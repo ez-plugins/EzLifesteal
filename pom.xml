@@ -54,14 +54,14 @@
         </dependency>
         <!-- EzSeasons public API — provided at runtime via softdepend when EzSeasons is installed -->
         <dependency>
-            <groupId>com.skyblockexp.lifesteal</groupId>
+            <groupId>com.github.ez-plugins.EzSeasons</groupId>
             <artifactId>ezseasons-api</artifactId>
             <version>2.1.2</version>
             <scope>provided</scope>
         </dependency>
         <!-- EzSeasons full plugin JAR — test-only; provides LifestealIntegration and SeasonResetEvent -->
         <dependency>
-            <groupId>com.skyblockexp.lifesteal</groupId>
+            <groupId>com.github.ez-plugins.EzSeasons</groupId>
             <artifactId>ezseasons-plugin</artifactId>
             <version>2.1.2</version>
             <scope>test</scope>
@@ -96,7 +96,7 @@
         <dependency>
             <groupId>org.mockbukkit.mockbukkit</groupId>
             <artifactId>mockbukkit-v26.1</artifactId>
-            <version>dev-9f320b33</version>
+            <version>dev-d245e0a</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

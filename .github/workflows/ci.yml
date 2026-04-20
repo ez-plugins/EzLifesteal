@@ -25,7 +25,10 @@ jobs:
 
       - name: Build and install MockBukkit dev/26.1.1
         run: |
-          git clone --depth=1 --branch dev/26.1.1 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
+          git init /tmp/MockBukkit
+          git -C /tmp/MockBukkit remote add origin https://github.com/MockBukkit/MockBukkit.git
+          git -C /tmp/MockBukkit fetch --depth=1 origin d245e0a
+          git -C /tmp/MockBukkit checkout FETCH_HEAD
           cd /tmp/MockBukkit && ./gradlew publishToMavenLocal -xtest -xjavadoc
 
       - name: Verify plugin build
