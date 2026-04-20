@@ -21,11 +21,13 @@ description: "Reference for features.yml — action bar, boss bar, and hologram 
 Controls the live heart count overlay shown to players.
 
 ### `action-bar.enabled`
+
 - Type: boolean
 - Default: `true`
 - Toggle the overlay on or off globally.
 
 ### `action-bar.mode`
+
 - Type: string
 - Default: `ACTION_BAR`
 - Controls display style. Accepted values:
@@ -33,17 +35,20 @@ Controls the live heart count overlay shown to players.
   - `BOSS_BAR` — displays a progress bar at the top of the screen. Requires the `boss-bar` sub-section.
 
 ### `action-bar.update-interval-ticks`
+
 - Type: integer
 - Default: `40`
 - How often (in server ticks, 20 ticks = 1 second) the display refreshes. Lower values are smoother but add overhead.
 
 ### `action-bar.message`
+
 - Type: string
 - Default: `"&c❤ %hearts% &7hearts"`
 - Text shown when `mode` is `ACTION_BAR`. Supports `&` colour codes.
 - Available placeholder: `%hearts%` — the player's current heart count.
 
 ### `action-bar.enabled-worlds` / `action-bar.disabled-worlds`
+
 - Type: list of world names
 - Default: `[]` (empty)
 - Leave both lists empty to show the overlay in all worlds.
@@ -56,11 +61,13 @@ Controls the live heart count overlay shown to players.
 Only read when `action-bar.mode` is `BOSS_BAR`.
 
 #### `action-bar.boss-bar.color`
+
 - Type: string
 - Default: `RED`
 - Controls bar colour. Accepted values: `PINK`, `BLUE`, `RED`, `GREEN`, `YELLOW`, `PURPLE`, `WHITE`.
 
 #### `action-bar.boss-bar.overlay`
+
 - Type: string
 - Default: `PROGRESS`
 - Controls bar segment style. Accepted values:
@@ -93,16 +100,19 @@ action-bar:
 A floating text display showing the top-hearts ranking. Requires the hologram to be placed via `/lifesteal hologram place` before it appears.
 
 ### `hologram.update-interval-ticks`
+
 - Type: integer
 - Default: `600`
 - How often the ranking text refreshes (600 ticks = 30 seconds).
 
 ### `hologram.max-entries`
+
 - Type: integer
 - Default: `10`
 - Maximum number of players shown in the leaderboard.
 
 ### `hologram.location`
+
 - Type: map
 - Default: `{}` (not placed)
 - Set automatically when a staff member runs `/lifesteal hologram place`. You can also set it manually:

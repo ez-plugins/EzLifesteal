@@ -31,6 +31,7 @@ Settings for heart drops, world scoping, mob rewards, kill streaks, and revive b
 ## Global Switch
 
 ### `global-enabled`
+
 - Type: boolean
 - Default: `true`
 - Master switch. When `false`, all lifesteal gain/loss processing stops.
@@ -40,16 +41,19 @@ Settings for heart drops, world scoping, mob rewards, kill streaks, and revive b
 ## Core Bounds
 
 ### `default-hearts`
+
 - Type: number
 - Default: `10.0`
 - Heart count assigned to new players and used when resetting a profile.
 
 ### `min-hearts`
+
 - Type: number
 - Default: `1.0`
 - Lower clamp. A player's stored hearts will never fall below this value through normal gameplay. Set to `0` to allow elimination.
 
 ### `max-hearts`
+
 - Type: number
 - Default: `40.0`
 - Upper clamp. Hearts gained beyond this value are discarded.
@@ -59,11 +63,13 @@ Settings for heart drops, world scoping, mob rewards, kill streaks, and revive b
 ## Health Scaling
 
 ### `apply-health-scale`
+
 - Type: boolean
 - Default: `false`
 - When `true`, the plugin applies a fixed health scale to all players. Use this to normalise the displayed heart row to a fixed UI size regardless of actual max health.
 
 ### `health-scale`
+
 - Type: number
 - Default: `20.0`
 - The health value used for Bukkit's `setHealthScale`. Only used when `apply-health-scale` is `true`.
@@ -73,11 +79,13 @@ Settings for heart drops, world scoping, mob rewards, kill streaks, and revive b
 ## Gain / Loss Math
 
 ### `hearts-per-kill`
+
 - Type: number
 - Default: `1.0`
 - Hearts added to the killer after a PvP kill. Supports decimals.
 
 ### `hearts-lost-on-death`
+
 - Type: number
 - Default: `1.0`
 - Hearts removed from the victim on a PvP death. Supports decimals.
@@ -87,21 +95,25 @@ Settings for heart drops, world scoping, mob rewards, kill streaks, and revive b
 ## Zero-heart Policy
 
 ### `ban-when-zero-hearts`
+
 - Type: boolean
 - Default: `false`
 - When `true`, any player whose hearts reach zero is banned. Set to `false` to kick instead.
 
 ### `zero-heart-ban-message`
+
 - Type: string
 - Default: `"You have run out of hearts."`
 - Message shown in the ban screen. Supports colour codes.
 
 ### `zero-heart-kick-message`
+
 - Type: string
 - Default: `"You have run out of hearts."`
 - Message sent when kicking a player at zero hearts (used when `ban-when-zero-hearts` is `false`).
 
 ### `zero-heart-commands`
+
 - Type: list of strings
 - Default: `[]` (disabled)
 - Console commands executed when a player reaches zero hearts, before the ban or kick. Supports placeholders:
@@ -122,6 +134,7 @@ zero-heart-commands:
 Prevents players from logging out mid-fight to avoid heart loss.
 
 ### `combat-logout-protection.enabled`
+
 - Type: boolean
 - Default: `false`
 

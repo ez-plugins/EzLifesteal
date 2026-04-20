@@ -22,6 +22,18 @@ The shop GUI opens when a player runs `/lifesteal shop` or `/hearts`. Items are 
 
 ---
 
+## Purchase Flow
+
+1. Player opens the shop via `/lifesteal shop` or `/hearts`.
+2. The GUI renders item icons at the configured slots with their display names and lore.
+3. Player left-clicks a slot:
+   - If `price > 0`, the plugin checks the player’s Vault balance. If they cannot afford it, the purchase is cancelled and they receive a feedback message.
+   - If affordable (or free), `quantity` heart vouchers are added to their inventory. If the inventory is full, the vouchers drop at their feet.
+4. `commands` entries execute as console commands, with `{player}` replaced by the buyer’s in-game name.
+5. The GUI stays open after a purchase so players can buy multiple items in one session.
+
+---
+
 ## GUI Container
 
 ### `title`
@@ -102,3 +114,13 @@ items:
     commands:
       - "say {player} bought a revive voucher"
 ```
+
+---
+
+## Tips
+
+- **Slot numbering:** slots are numbered left-to-right, top-to-bottom starting at `0`. In a `size: 54` chest, slot `4` is the centre of the top row and slot `49` the centre of the bottom row. A common pattern puts purchasable items in rows 2–4 with the outer border left empty.
+- **Free items:** set `price: 0` or omit `price` entirely to make an item cost nothing. Useful for event giveaways or starter kits delivered via `commands`.
+- **Post-purchase hooks:** use `commands` to send purchase announcements, trigger economy logging via a bridge plugin, or run any other console action. The `{player}` token is replaced with the buyer’s name at execution time.
+- **Per-item icons:** use `icon` to override the visual displayed in the GUI without affecting which heart type is delivered. This lets you display a `GOLD_INGOT` for a gold-tier heart even if the heart item itself uses a skull texture.
+- **Testing prices:** temporarily set `price: 0` on an item to verify the purchase flow and inventory delivery before committing to final economy values.

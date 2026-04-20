@@ -23,21 +23,25 @@ description: "Reference for lifesteal-drops.yml — heart item drop behavior on 
 ## Options
 
 ### `drop-heart-on-kill`
+
 - Type: boolean
 - Default: `true`
 - When `true`, a heart voucher item is produced on a PvP kill. When `false`, no item is dropped or given and the section below has no effect.
 
 ### `drop-heart-id`
+
 - Type: string
 - Default: `"basic"`
 - The heart ID that is produced as the dropped item. Must match a key defined in `hearts.yml`.
 
 ### `drop-heart-amount`
+
 - Type: integer
 - Default: `1`
 - Number of heart vouchers produced per kill.
 
 ### `drop-heart-naturally`
+
 - Type: boolean
 - Default: `true`
 - Controls **how** the heart item is delivered:
