@@ -10,6 +10,8 @@ import com.skyblockexp.ezlifesteal.util.PluginLifecycleSupport;
 import java.lang.reflect.Method;
 import java.util.logging.Level;
 import org.bukkit.Bukkit;
+import org.bukkit.event.Event;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -228,7 +230,8 @@ public final class IntegrationRuntimeService {
 
     private void registerSeasonResetListener() {
         final var integrationState = registry.getSeasonsIntegrationState();
-        if (!hasSeasonsResetEventClass()) {
+        final Class<? extends Event> eventClass = loadSeasonsResetEventClass();
+        if (eventClass == null) {
             return;
         }
         if (integrationState.getSeasonResetListener() != null) {
@@ -237,7 +240,10 @@ public final class IntegrationRuntimeService {
         try {
             final SeasonResetListener seasonResetListener = new SeasonResetListener(pluginAccessor);
             integrationState.setSeasonResetListener(seasonResetListener);
-            Bukkit.getPluginManager().registerEvents(seasonResetListener, plugin);
+            Bukkit.getPluginManager().registerEvent(
+                    eventClass, seasonResetListener, EventPriority.NORMAL,
+                    (listener, event) -> ((SeasonResetListener) listener).onSeasonReset(event),
+                    plugin);
             plugin.getLogger().info("Registered EzSeasons season reset listener.");
         }
         catch (LinkageError | RuntimeException exception) {
@@ -255,18 +261,19 @@ public final class IntegrationRuntimeService {
         registry.getSeasonsIntegrationState().setSeasonResetListener(null);
     }
 
-    private boolean hasSeasonsResetEventClass() {
+    @SuppressWarnings("unchecked")
+    private Class<? extends Event> loadSeasonsResetEventClass() {
         final Plugin seasonsPlugin = Bukkit.getPluginManager().getPlugin(SEASONS_PLUGIN_NAME);
         if (seasonsPlugin == null) {
-            return false;
+            return null;
         }
         final ClassLoader loader = seasonsPlugin.getClass().getClassLoader();
         try {
-            Class.forName("com.skyblockexp.lifesteal.seasons.api.events.SeasonResetEvent", false, loader);
-            return true;
+            return (Class<? extends Event>) Class.forName(
+                    "com.skyblockexp.lifesteal.seasons.api.events.SeasonResetEvent", false, loader);
         }
         catch (ClassNotFoundException exception) {
-            return false;
+            return null;
         }
     }
 }

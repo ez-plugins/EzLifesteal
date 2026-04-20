@@ -25,13 +25,70 @@ commands:
     usage: /revive <player>
     permission: lifesteal.command.base
 permissions:
-  lifesteal.*:
-    description: Grants all EzLifesteal permissions
+  # ── Leaf permissions ────────────────────────────────────────────────────────
+  lifesteal.command.base:
+    description: Use /lifesteal to check your hearts and open sub-commands
+    default: true
+  lifesteal.top:
+    description: View the hearts leaderboard with /lifesteal top
+    default: true
+  lifesteal.transfer:
+    description: Transfer hearts to another player
+    default: true
+  lifesteal.withdraw:
+    description: Withdraw hearts as a voucher item
+    default: true
+  lifesteal.manage.view:
+    description: View stored hearts for other players
+    default: false
+  lifesteal.manage.modify:
+    description: Add, remove, set, reset, or revive player hearts
+    default: false
+  lifesteal.manage.resetall:
+    description: Reset every stored profile to the default hearts
+    default: false
+  lifesteal.admin.banlist:
+    description: View the list of banned (zero-heart) players
+    default: false
+  lifesteal.reload:
+    description: Reload EzLifesteal configuration and services
+    default: false
+  lifesteal.alert:
+    description: Receive smurf farming alerts
+    default: false
+  lifesteal.smurf.manage:
+    description: Access the smurf management GUI
+    default: false
+  lifesteal.scoreboard.place:
+    description: Place the hologram scoreboard
+    default: false
+  lifesteal.scoreboard.remove:
+    description: Remove the hologram scoreboard
+    default: false
+  lifesteal.test:
+    description: Allows simulating lifesteal kills and deaths
+    default: false
+  # ── Composite permissions ───────────────────────────────────────────────────
+  lifesteal.manage.*:
+    description: Modify stored hearts for other players
     default: op
     children:
-      lifesteal.admin: true
-      lifesteal.mod: true
-      lifesteal.player: true
+      lifesteal.manage.view: true
+      lifesteal.manage.modify: true
+      lifesteal.manage.resetall: true
+  lifesteal.scoreboard.*:
+    description: Manage EzLifesteal hologram or scoreboard displays
+    default: op
+    children:
+      lifesteal.scoreboard.place: true
+      lifesteal.scoreboard.remove: true
+  lifesteal.hologram:
+    description: Legacy alias for hologram placement permissions
+    default: op
+    children:
+      lifesteal.scoreboard.place: true
+      lifesteal.scoreboard.remove: true
+  # ── Role bundles ────────────────────────────────────────────────────────────
   lifesteal.player:
     description: Access basic EzLifesteal features
     default: true
@@ -58,58 +115,10 @@ permissions:
       lifesteal.admin.banlist: true
       lifesteal.reload: true
       lifesteal.test: true
-  lifesteal.command.base:
-    description: Use /lifesteal to check your hearts and open sub-commands
-    default: true
-  lifesteal.top:
-    description: View the hearts leaderboard with /lifesteal top
-    default: true
-  lifesteal.transfer:
-    description: Transfer hearts to another player
-    default: true
-  lifesteal.manage.*:
-    description: Modify stored hearts for other players
+  lifesteal.*:
+    description: Grants all EzLifesteal permissions
     default: op
     children:
-      lifesteal.manage.view: true
-      lifesteal.manage.modify: true
-      lifesteal.manage.resetall: true
-  lifesteal.manage.view:
-    description: View stored hearts for other players
-    default: false
-  lifesteal.manage.modify:
-    description: Add, remove, set, reset, or revive player hearts
-    default: false
-  lifesteal.manage.resetall:
-    description: Reset every stored profile to the default hearts
-    default: false
-  lifesteal.reload:
-    description: Reload EzLifesteal configuration and services
-    default: false
-  lifesteal.alert:
-    description: Receive smurf farming alerts
-    default: false
-  lifesteal.smurf.manage:
-    description: Access the smurf management GUI
-    default: false
-  lifesteal.scoreboard.*:
-    description: Manage EzLifesteal hologram or scoreboard displays
-    default: op
-    children:
-      lifesteal.scoreboard.place: true
-      lifesteal.scoreboard.remove: true
-  lifesteal.scoreboard.place:
-    description: Place the hologram scoreboard
-    default: false
-  lifesteal.scoreboard.remove:
-    description: Remove the hologram scoreboard
-    default: false
-  lifesteal.hologram:
-    description: Legacy alias for hologram placement permissions
-    default: op
-    children:
-      lifesteal.scoreboard.place: true
-      lifesteal.scoreboard.remove: true
-  lifesteal.test:
-    description: Allows simulating lifesteal kills and deaths
-    default: false
+      lifesteal.admin: true
+      lifesteal.mod: true
+      lifesteal.player: true

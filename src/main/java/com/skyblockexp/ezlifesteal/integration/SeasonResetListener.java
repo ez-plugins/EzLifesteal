@@ -7,7 +7,6 @@ import java.util.concurrent.CompletionException;
 import java.util.logging.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Event;
-import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
 public final class SeasonResetListener implements Listener {
@@ -18,12 +17,7 @@ public final class SeasonResetListener implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler
     public void onSeasonReset(Event event) {
-        final String eventClassName = event.getClass().getName();
-        if (!eventClassName.contains("SeasonResetEvent")) {
-            return;
-        }
         final LifestealManager manager = plugin.getLifestealManager();
         if (manager == null) {
             plugin.getLogger().warning("Skipping EzSeasons reset sync: Lifesteal manager is not ready.");
