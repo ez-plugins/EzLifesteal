@@ -30,7 +30,6 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class SeasonResetListenerTest {
@@ -45,18 +44,6 @@ class SeasonResetListenerTest {
     @AfterEach
     void tearDown() {
         MockBukkitTestHelper.stopServer();
-    }
-
-    @Test
-    void ignoresEventsThatAreNotSeasonResetEvents() {
-        PluginAccessor plugin = mock(PluginAccessor.class);
-        Event event = new NonSeasonEvent();
-
-        SeasonResetListener listener = new SeasonResetListener(plugin);
-
-        listener.onSeasonReset(event);
-
-        verifyNoInteractions(plugin);
     }
 
     @Test
@@ -180,19 +167,6 @@ class SeasonResetListenerTest {
     }
 
     private static final class TestSeasonResetEvent extends Event {
-        private static final HandlerList HANDLERS = new HandlerList();
-
-        @Override
-        public HandlerList getHandlers() {
-            return HANDLERS;
-        }
-
-        public static HandlerList getHandlerList() {
-            return HANDLERS;
-        }
-    }
-
-    private static final class NonSeasonEvent extends Event {
         private static final HandlerList HANDLERS = new HandlerList();
 
         @Override

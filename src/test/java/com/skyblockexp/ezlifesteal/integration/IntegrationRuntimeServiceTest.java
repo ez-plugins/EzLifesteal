@@ -15,7 +15,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.bytebuddy.ByteBuddy;
 import org.bukkit.Bukkit;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -248,7 +250,7 @@ class IntegrationRuntimeServiceTest {
             invokeRegisterSeasonResetListener();
 
             assertNull(registry.getSeasonsIntegrationState().getSeasonResetListener());
-            verify(pluginManager, never()).registerEvents(any(Listener.class), eq(plugin));
+            verify(pluginManager, never()).registerEvent(any(), any(Listener.class), any(), any(), eq(plugin));
         }
     }
 
@@ -264,7 +266,8 @@ class IntegrationRuntimeServiceTest {
             invokeRegisterSeasonResetListener();
 
             assertNotNull(registry.getSeasonsIntegrationState().getSeasonResetListener());
-            verify(pluginManager, times(1)).registerEvents(any(SeasonResetListener.class), eq(plugin));
+            verify(pluginManager, times(1)).registerEvent(
+                    any(), any(SeasonResetListener.class), eq(EventPriority.NORMAL), any(EventExecutor.class), eq(plugin));
             verify(logger, times(1)).info("Registered EzSeasons season reset listener.");
         }
     }
