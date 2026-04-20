@@ -23,41 +23,49 @@ The revive beacon system allows a banned player to be revived by right-clicking 
 ## Core Settings
 
 ### `revive-beacon.enabled`
+
 - Type: boolean
 - Default: `true`
 - Master switch. When `false`, no beacon interactions trigger revive logic.
 
 ### `revive-beacon.voucher-heart-id`
+
 - Type: string
 - Default: `"revive"`
 - The heart ID (from `hearts.yml`) that acts as the revive voucher. Only items with this ID will trigger a revive when used on a beacon.
 
 ### `revive-beacon.require-sneak`
+
 - Type: boolean
 - Default: `false`
 - When `true`, the player must be sneaking (shift held) while right-clicking the beacon to trigger a revive.
 
 ### `revive-beacon.max-distance`
+
 - Type: number
 - Default: `8.0`
 - Radius in blocks around the beacon to search for a valid revive target.
 
 ### `revive-beacon.consume-on-fail`
+
 - Type: boolean
 - Default: `false`
 - When `true`, the voucher item is consumed even if no valid revive target is found. When `false`, a failed revive does not cost the item.
 
 ### `revive-beacon.require-voucher-in-beacon`
+
 - Type: boolean
 - Default: `true`
 - When `true`, the revive attempt requires the player to hold the voucher and complete a timed interaction (`voucher-hold-seconds`) rather than consuming it immediately.
 
 ### `revive-beacon.voucher-hold-seconds`
+
 - Type: number
 - Default: `300.0`
 - Number of seconds the player must hold the interaction to complete a revive when `require-voucher-in-beacon` is `true`.
 
 ### `revive-beacon.whitelist-enabled`
+
 - Type: boolean
 - Default: `false`
 - When `true`, only beacons listed in `revive-beacon-whitelist.yml` can be used as revive beacons.
@@ -67,6 +75,7 @@ The revive beacon system allows a banned player to be revived by right-clicking 
 ## Target Strategy
 
 ### `revive-beacon.target-strategy`
+
 - Type: string
 - Default: `COMMAND_SELECTION`
 - Controls how the revive target is chosen. Accepted values:
@@ -81,16 +90,19 @@ The revive beacon system allows a banned player to be revived by right-clicking 
 ## Broadcast
 
 ### `revive-beacon.broadcast.enabled`
+
 - Type: boolean
 - Default: `false`
 - When `true`, broadcasts a server-wide message at the start and completion of a revive.
 
 ### `revive-beacon.broadcast.hold-start-message-key`
+
 - Type: string
 - Default: `"beacon-revive-broadcast-hold-start"`
 - Language message key sent when a player begins holding the revive interaction.
 
 ### `revive-beacon.broadcast.complete-message-key`
+
 - Type: string
 - Default: `"beacon-revive-broadcast-complete"`
 - Language message key sent when the revive completes.
@@ -102,25 +114,30 @@ The revive beacon system allows a banned player to be revived by right-clicking 
 Visual effects played on the reviver and in the world during and after a successful revive.
 
 ### `revive-beacon.animation.enabled`
+
 - Type: boolean
 - Default: `true`
 
 ### `revive-beacon.animation.duration-ticks`
+
 - Type: integer
 - Default: `30`
 - Length of the animation in ticks.
 
 ### `revive-beacon.animation.spiral-steps`
+
 - Type: integer
 - Default: `10`
 - Number of steps in the spiral particle effect.
 
 ### `revive-beacon.animation.ring-count`
+
 - Type: integer
 - Default: `3`
 - Number of particle rings during the animation.
 
 ### `revive-beacon.animation.vertical-lift-per-step`
+
 - Type: number
 - Default: `0.08`
 - How much the animation rises per step.

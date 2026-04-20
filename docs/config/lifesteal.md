@@ -139,6 +139,7 @@ Prevents players from logging out mid-fight to avoid heart loss.
 - Default: `false`
 
 ### `combat-logout-protection.tag-duration-seconds`
+
 - Type: number
 - Default: `15.0`
 - Seconds a player remains "combat-tagged" after their last PvP hit. Logging out during this window applies the full heart loss.
@@ -156,20 +157,24 @@ combat-logout-protection:
 Visual effects played when a player uses (right-clicks) a heart voucher item.
 
 ### `heart-consumption-effects.enabled`
+
 - Type: boolean
 - Default: `true`
 
 ### `heart-consumption-effects.stacking-particles`
+
 - Type: boolean
 - Default: `true`
 - When `true`, particles are layered in sequence over `stacking-duration-ticks`.
 
 ### `heart-consumption-effects.stacking-duration-ticks`
+
 - Type: integer
 - Default: `40`
 - Total duration of the stacked particle sequence.
 
 ### `heart-consumption-effects.particles`
+
 - Type: list of particle definitions
 - Each entry supports:
   - `type` — Bukkit particle name (e.g. `DUST`, `HEART`, `END_ROD`)

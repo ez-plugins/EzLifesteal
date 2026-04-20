@@ -60,7 +60,7 @@ Full node list: [Permissions reference]({{ site.baseurl }}/permissions).
 
 ### Checking a Player's Hearts
 
-```
+```text
 /lifesteal hearts <player>
 ```
 
@@ -80,7 +80,7 @@ All adjustments respect `min-hearts` and `max-hearts` from `lifesteal-core.yml`,
 
 ### Giving Heart Vouchers Directly
 
-```
+```text
 /lifesteal giveheart <player> <heartId|tier> [amount]
 ```
 
@@ -88,7 +88,7 @@ Delivers heart voucher items directly to the player's inventory. If the inventor
 
 ### Viewing the Leaderboard
 
-```
+```text
 /lifesteal top [page]
 ```
 
@@ -96,7 +96,7 @@ Shows the hearts leaderboard sorted from highest to lowest. Page through results
 
 ### Resetting All Players
 
-```
+```text
 /lifesteal resetall
 ```
 
@@ -109,9 +109,11 @@ Resets every stored profile to the configured default hearts. Runs asynchronousl
 When a smurf alert fires, players holding `lifesteal.alert` receive a chat notification. To investigate:
 
 **1. Open the review GUI:**
-```
+
+```text
 /lifesteal smurf
 ```
+
 Lists all recorded alerts with suspect name, victim name, kill count, and timestamp. Requires `lifesteal.smurf.manage`.
 
 **2. Click an alert entry** to open the kill history detail view. Look for:
@@ -121,10 +123,12 @@ Lists all recorded alerts with suspect name, victim name, kill count, and timest
 - **Spread over days** — kills distributed across many sessions are more likely legitimate rivalry than deliberate farming.
 
 **3. Cross-reference current state:**
-```
+
+```text
 /lifesteal hearts <suspect>
 /lifesteal hearts <victim>
 ```
+
 Check whether the victim has been bled down significantly and whether the suspect has an unusually high count.
 
 **4. Take action:**
@@ -141,12 +145,14 @@ Check whether the victim has been bled down significantly and whether the suspec
 ## Hologram Leaderboard
 
 Place a floating leaderboard at your current position:
-```
+
+```text
 /lifesteal hologram place
 ```
 
 Remove it:
-```
+
+```text
 /lifesteal hologram remove
 ```
 
@@ -161,15 +167,18 @@ Before applying heart-rule changes on a live server, validate them on a staging 
 1. **Disable the admin bypass** — set `bypass-heart-loss: false` and `bypass-heart-gain: false` in `admin.yml`, or remove your account from admin detection. This ensures test flows are not silently skipped.
 
 2. **Run simulated flows:**
-   ```
+
+   ```text
    /lifesteal test kill
    /lifesteal test death
    ```
 
 3. **Verify the delta:**
-   ```
+
+   ```text
    /lifesteal hearts <yourname>
    ```
+
    Confirm hearts changed by the expected amount after each simulation.
 
 4. **Re-enable the bypass** before pushing to production.
@@ -178,13 +187,14 @@ Before applying heart-rule changes on a live server, validate them on a staging 
 
 ## Reloading Configuration
 
-```
+```text
 /lifesteal reload
 ```
 
 Refreshes all YAML files (`config.yml`, `admin.yml`, `smurf.yml`, `storage.yml`, `lifesteal-*.yml`, language files, and overlays) without restarting. Safe to run at any time, but avoid it during active PvP — overlay updates may flicker briefly for online players.
 
 **When to restart instead:**
+
 - Changing `type` in `storage.yml` (YAML ↔ MySQL) requires a full restart so the storage backend can reinitialise cleanly.
 - Adding a new soft-dependency jar (PlaceholderAPI, Vault) to the server for the first time.
 

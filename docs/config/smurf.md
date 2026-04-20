@@ -52,21 +52,25 @@ Clicking an entry opens a detail view with the full recorded kill history betwee
 ## Detection Controls
 
 ### `enabled`
+
 - Type: boolean
 - Default: `true`
 - Master switch for smurf detection.
 
 ### `same-victim-threshold`
+
 - Type: integer
 - Default: `3`
 - Number of kills against the same victim inside the time window before an alert is triggered. Raise this value on servers with frequent organised duels to reduce false positives.
 
 ### `time-window-minutes`
+
 - Type: integer
 - Default: `15`
 - Length of the rolling detection window in minutes. Kills older than this window do not count toward the threshold.
 
 ### `notify-permission`
+
 - Type: string
 - Default: `"lifesteal.alert"`
 - Permission node that staff need to receive live smurf alerts.
@@ -76,11 +80,13 @@ Clicking an entry opens a detail view with the full recorded kill history betwee
 ## History Controls
 
 ### `history-limit`
+
 - Type: integer
 - Default: `50`
 - Maximum number of **alert entries** retained in the smurf review GUI (`/lifesteal smurf`). When the cap is reached, the oldest entry is evicted.
 
 ### `kill-history-limit`
+
 - Type: integer
 - Default: `120`
 - Maximum number of **raw kill log entries** retained per player for staff review. This is a higher-resolution log used inside the smurf detail view to show each individual kill in context.
@@ -90,6 +96,7 @@ Clicking an entry opens a detail view with the full recorded kill history betwee
 ## Trust / Exemptions
 
 ### `exempted-players`
+
 - Type: list of player names or UUIDs
 - Default: `[]`
 - Players in this list are completely ignored by smurf detection — neither as suspects nor as victims. Useful for trusted duel partners or automated test accounts.

@@ -23,12 +23,14 @@ description: "Reference for lifesteal-mobs.yml — mob death behavior and per-mo
 ## Mob Death Behavior
 
 ### `dont-remove-hearts-from-mobs`
+
 - Type: boolean
 - Default: `true`
 - When `true`, dying to a mob (non-player) **does not** remove hearts from the victim. Only PvP deaths trigger heart loss.
 - Set to `false` to make mob deaths also cost hearts.
 
 ### `mob-remove-hearts-greater-than`
+
 - Type: integer
 - Default: `-1` (disabled)
 - Only used when `dont-remove-hearts-from-mobs` is `false`. When set to a positive integer, heart removal from mob deaths only applies to players whose heart count is **greater than** this value. For example, `mob-remove-hearts-greater-than: 5` means players with 5 or fewer hearts are protected from mob heart loss.
@@ -39,6 +41,7 @@ description: "Reference for lifesteal-mobs.yml — mob death behavior and per-mo
 ## Mob Rewards
 
 ### `mob-rewards`
+
 - Type: map keyed by entity type name
 - Default: `{}` (no rewards)
 - Award hearts to a player when they kill a specific mob type. Entity type names are Bukkit entity type strings (e.g. `zombie`, `skeleton`, `ender_dragon`).

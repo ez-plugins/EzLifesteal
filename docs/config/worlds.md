@@ -23,12 +23,14 @@ description: "Reference for lifesteal-worlds.yml — per-world enable/disable ru
 ## Options
 
 ### `enabled-worlds`
+
 - Type: list of world names
 - Default: `[]` (empty)
 - If **non-empty**, lifesteal only runs in the listed worlds. All other worlds are silently ignored.
 - If **empty**, the `disabled-worlds` list is consulted instead.
 
 ### `disabled-worlds`
+
 - Type: list of world names
 - Default: `[]` (empty)
 - Worlds explicitly excluded from lifesteal processing.
@@ -43,6 +45,7 @@ description: "Reference for lifesteal-worlds.yml — per-world enable/disable ru
 | empty | non-empty | All worlds except listed ones run lifesteal |
 
 ### `world-overrides`
+
 - Type: map keyed by world name
 - Default: `{}` (no overrides)
 - Each key is a world name. The value is a partial settings map that overrides the global values from `lifesteal-core.yml` for that world only. Unspecified keys fall back to the global value.

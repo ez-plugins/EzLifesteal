@@ -37,10 +37,12 @@ The shop GUI opens when a player runs `/lifesteal shop` or `/hearts`. Items are 
 ## GUI Container
 
 ### `title`
+
 - Type: string
 - Display name of the inventory window. Supports `&` colour codes.
 
 ### `size`
+
 - Type: integer
 - Number of inventory slots. Must be a multiple of 9 (9, 18, 27, 36, 45, or 54).
 
