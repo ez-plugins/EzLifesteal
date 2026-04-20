@@ -2,10 +2,10 @@
 title: Kill Streaks
 nav_order: 4
 parent: Configuration
-description: "Reference for lifesteal.yml kill-streaks section — reward definitions and limits"
+description: "Reference for lifesteal-killstreaks.yml — kill streak reward definitions and limits"
 ---
 
-# Kill Streaks Configuration (`lifesteal.yml` → `kill-streaks`)
+# Kill Streaks Configuration (`lifesteal-killstreaks.yml`)
 {: .no_toc }
 
 ## Table of contents
@@ -16,7 +16,9 @@ description: "Reference for lifesteal.yml kill-streaks section — reward defini
 
 ---
 
-Kill streak rewards are configured under `kill-streaks`.
+Kill streak rewards are configured in `lifesteal-killstreaks.yml` under the `kill-streaks` root key.
+
+**Vault and an economy provider are required** if you use the `money` reward field.
 
 ## Structure
 
@@ -63,7 +65,7 @@ kill-streaks:
 Supported reward fields:
 
 - `money` (number)
-  - Requires Vault + economy provider.
+  - Amount of in-game currency given to the player. Requires Vault and a compatible economy plugin.
 - `commands` (list of strings)
   - Executed as console.
 - `items` (list)
@@ -84,3 +86,4 @@ Common placeholders for reward text/commands include:
 - Start with low thresholds (3/5/10) and increase only if PvP is frequent.
 - Keep money rewards modest to avoid inflation.
 - Combine one personal reward (`messages`/`items`) with one server signal (`broadcast-message`).
+- When a player reaches a streak count that crosses **multiple** defined thresholds at once (e.g. they jump from streak 2 to 5 in a single kill because the previous thresholds were not defined), only the matching threshold fires. Intermediate thresholds that were skipped are not triggered.

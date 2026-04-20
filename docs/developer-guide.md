@@ -19,7 +19,7 @@ This guide helps contributors quickly understand how EzLifesteal is organized, h
 
 ## Prerequisites
 
-- Java 17+
+- Java 25+
 - Maven 3.9+
 - Paper 1.21+ test server (for manual plugin validation)
 
