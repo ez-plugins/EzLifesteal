@@ -1,0 +1,17 @@
+# ==============================================================
+# EzLifesteal - Mob/environment death behavior and rewards
+# ==============================================================
+
+dont-remove-hearts-from-mobs: true
+mob-remove-hearts-greater-than: -1
+
+mob-rewards: {}
+# Example:
+# mob-rewards:
+#   zombie:
+#     hearts: 0.25
+#     permission: lifesteal.mob.zombie
+#     worlds:
+#       - world
+#     blocked-worlds:
+#       - world_nether

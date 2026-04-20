@@ -1,0 +1,67 @@
+---
+title: Commands
+nav_order: 3
+description: "Reference for all EzLifesteal commands and subcommands"
+---
+
+# EzLifesteal Commands
+{: .no_toc }
+
+## Table of contents
+{: .no_toc .text-delta }
+
+1. TOC
+{:toc}
+
+---
+
+This page lists all player, moderator, and admin commands exposed by EzLifesteal.
+
+## Base Commands
+
+| Command | Description | Permission |
+|---|---|---|
+| `/lifesteal` | Opens the main command and shows your current heart status context. | `lifesteal.command.base` |
+| `/hearts` | Opens the heart voucher shop GUI. | `lifesteal.command.base` |
+
+## Player Commands
+
+| Command | Description | Permission |
+|---|---|---|
+| `/lifesteal top [page]` | Shows the heart leaderboard with pagination. | `lifesteal.top` |
+| `/lifesteal transfer <player> <amount>` | Transfers hearts to another player (respecting minimum constraints). | `lifesteal.transfer` |
+
+## Management Commands
+
+| Command | Description | Permission |
+|---|---|---|
+| `/lifesteal hearts <player>` | View stored hearts for any player (online/offline). | `lifesteal.manage.view` |
+| `/lifesteal set <player> <hearts>` | Set exact heart amount for a player. | `lifesteal.manage.modify` |
+| `/lifesteal add <player> <hearts>` | Add hearts to a player. | `lifesteal.manage.modify` |
+| `/lifesteal remove <player> <hearts>` | Remove hearts from a player. | `lifesteal.manage.modify` |
+| `/lifesteal reset <player>` | Reset one player to default hearts. | `lifesteal.manage.modify` |
+| `/lifesteal revive <player>` | Revive a player and restore default heart state. | `lifesteal.manage.modify` |
+| `/lifesteal giveheart <player> <heartId\|tier> [amount]` | Give configured heart items directly. | `lifesteal.manage.modify` |
+| `/lifesteal resetall` | Reset all stored profiles to default hearts. | `lifesteal.manage.resetall` |
+
+## Moderation / Staff Commands
+
+| Command | Description | Permission |
+|---|---|---|
+| `/lifesteal smurf` | Opens the smurf detection review GUI. | `lifesteal.smurf.manage` |
+| `/lifesteal hologram place` | Places the top-heart hologram at your location. | `lifesteal.scoreboard.place` |
+| `/lifesteal hologram remove` | Removes the top-heart hologram. | `lifesteal.scoreboard.remove` |
+
+## Admin / Maintenance Commands
+
+| Command | Description | Permission |
+|---|---|---|
+| `/lifesteal reload` | Reloads plugin config/runtime services. | `lifesteal.reload` |
+| `/lifesteal test <kill\|death>` | Simulates kill/death lifesteal flows for validation. | `lifesteal.test` |
+
+## Usage Notes
+
+- Assign `lifesteal.player` to normal players.
+- Assign `lifesteal.mod` to moderators.
+- Assign `lifesteal.admin` to server administrators.
+- Use `/lifesteal reload` after editing YAML files.

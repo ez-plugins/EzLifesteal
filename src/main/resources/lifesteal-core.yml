@@ -1,0 +1,42 @@
+# ==============================================================
+# EzLifesteal - Core gameplay settings
+# ==============================================================
+
+global-enabled: true
+
+default-hearts: 10.0
+min-hearts: 1.0
+max-hearts: 40.0
+
+apply-health-scale: false
+health-scale: 20.0
+
+hearts-per-kill: 1.0
+hearts-lost-on-death: 1.0
+
+ban-when-zero-hearts: false
+zero-heart-ban-message: "You have run out of hearts."
+zero-heart-kick-message: "You have run out of hearts."
+
+# Commands execute as console and support placeholders:
+#   %player% / %victim% / %player_uuid% / %victim_uuid%
+#   %killer% / %killer_uuid%
+#   %hearts% / %remaining_hearts%
+# zero-heart-commands: []
+
+combat-logout-protection:
+  enabled: false
+  tag-duration-seconds: 15.0
+
+heart-consumption-effects:
+  enabled: true
+  stacking-particles: true
+  stacking-duration-ticks: 40
+  particles:
+    - type: DUST
+      count: 50
+      speed: 0.1
+      color: "#8B0000"
+    - type: HEART
+      count: 20
+      speed: 0.05

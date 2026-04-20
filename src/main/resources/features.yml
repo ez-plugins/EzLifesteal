@@ -1,0 +1,42 @@
+# ==============================================================
+# EzLifesteal - Display and feature settings
+# ==============================================================
+
+# --------------------------------------------------------------
+# Heart display: Action Bar / Boss Bar
+# --------------------------------------------------------------
+action-bar:
+  enabled: true
+  # ACTION_BAR or BOSS_BAR
+  mode: ACTION_BAR
+  # Update interval for display refresh.
+  update-interval-ticks: 40
+  # Placeholder: %hearts%
+  message: "&c❤ %hearts% &7hearts"
+
+  # Leave both lists empty to allow all worlds.
+  enabled-worlds: []
+  disabled-worlds: []
+
+  # Used when mode is BOSS_BAR.
+  boss-bar:
+    color: RED
+    overlay: PROGRESS
+
+# --------------------------------------------------------------
+# Top-hearts hologram
+# --------------------------------------------------------------
+hologram:
+  # Refresh interval for ranking text.
+  update-interval-ticks: 600
+  max-entries: 10
+
+  # Set with /lifesteal hologram set or manually as:
+  # location:
+  #   world: world
+  #   x: 0.5
+  #   y: 64.0
+  #   z: 0.5
+  #   yaw: 0.0
+  #   pitch: 0.0
+  location: {}

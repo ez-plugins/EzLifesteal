@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+    "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+<suppressions>
+    <!-- Test classes: relax documentation and style rules -->
+    <suppress checks="JavadocMethod"      files=".*Test\.java"/>
+    <suppress checks="JavadocType"        files=".*Test\.java"/>
+    <suppress checks="JavadocVariable"    files=".*Test\.java"/>
+    <suppress checks="FinalLocalVariable" files=".*Test\.java"/>
+    <suppress checks="NoLineWrap"         files=".*Test\.java"/>
+</suppressions>

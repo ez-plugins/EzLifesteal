@@ -1,0 +1,62 @@
+# ==============================================================
+# EzLifesteal - Revive beacon settings
+# ==============================================================
+
+revive-beacon:
+  # Enables reviving a banned target by right-clicking a beacon with a voucher heart item.
+  enabled: true
+  # Heart item id (PDC heart-id) that is accepted as the revive voucher.
+  voucher-heart-id: revive
+  require-sneak: false
+  max-distance: 8.0
+  consume-on-fail: false
+  require-voucher-in-beacon: true
+  voucher-hold-seconds: 300.0
+  whitelist-enabled: false
+  # Whitelisted beacon locations are persisted to revive-beacon-whitelist.yml
+  # to avoid accidental override while editing this config.
+  # Deterministic selection strategy. Supported: NEAREST_BANNED, COMMAND_SELECTION
+  # NEAREST_BANNED picks the closest banned target in radius, then UUID lexical order for ties.
+  # COMMAND_SELECTION requires the reviver to first run /revive <player>.
+  target-strategy: COMMAND_SELECTION
+  broadcast:
+    enabled: false
+    hold-start-message-key: beacon-revive-broadcast-hold-start
+    complete-message-key: beacon-revive-broadcast-complete
+  animation:
+    enabled: true
+    duration-ticks: 30
+    spiral-steps: 10
+    ring-count: 3
+    vertical-lift-per-step: 0.08
+    particles:
+      spiral:
+        type: END_ROD
+        count: 2
+        offset-x: 0.0
+        offset-y: 0.0
+        offset-z: 0.0
+        speed: 0.0
+      ring:
+        type: ENCHANT
+        count: 2
+        offset-x: 0.03
+        offset-y: 0.03
+        offset-z: 0.03
+        speed: 0.01
+      impact:
+        type: TOTEM_OF_UNDYING
+        count: 20
+        offset-x: 0.4
+        offset-y: 0.6
+        offset-z: 0.4
+        speed: 0.01
+    sounds:
+      loop:
+        type: BLOCK_BEACON_AMBIENT
+        volume: 0.3
+        pitch: 1.2
+      impact:
+        type: BLOCK_BEACON_ACTIVATE
+        volume: 1.0
+        pitch: 1.15

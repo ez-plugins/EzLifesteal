@@ -1,0 +1,14 @@
+# ==============================================================
+# EzLifesteal - World scoping and world overrides
+# ==============================================================
+
+enabled-worlds: []
+disabled-worlds: []
+
+world-overrides: {}
+# Example:
+# world-overrides:
+#   world_nether:
+#     hearts-per-kill: 0.5
+#     hearts-lost-on-death: 2.0
+#     ban-when-zero: true

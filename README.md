@@ -1,0 +1,108 @@
+# EzLifesteal
+
+EzLifesteal is a production-ready Paper plugin for running Lifesteal game modes on Minecraft servers. It gives server owners full control over heart gain/loss, progression, anti-abuse systems, seasonal resets, and monetization-friendly options while staying lightweight and configurable.
+
+## Quick links
+
+- **Download on Modrinth:** https://modrinth.com/plugin/ezlifesteal
+- **Commands reference:** [docs/commands.md](docs/commands.md)
+- **Permissions reference:** [docs/permissions.md](docs/permissions.md)
+- **Full configuration guide:** [docs/configuration.md](docs/configuration.md)
+- **Developer guide:** [docs/developer-guide.md](docs/developer-guide.md)
+- **Configuration by file:**
+  - [config/lifesteal.md](docs/config/lifesteal.md)
+  - [config/hearts.md](docs/config/hearts.md)
+  - [config/shop.md](docs/config/shop.md)
+  - [config/features.md](docs/config/features.md)
+  - [config/storage.md](docs/config/storage.md)
+  - [config/killstreaks.md](docs/config/killstreaks.md)
+  - [config/admin.md](docs/config/admin.md)
+  - [config/smurf.md](docs/config/smurf.md)
+
+## Why server owners choose EzLifesteal
+
+- **Flexible gameplay rules** for heart transfer, death penalties, and progression pacing.
+- **Built-in heart ecosystem** with heart items, recipes, and a shop flow.
+- **Competitive features** including killstreak rewards and leaderboard/hologram support.
+- **Operational controls** with admin detection and smurf detection tooling.
+- **Deployment flexibility** with YAML or MySQL storage backends.
+- **Safe optional integrations**: missing dependencies degrade gracefully without preventing server startup.
+
+## Core features
+
+- Configurable lifesteal heart gain/loss logic.
+- Heart item registry and recipe support.
+- Heart shop and related GUI/listener systems.
+- Killstreak reward pipeline.
+- Player/mob listener hooks for custom reward flows.
+- Top hologram and overlay support.
+
+## Optional integrations
+
+EzLifesteal runs standalone, but can integrate with:
+
+- **Vault** for economy rewards and money-based incentives.
+- **PlaceholderAPI** for placeholders in scoreboards, tab lists, and other plugins.
+- **EzSeasons** for season reset workflows and season-aware progression.
+
+If these plugins are not installed, EzLifesteal keeps running and only disables the corresponding integration behavior.
+
+## Requirements
+
+- **Java:** 17+
+- **Server software:** Paper 1.21+
+
+## Installation
+
+1. Download the latest EzLifesteal release from Modrinth.
+2. Place the plugin JAR in your server's `plugins/` directory.
+3. Start (or restart) the server to generate default config files.
+4. Review and adjust settings using the docs linked above.
+5. Reload/restart and validate your commands/permissions setup.
+
+## Build from source
+
+```bash
+mvn clean package
+```
+
+Compiled artifacts are generated in `target/`.
+
+
+## Coverage
+
+Run coverage from a clean build so JaCoCo only inspects freshly compiled classes:
+
+```bash
+rm -rf target
+mvn clean verify -Djacoco.haltOnFailure=false
+```
+
+- One-time local cleanup tip: if you have old compiled artifacts, delete `target/` before measuring coverage.
+- CI uses the same `clean verify` coverage command.
+- Reports are written to `target/site/jacoco/`.
+
+## Default configuration files
+
+On first startup, EzLifesteal creates and manages these runtime-backed configuration files:
+
+- `config.yml`
+- `admin.yml`
+- `smurf.yml`
+- `storage.yml`
+- `lifesteal-core.yml`
+- `lifesteal-drops.yml`
+- `lifesteal-worlds.yml`
+- `lifesteal-mobs.yml`
+- `lifesteal-killstreaks.yml`
+- `hearts.yml`
+- `shop.yml`
+- `features.yml`
+- `revive-beacon.yml`
+- `languages/*.yml`
+
+Message and language keys are defined in `languages/<locale>.yml` files (for example, `languages/en.yml`).
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE).

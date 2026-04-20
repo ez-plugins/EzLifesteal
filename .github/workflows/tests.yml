@@ -1,0 +1,140 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Build and install MockBukkit dev/26.1.1
+        run: |
+          git clone --depth=1 --branch dev/26.1.1 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
+          cd /tmp/MockBukkit && ./gradlew publishToMavenLocal -xtest -xjavadoc
+
+      - name: Run unit tests
+        run: mvn -B -ntp test -Dtest='*Test,!*FeatureTest'
+
+  unit-test-coverage:
+    name: Unit test coverage report
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Build and install MockBukkit dev/26.1.1
+        run: |
+          git clone --depth=1 --branch dev/26.1.1 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
+          cd /tmp/MockBukkit && ./gradlew publishToMavenLocal -xtest -xjavadoc
+
+      - name: Generate unit test coverage report
+        run: mvn -B -ntp clean verify -Djacoco.haltOnFailure=false
+
+      - name: Add coverage summary to workflow report
+        run: |
+          python3 - <<'PY'
+          import csv
+          from pathlib import Path
+
+          csv_path = Path("target/site/jacoco/jacoco.csv")
+          if not csv_path.exists():
+              raise SystemExit("jacoco.csv was not produced")
+
+          with csv_path.open("r", encoding="utf-8", newline="") as handle:
+              reader = csv.DictReader(handle)
+              rows = list(reader)
+
+          instruction_missed  = sum(int(row["INSTRUCTION_MISSED"])  for row in rows)
+          instruction_covered = sum(int(row["INSTRUCTION_COVERED"]) for row in rows)
+          branch_missed       = sum(int(row["BRANCH_MISSED"])       for row in rows)
+          branch_covered      = sum(int(row["BRANCH_COVERED"])      for row in rows)
+          line_missed         = sum(int(row["LINE_MISSED"])          for row in rows)
+          line_covered        = sum(int(row["LINE_COVERED"])         for row in rows)
+
+          def ratio(covered: int, missed: int) -> float:
+              total = covered + missed
+              return 100.0 if total == 0 else covered * 100.0 / total
+
+          summary = [
+              "## Unit Test Coverage",
+              "",
+              "| Metric | Covered | Missed | Coverage |",
+              "| --- | ---: | ---: | ---: |",
+              f"| Instructions | {instruction_covered} | {instruction_missed} | {ratio(instruction_covered, instruction_missed):.2f}% |",
+              f"| Branches     | {branch_covered}      | {branch_missed}      | {ratio(branch_covered, branch_missed):.2f}% |",
+              f"| Lines        | {line_covered}        | {line_missed}        | {ratio(line_covered, line_missed):.2f}% |",
+          ]
+
+          import os
+          output_path = Path(os.environ["GITHUB_STEP_SUMMARY"])
+          output_path.write_text("\n".join(summary) + "\n", encoding="utf-8")
+          PY
+
+      - name: Upload JaCoCo HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-coverage-report
+          path: target/site/jacoco
+          if-no-files-found: error
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: target/site/jacoco/jacoco.xml
+          flags: unittests
+          fail_ci_if_error: true
+
+  language-files-validation:
+    name: Language files completeness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Build and install MockBukkit dev/26.1.1
+        run: |
+          git clone --depth=1 --branch dev/26.1.1 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
+          cd /tmp/MockBukkit && ./gradlew publishToMavenLocal -xtest -xjavadoc
+
+      - name: Check language file completeness
+        run: mvn -B -ntp test -Dtest='LanguageFilesCompletenessTest'
+
+  feature-tests:
+    name: Feature tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Build and install MockBukkit dev/26.1.1
+        run: |
+          git clone --depth=1 --branch dev/26.1.1 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
+          cd /tmp/MockBukkit && ./gradlew publishToMavenLocal -xtest -xjavadoc
+
+      - name: Run feature tests
+        run: mvn -B -ntp test -Dtest='*FeatureTest'
