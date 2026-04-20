@@ -48,17 +48,16 @@ messages:
   prefix: "&c[EzLifesteal]&r "
 ```
 
-Open `plugins/EzLifesteal/lifesteal.yml` to enable lifesteal and set heart values.
+Open `plugins/EzLifesteal/lifesteal-core.yml` to enable lifesteal and set heart values.
 
 ```yaml
-lifesteal-core:
-  enabled: true
-  default-hearts: 10
-  max-hearts: 20
-  min-hearts: 0
-  hearts-per-kill: 1.0
-  hearts-lost-on-death: 1.0
-  ban-when-zero-hearts: true
+global-enabled: true
+default-hearts: 10
+max-hearts: 20
+min-hearts: 0
+hearts-per-kill: 1.0
+hearts-lost-on-death: 1.0
+ban-when-zero-hearts: true
 ```
 
 ---

@@ -30,6 +30,8 @@ This page lists all player, moderator, and admin commands exposed by EzLifesteal
 |---|---|---|
 | `/lifesteal top [page]` | Shows the heart leaderboard with pagination. | `lifesteal.top` |
 | `/lifesteal transfer <player> <amount>` | Transfers hearts to another player (respecting minimum constraints). | `lifesteal.transfer` |
+| `/lifesteal withdraw <amount>` | Withdraws hearts from your own count as a heart voucher item. | `lifesteal.withdraw` |
+| `/lifesteal shop` | Opens the heart voucher shop GUI (same as `/hearts`). | `lifesteal.command.base` |
 
 ## Management Commands
 
@@ -58,6 +60,12 @@ This page lists all player, moderator, and admin commands exposed by EzLifesteal
 |---|---|---|
 | `/lifesteal reload` | Reloads plugin config/runtime services. | `lifesteal.reload` |
 | `/lifesteal test <kill\|death>` | Simulates kill/death lifesteal flows for validation. | `lifesteal.test` |
+
+## Standalone Commands
+
+| Command | Description | Permission |
+|---|---|---|
+| `/revive <player>` | Pre-selects a revive target for the next beacon interaction. Required when `target-strategy` is set to `COMMAND_SELECTION` in `revive-beacon.yml`. | `lifesteal.command.base` |
 
 ## Usage Notes
 

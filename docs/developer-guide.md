@@ -1,6 +1,6 @@
 ---
 title: Developer Guide
-nav_order: 6
+nav_order: 8
 description: "Architecture overview, contribution workflow, and EzSeasons API integration"
 ---
 
@@ -19,7 +19,7 @@ This guide helps contributors quickly understand how EzLifesteal is organized, h
 
 ## Prerequisites
 
-- Java 17+
+- Java 25+
 - Maven 3.9+
 - Paper 1.21+ test server (for manual plugin validation)
 

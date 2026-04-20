@@ -22,7 +22,7 @@ This file documents every permission node declared by EzLifesteal and how inheri
 | Node | Default | Includes |
 |---|---|---|
 | `lifesteal.*` | op | `lifesteal.admin`, `lifesteal.mod`, `lifesteal.player` |
-| `lifesteal.player` | true | `lifesteal.command.base`, `lifesteal.top`, `lifesteal.transfer` |
+| `lifesteal.player` | true | `lifesteal.command.base`, `lifesteal.top`, `lifesteal.transfer`, `lifesteal.withdraw` |
 | `lifesteal.mod` | op | `lifesteal.player`, `lifesteal.alert`, `lifesteal.manage.view`, `lifesteal.smurf.manage`, `lifesteal.scoreboard.*` |
 | `lifesteal.admin` | op | `lifesteal.mod`, `lifesteal.manage.*`, `lifesteal.admin.banlist`, `lifesteal.reload`, `lifesteal.test` |
 | `lifesteal.manage.*` | op | `lifesteal.manage.view`, `lifesteal.manage.modify`, `lifesteal.manage.resetall` |
@@ -35,6 +35,7 @@ This file documents every permission node declared by EzLifesteal and how inheri
 | `lifesteal.command.base` | true | Use `/lifesteal` and basic command entrypoints. |
 | `lifesteal.top` | true | View `/lifesteal top` leaderboard. |
 | `lifesteal.transfer` | true | Transfer hearts using `/lifesteal transfer`. |
+| `lifesteal.withdraw` | true | Withdraw hearts as a voucher using `/lifesteal withdraw`. |
 
 ## Management Permissions
 
@@ -55,6 +56,7 @@ This file documents every permission node declared by EzLifesteal and how inheri
 | `lifesteal.scoreboard.place` | false | Place leaderboard hologram. |
 | `lifesteal.scoreboard.remove` | false | Remove leaderboard hologram. |
 | `lifesteal.hologram` | op | Legacy alias for place/remove hologram permissions. |
+| `lifesteal.admin.banlist` | false | View the list of banned (zero-heart) players. Included in `lifesteal.admin`. |
 
 ## Recommended Role Mapping
 
