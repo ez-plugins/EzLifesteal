@@ -73,9 +73,9 @@ jobs:
           java-version: '25'
           cache: maven
 
-      - name: Build and install MockBukkit dev/26.1.1
+      - name: Build and install MockBukkit minecraft/v26
         run: |
-          git clone --depth=1 --branch dev/26.1.1 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
+          git clone --depth=1 --branch minecraft/v26 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
           cd /tmp/MockBukkit && ./gradlew publishToMavenLocal -xtest -xjavadoc
 
       - name: Set release version in pom.xml
