@@ -83,6 +83,25 @@ class PlayerDeathServiceTest {
     }
 
     @Test
+    void handlePlayerDeathSkipsLifestealForTeamKillBypass() {
+        PluginAccessor plugin = mock(PluginAccessor.class);
+        Player victim = player("victim", "world");
+        Player killer = player("killer", "world");
+
+        when(plugin.isGlobalLifestealEnabled()).thenReturn(true);
+        when(plugin.isLifestealEnabledInWorld("world")).thenReturn(true);
+        when(plugin.isTeamKillBypassEnabled()).thenReturn(true);
+        when(plugin.shouldBypassForTeamKill(killer, victim)).thenReturn(true);
+        when(plugin.getLogger()).thenReturn(java.util.logging.Logger.getLogger("test"));
+
+        PlayerDeathService service = new PlayerDeathService(plugin, mock(BanEnforcementService.class));
+        service.handlePlayerDeath(victim, killer, false, "", "");
+
+        verify(plugin, never()).getLifestealManager();
+        verify(plugin, never()).requestTopHologramUpdate();
+    }
+
+    @Test
     void handlePlayerDeathSkipsMobHeartLossWhenDontRemoveHeartsFromMobsEnabled() {
         PluginAccessor plugin = basePlugin();
         LifestealManager manager = mock(LifestealManager.class);

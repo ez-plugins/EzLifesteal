@@ -14,6 +14,12 @@ public final class HeartRulesState {
 
     private boolean globalLifestealEnabled;
 
+    private boolean teamKillBypassWithTeamsApi;
+
+    private boolean teamBankEnabled;
+
+    private double teamBankMaxHearts;
+
     HeartRulesState() {
     }
 
@@ -67,5 +73,29 @@ public final class HeartRulesState {
 
     public void setGlobalLifestealEnabled(boolean globalLifestealEnabled) {
         this.globalLifestealEnabled = globalLifestealEnabled;
+    }
+
+    public boolean isTeamKillBypassWithTeamsApi() {
+        return teamKillBypassWithTeamsApi;
+    }
+
+    public void setTeamKillBypassWithTeamsApi(boolean teamKillBypassWithTeamsApi) {
+        this.teamKillBypassWithTeamsApi = teamKillBypassWithTeamsApi;
+    }
+
+    public boolean isTeamBankEnabled() {
+        return teamBankEnabled;
+    }
+
+    public void setTeamBankEnabled(boolean teamBankEnabled) {
+        this.teamBankEnabled = teamBankEnabled;
+    }
+
+    public double getTeamBankMaxHearts() {
+        return teamBankMaxHearts;
+    }
+
+    public void setTeamBankMaxHearts(double teamBankMaxHearts) {
+        this.teamBankMaxHearts = teamBankMaxHearts;
     }
 }

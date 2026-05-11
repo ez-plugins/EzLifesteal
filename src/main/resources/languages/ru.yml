@@ -91,3 +91,8 @@ help-desc-hologram: "Управляет голограммой топ-табли
 help-desc-smurf: "Открывает инструменты управления smurf."
 help-desc-test: "Запускает команды симуляции lifesteal."
 season-reset-broadcast: "&aСердца были сброшены для нового сезона."
+beacon-spawn-available-broadcast: "&5☠ &d&lREVIVE BEACON &5☠ &7Маяк появился в &f%world% &8(%x%, %y%, %z%)&7. Будь первым, кто его захватит!"
+beacon-spawn-available-title: "&5☠ &d&lREVIVE BEACON &5☠"
+beacon-spawn-available-subtitle: "&7Появился в &f%world% &8(%x%, %y%, %z%)"
+beacon-spawn-not-available: "&cThis beacon is not yet available — the countdown has not finished."
+beacon-spawn-protected: "&cThis beacon is protected and cannot be broken."

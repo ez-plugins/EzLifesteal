@@ -1,6 +1,6 @@
 ---
 title: Moderation Guide
-nav_order: 7
+nav_order: 8
 description: "How to set up staff roles, manage hearts, investigate smurf reports, and test config changes safely"
 ---
 

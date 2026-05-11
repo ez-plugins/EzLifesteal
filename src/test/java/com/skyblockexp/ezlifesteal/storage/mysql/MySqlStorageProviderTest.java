@@ -29,6 +29,7 @@ class MySqlStorageProviderTest {
 
         assertNotNull(provider.profiles());
         assertNotNull(provider.bans());
+        assertNotNull(provider.teamBanks());
         assertInstanceOf(MySqlProfileRepository.class, provider.profiles());
         assertInstanceOf(MySqlBanRepository.class, provider.bans());
 
@@ -41,7 +42,7 @@ class MySqlStorageProviderTest {
 
             assertDoesNotThrow(provider::init);
 
-            verify(statement, times(3)).executeUpdate(anyString());
+            verify(statement, times(4)).executeUpdate(anyString());
         }
     }
 

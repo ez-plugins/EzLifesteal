@@ -1,6 +1,6 @@
 ---
 title: Commands
-nav_order: 3
+nav_order: 5
 description: "Reference for all EzLifesteal commands and subcommands"
 ---
 
@@ -31,6 +31,9 @@ This page lists all player, moderator, and admin commands exposed by EzLifesteal
 | `/lifesteal top [page]` | Shows the heart leaderboard with pagination. | `lifesteal.top` |
 | `/lifesteal transfer <player> <amount>` | Transfers hearts to another player (respecting minimum constraints). | `lifesteal.transfer` |
 | `/lifesteal withdraw <amount>` | Withdraws hearts from your own count as a heart voucher item. | `lifesteal.withdraw` |
+| `/lifesteal teambank balance` | Shows your current team heart bank balance. | `lifesteal.teambank.balance` |
+| `/lifesteal teambank deposit <amount>` | Deposits hearts from your profile into your team's shared bank. | `lifesteal.teambank.deposit` |
+| `/lifesteal teambank withdraw <amount>` | Withdraws hearts from your team's shared bank into your profile. | `lifesteal.teambank.withdraw` |
 | `/lifesteal shop` | Opens the heart voucher shop GUI (same as `/hearts`). | `lifesteal.command.base` |
 
 ## Management Commands
@@ -54,6 +57,22 @@ This page lists all player, moderator, and admin commands exposed by EzLifesteal
 | `/lifesteal hologram place` | Places the top-heart hologram at your location. | `lifesteal.scoreboard.place` |
 | `/lifesteal hologram remove` | Removes the top-heart hologram. | `lifesteal.scoreboard.remove` |
 
+## Beacon Commands
+
+These subcommands manage both whitelisted beacon blocks and plugin-spawned beacons.
+
+| Command | Description | Permission |
+|---|---|---|
+| `/lifesteal beacon add` | Whitelist the beacon block you are looking at. | `lifesteal.manage.modify` |
+| `/lifesteal beacon remove` | Remove the beacon block you are looking at from the whitelist. | `lifesteal.manage.modify` |
+| `/lifesteal beacon list` | List all whitelisted beacon blocks and revive beacon settings. | `lifesteal.manage.modify` |
+| `/lifesteal beacon clear` | Clear all whitelisted beacon blocks. | `lifesteal.manage.modify` |
+| `/lifesteal beacon spawn [x y z]` | Spawn a beacon block. Uses `random-spawn` bounds from config if no coordinates are given. | `lifesteal.manage.modify` |
+| `/lifesteal beacon despawn <id\|all>` | Despawn a tracked spawned beacon by ID, or `all` to remove every active beacon. | `lifesteal.manage.modify` |
+| `/lifesteal beacon spawns` | List all currently active plugin-spawned beacons and their status. | `lifesteal.manage.modify` |
+
+`/lifesteal beacon spawn` / `despawn` / `spawns` require `spawn.enabled: true` in `revive-beacon.yml`.
+
 ## Admin / Maintenance Commands
 
 | Command | Description | Permission |
@@ -73,3 +92,4 @@ This page lists all player, moderator, and admin commands exposed by EzLifesteal
 - Assign `lifesteal.mod` to moderators.
 - Assign `lifesteal.admin` to server administrators.
 - Use `/lifesteal reload` after editing YAML files.
+- Team bank commands require `team-bank.enabled: true` and TeamsAPI availability.

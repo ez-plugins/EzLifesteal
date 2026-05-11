@@ -2,7 +2,7 @@
 title: Lifesteal Core
 nav_order: 5
 parent: Configuration
-description: "Reference for lifesteal-core.yml — heart bounds, gain/loss math, ban policy, combat-logout protection, and consumption effects"
+description: "Reference for lifesteal-core.yml — heart bounds, gain/loss math, team settings, ban policy, combat-logout protection, and consumption effects"
 ---
 
 # Lifesteal Core Configuration (`lifesteal-core.yml`)
@@ -16,7 +16,7 @@ description: "Reference for lifesteal-core.yml — heart bounds, gain/loss math,
 
 ---
 
-`lifesteal-core.yml` controls the fundamental heart system: starting values, gain/loss amounts, the zero-heart ban or kick policy, health scaling, combat-logout protection, and item-consumption visual effects.
+`lifesteal-core.yml` controls the fundamental heart system: starting values, gain/loss amounts, team-related behavior, the zero-heart ban or kick policy, health scaling, combat-logout protection, and item-consumption visual effects.
 
 Settings for heart drops, world scoping, mob rewards, kill streaks, and revive beacon are in their own dedicated files:
 
@@ -89,6 +89,39 @@ Settings for heart drops, world scoping, mob rewards, kill streaks, and revive b
 - Type: number
 - Default: `1.0`
 - Hearts removed from the victim on a PvP death. Supports decimals.
+
+### `team-kill-bypass-with-teams-api`
+
+- Type: boolean
+- Default: `false`
+- When `true`, PvP heart transfer is skipped when killer and victim are in the same TeamsAPI team.
+- Requires TeamsAPI to be installed and active.
+
+---
+
+## Team Heart Bank
+
+Shared bank storage tied to a TeamsAPI team UUID. Any member of the same team can use the bank.
+
+### `team-bank.enabled`
+
+- Type: boolean
+- Default: `false`
+- Enables `/lifesteal teambank` commands (`balance`, `deposit`, `withdraw`).
+- If disabled, team bank commands return a disabled message.
+
+### `team-bank.max-hearts`
+
+- Type: number
+- Default: `200.0`
+- Maximum total hearts allowed in one team bank.
+- Deposits that would exceed this value are rejected.
+
+```yaml
+team-bank:
+  enabled: true
+  max-hearts: 200.0
+```
 
 ---
 

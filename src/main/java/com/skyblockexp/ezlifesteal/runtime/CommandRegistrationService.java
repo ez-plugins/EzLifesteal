@@ -5,6 +5,7 @@ import com.skyblockexp.ezlifesteal.command.HeartsCommand;
 import com.skyblockexp.ezlifesteal.command.LifestealCommand;
 import com.skyblockexp.ezlifesteal.command.LifestealPaperCommand;
 import com.skyblockexp.ezlifesteal.command.LifestealTabCompleter;
+import com.skyblockexp.ezlifesteal.command.BeaconCommand;
 import com.skyblockexp.ezlifesteal.command.ReviveCommand;
 import com.skyblockexp.ezlifesteal.command.SubcommandRegistry;
 import com.skyblockexp.ezlifesteal.command.subcommand.AboutSubcommand;
@@ -73,6 +74,13 @@ public final class CommandRegistrationService {
             reviveCommand.setExecutor(new ReviveCommand(
                     new BeaconReviveService(pluginAccessor, new ReviveAnimationService(pluginAccessor))
             ));
+        }
+
+        final var beaconPluginCommand = plugin.getCommand("beacon");
+        if (beaconPluginCommand != null) {
+            final BeaconCommand beaconCmd = new BeaconCommand(executor, tabCompleter);
+            beaconPluginCommand.setExecutor(beaconCmd);
+            beaconPluginCommand.setTabCompleter(beaconCmd);
         }
     }
 

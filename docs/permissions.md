@@ -1,6 +1,6 @@
 ---
 title: Permissions
-nav_order: 5
+nav_order: 7
 description: "Permission node reference for EzLifesteal"
 ---
 
@@ -22,7 +22,7 @@ This file documents every permission node declared by EzLifesteal and how inheri
 | Node | Default | Includes |
 |---|---|---|
 | `lifesteal.*` | op | `lifesteal.admin`, `lifesteal.mod`, `lifesteal.player` |
-| `lifesteal.player` | true | `lifesteal.command.base`, `lifesteal.top`, `lifesteal.transfer`, `lifesteal.withdraw` |
+| `lifesteal.player` | true | `lifesteal.command.base`, `lifesteal.top`, `lifesteal.transfer`, `lifesteal.withdraw`, `lifesteal.teambank.balance`, `lifesteal.teambank.deposit`, `lifesteal.teambank.withdraw` |
 | `lifesteal.mod` | op | `lifesteal.player`, `lifesteal.alert`, `lifesteal.manage.view`, `lifesteal.smurf.manage`, `lifesteal.scoreboard.*` |
 | `lifesteal.admin` | op | `lifesteal.mod`, `lifesteal.manage.*`, `lifesteal.admin.banlist`, `lifesteal.reload`, `lifesteal.test` |
 | `lifesteal.manage.*` | op | `lifesteal.manage.view`, `lifesteal.manage.modify`, `lifesteal.manage.resetall` |
@@ -36,6 +36,9 @@ This file documents every permission node declared by EzLifesteal and how inheri
 | `lifesteal.top` | true | View `/lifesteal top` leaderboard. |
 | `lifesteal.transfer` | true | Transfer hearts using `/lifesteal transfer`. |
 | `lifesteal.withdraw` | true | Withdraw hearts as a voucher using `/lifesteal withdraw`. |
+| `lifesteal.teambank.balance` | true | View shared team bank hearts using `/lifesteal teambank balance`. |
+| `lifesteal.teambank.deposit` | true | Deposit hearts into your team's bank using `/lifesteal teambank deposit`. |
+| `lifesteal.teambank.withdraw` | true | Withdraw hearts from your team's bank using `/lifesteal teambank withdraw`. |
 
 ## Management Permissions
 

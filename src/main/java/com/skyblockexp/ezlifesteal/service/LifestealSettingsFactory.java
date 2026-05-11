@@ -1,5 +1,6 @@
 package com.skyblockexp.ezlifesteal.service;
 
+import com.skyblockexp.ezlifesteal.config.BeaconSpawnSettings;
 import com.skyblockexp.ezlifesteal.config.LifestealConfigAdapter;
 import com.skyblockexp.ezlifesteal.config.ReviveAnimationSettings;
 import com.skyblockexp.ezlifesteal.runtime.DefaultPluginRuntimeServices;
@@ -148,6 +149,7 @@ public class LifestealSettingsFactory {
                 "broadcast.complete-message-key",
                 DEFAULT_REVIVE_BEACON_BROADCAST_COMPLETE_MESSAGE_KEY
         );
+        final BeaconSpawnSettings beaconSpawnSettings = parseBeaconSpawnSettings(lifestealConfigAdapter, warnings);
 
         return new LifestealSettings(
                 heartBounds.defaultHearts(),
@@ -157,6 +159,9 @@ public class LifestealSettingsFactory {
                 lifestealConfigAdapter.getDouble("health-scale", 20.0),
                 lifestealConfigAdapter.getDouble("hearts-per-kill", 1.0),
                 lifestealConfigAdapter.getDouble("hearts-lost-on-death", 1.0),
+                lifestealConfigAdapter.getBoolean("team-kill-bypass-with-teams-api", false),
+                lifestealConfigAdapter.getBoolean("team-bank.enabled", false),
+                Math.max(0.0D, lifestealConfigAdapter.getDouble("team-bank.max-hearts", 200.0D)),
                 lifestealConfigAdapter.getBoolean("dont-remove-hearts-from-mobs", true),
                 lifestealConfigAdapter.getDouble("mob-remove-hearts-greater-than", -1.0),
                 dropHeartOnDeath,
@@ -177,6 +182,7 @@ public class LifestealSettingsFactory {
                 reviveBeaconBroadcastEnabled,
                 reviveBeaconBroadcastHoldStartMessageKey,
                 reviveBeaconBroadcastCompleteMessageKey,
+                beaconSpawnSettings,
                 lifestealConfigAdapter.getBoolean("ban-when-zero-hearts", false),
                 List.copyOf(lifestealConfigAdapter.getStringList("zero-heart-commands")),
                 lifestealConfigAdapter.getBoolean("global-enabled", true),
@@ -216,6 +222,80 @@ public class LifestealSettingsFactory {
             return primary;
         }
         return adapter.getStringList(LEGACY_BEACON_REVIVE_PATH + "." + childPath);
+    }
+
+    private BeaconSpawnSettings parseBeaconSpawnSettings(LifestealConfigAdapter adapter, List<String> warnings) {
+        final String base = REVIVE_BEACON_PATH + ".spawn";
+        if (!adapter.getBoolean(base + ".enabled", false)) {
+            return BeaconSpawnSettings.disabled();
+        }
+        final int maxConcurrent = Math.max(1, adapter.getInt(base + ".max-concurrent", 1));
+
+        final String wgBase = base + ".worldguard";
+        final BeaconSpawnSettings.WorldGuardSettings wg = new BeaconSpawnSettings.WorldGuardSettings(
+                adapter.getBoolean(wgBase + ".enabled", true),
+                Math.max(1, adapter.getInt(wgBase + ".radius", 10)),
+                adapter.getBoolean(wgBase + ".deny-build", true),
+                adapter.getBoolean(wgBase + ".deny-pvp", false),
+                adapter.getBoolean(wgBase + ".deny-mob-damage", false),
+                adapter.getBoolean(wgBase + ".deny-explosions", false)
+        );
+
+        final String cdBase = base + ".countdown";
+        final BeaconSpawnSettings.CountdownSettings countdown = new BeaconSpawnSettings.CountdownSettings(
+                adapter.getBoolean(cdBase + ".enabled", true),
+                Math.max(1, adapter.getInt(cdBase + ".duration-seconds", 300)),
+                List.copyOf(adapter.getStringList(cdBase + ".display-types")),
+                adapter.getString(cdBase + ".format-message", "&5\u2620 &d&lRevive Beacon &5\u2620 &r&7 {formatted} until active"),
+                adapter.getString(cdBase + ".boss-bar-color", "PURPLE"),
+                adapter.getString(cdBase + ".boss-bar-style", "SEGMENTED_20")
+        );
+
+        final String rsBase = base + ".random-spawn";
+        final BeaconSpawnSettings.RandomSpawnSettings randomSpawn = new BeaconSpawnSettings.RandomSpawnSettings(
+                adapter.getBoolean(rsBase + ".enabled", false),
+                adapter.getString(rsBase + ".world", "world"),
+                adapter.getInt(rsBase + ".min-x", -1000),
+                adapter.getInt(rsBase + ".max-x", 1000),
+                adapter.getInt(rsBase + ".min-z", -1000),
+                adapter.getInt(rsBase + ".max-z", 1000)
+        );
+
+        final String schBase = base + ".schedule";
+        final BeaconSpawnSettings.ScheduleSettings schedule = new BeaconSpawnSettings.ScheduleSettings(
+                adapter.getBoolean(schBase + ".enabled", false),
+                Math.max(1, adapter.getInt(schBase + ".interval-minutes", 60))
+        );
+
+        final int expiryMinutes = adapter.getInt(base + ".expiry-minutes", 30);
+        if (expiryMinutes < 0) {
+            warnings.add("beacon spawn expiry-minutes is negative; using 0 (no expiry)");
+        }
+        final BeaconSpawnSettings.ExpirySettings expiry =
+                new BeaconSpawnSettings.ExpirySettings(Math.max(0, expiryMinutes));
+
+        final String evBase = base + ".availability-event";
+        final BeaconSpawnSettings.AvailabilityEventSettings availabilityEvent =
+                new BeaconSpawnSettings.AvailabilityEventSettings(
+                        adapter.getBoolean(evBase + ".broadcast.enabled", true),
+                        adapter.getString(evBase + ".broadcast.message-key", "beacon-spawn-available-broadcast"),
+                        adapter.getBoolean(evBase + ".title.enabled", true),
+                        adapter.getString(evBase + ".title.title-key", "beacon-spawn-available-title"),
+                        adapter.getString(evBase + ".title.subtitle-key", "beacon-spawn-available-subtitle"),
+                        adapter.getBoolean(evBase + ".particles.enabled", true),
+                        adapter.getBoolean(evBase + ".fireworks.enabled", true)
+                );
+
+        return new BeaconSpawnSettings(
+                true,
+                maxConcurrent,
+                wg,
+                countdown,
+                randomSpawn,
+                schedule,
+                expiry,
+                availabilityEvent
+        );
     }
 
     private ReviveAnimationSettings parseReviveAnimationSettings(LifestealConfigAdapter adapter,
@@ -337,6 +417,9 @@ public class LifestealSettingsFactory {
             double healthScale,
             double heartsPerKill,
             double heartsLostOnDeath,
+            boolean teamKillBypassWithTeamsApi,
+            boolean teamBankEnabled,
+            double teamBankMaxHearts,
             boolean dontRemoveHeartsFromMobs,
             double mobRemoveHeartsGreaterThan,
             boolean dropHeartOnDeath,
@@ -357,6 +440,7 @@ public class LifestealSettingsFactory {
             boolean reviveBeaconBroadcastEnabled,
             String reviveBeaconBroadcastHoldStartMessageKey,
             String reviveBeaconBroadcastCompleteMessageKey,
+            BeaconSpawnSettings beaconSpawnSettings,
             boolean banWhenZeroHearts,
             List<String> zeroHeartCommands,
             boolean globalLifestealEnabled,

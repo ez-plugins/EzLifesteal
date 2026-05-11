@@ -60,3 +60,76 @@ revive-beacon:
         type: BLOCK_BEACON_ACTIVATE
         volume: 1.0
         pitch: 1.15
+
+  # ============================================================
+  # Beacon spawn feature — plugin places beacon blocks in the world.
+  # Use '/lifesteal beacon spawn' to trigger manually, or enable
+  # the schedule to auto-spawn at a recurring interval.
+  # Requires revive-beacon.enabled: true
+  # ============================================================
+  spawn:
+    enabled: true
+    # Maximum number of simultaneously active spawned beacons.
+    max-concurrent: 1
+
+    # WorldGuard protection region created around each beacon.
+    # Requires WorldGuard to be installed; silently skipped if absent.
+    worldguard:
+      enabled: true
+      radius: 10
+      deny-build: true
+      deny-pvp: false
+      deny-mob-damage: false
+      deny-explosions: false
+
+    # EzCountdown timer shown while the beacon is warming up.
+    # If EzCountdown is absent, an internal Bukkit timer is used as fallback.
+    countdown:
+      enabled: true
+      duration-seconds: 300
+      # Supported: ACTION_BAR, BOSS_BAR, CHAT, TITLE, SCOREBOARD
+      display-types:
+        - ACTION_BAR
+        - BOSS_BAR
+      # Message shown in the countdown display. Supports color codes (&) and placeholders:
+      # {formatted}  – human-readable remaining time (e.g. "4m 58s")
+      # {minutes}, {seconds}, {hours}, {days}  – individual time units
+      # {name}  – countdown name
+      format-message: "&5\u2620 &d&lRevive Beacon &5\u2620 &r&7 {formatted} until active"
+      # Boss bar color. Valid values: BLUE, GREEN, PINK, PURPLE, RED, WHITE, YELLOW
+      boss-bar-color: PURPLE
+      # Boss bar style. Valid values: SOLID, SEGMENTED_6, SEGMENTED_10, SEGMENTED_12, SEGMENTED_20
+      boss-bar-style: SEGMENTED_20
+
+    # Random world-spawn bounds used by the schedule and '/lifesteal beacon spawn'
+    # without explicit coordinates.
+    random-spawn:
+      enabled: true
+      world: world
+      min-x: -1000
+      max-x: 1000
+      min-z: -1000
+      max-z: 1000
+
+    # Recurring schedule that auto-spawns a new random beacon.
+    schedule:
+      enabled: true
+      interval-minutes: 5
+
+    # How long a beacon stays AVAILABLE before it is automatically removed.
+    # Set to 0 to keep indefinitely.
+    expiry-minutes: 30
+
+    # The "cool event" broadcast when a beacon becomes available.
+    availability-event:
+      broadcast:
+        enabled: true
+        message-key: beacon-spawn-available-broadcast
+      title:
+        enabled: true
+        title-key: beacon-spawn-available-title
+        subtitle-key: beacon-spawn-available-subtitle
+      particles:
+        enabled: true
+      fireworks:
+        enabled: true

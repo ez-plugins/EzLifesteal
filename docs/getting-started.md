@@ -27,7 +27,7 @@ description: "Install EzLifesteal and set up your first lifesteal server"
 ## Installation
 
 1. Stop your server.
-2. Download `EzLifesteal-1.0.0.jar` from [Modrinth](https://modrinth.com/plugin/ezlifesteal).
+2. Download `EzLifesteal-1.1.0.jar` from [Modrinth](https://modrinth.com/plugin/ezlifesteal).
 3. Copy the jar into your `plugins/` folder.
 4. *(Optional)* Install [EzSeasons](https://modrinth.com/plugin/ezseasons) if you want
    hearts to reset automatically at the start of each season.

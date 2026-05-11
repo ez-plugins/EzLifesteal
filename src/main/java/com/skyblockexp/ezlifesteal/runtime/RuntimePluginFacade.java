@@ -1,8 +1,10 @@
 package com.skyblockexp.ezlifesteal.runtime;
 
 import com.skyblockexp.ezlifesteal.EzLifestealPlugin;
+import com.skyblockexp.ezlifesteal.config.BeaconSpawnSettings;
 import com.skyblockexp.ezlifesteal.config.LifestealConfigAdapter;
 import com.skyblockexp.ezlifesteal.config.MessageService;
+import com.skyblockexp.ezlifesteal.service.BeaconSpawnService;
 import com.skyblockexp.ezlifesteal.detector.AdminDetector;
 import com.skyblockexp.ezlifesteal.detector.SmurfDetector;
 import com.skyblockexp.ezlifesteal.heart.HeartRegistry;
@@ -10,7 +12,9 @@ import com.skyblockexp.ezlifesteal.hologram.TopHologramManager;
 import com.skyblockexp.ezlifesteal.killstreak.KillStreakManager;
 import com.skyblockexp.ezlifesteal.model.MobReward;
 import com.skyblockexp.ezlifesteal.service.LifestealManager;
+import com.skyblockexp.ezlifesteal.service.TeamBankService;
 import com.skyblockexp.ezlifesteal.storage.Storage;
+import com.skyblockexp.ezlifesteal.storage.repository.TeamBankRepository;
 import com.skyblockexp.ezlifesteal.util.PlayerLookupService;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -98,6 +102,14 @@ public final class RuntimePluginFacade implements PluginAccessor {
         return runtime.getStorage();
     }
 
+    @Override public TeamBankRepository getTeamBankRepository() {
+        return runtime.getTeamBankRepository();
+    }
+
+    @Override public TeamBankService getTeamBankService() {
+        return runtime.getTeamBankService();
+    }
+
     @Override public MobReward getMobReward(EntityType entityType) {
         return registry.getGameplayState().getMobRulesState().getMobRewards().get(entityType);
     }
@@ -108,6 +120,22 @@ public final class RuntimePluginFacade implements PluginAccessor {
 
     @Override public boolean isLifestealEnabledInWorld(String worldName) {
         return runtime.isLifestealEnabledInWorld(worldName);
+    }
+
+    @Override public boolean isTeamBankEnabled() {
+        return runtime.isTeamBankEnabled();
+    }
+
+    @Override public double getTeamBankMaxHearts() {
+        return runtime.getTeamBankMaxHearts();
+    }
+
+    @Override public boolean isTeamKillBypassEnabled() {
+        return registry.getGameplayState().getHeartRulesState().isTeamKillBypassWithTeamsApi();
+    }
+
+    @Override public boolean shouldBypassForTeamKill(Player killer, Player victim) {
+        return runtime.shouldBypassForTeamKill(killer, victim);
     }
 
     @Override public boolean isAdminBypassHeartLoss() {
@@ -241,6 +269,14 @@ public final class RuntimePluginFacade implements PluginAccessor {
 
     @Override public void simulatePlayerKill(Player killer) {
         runtime.simulatePlayerKill(killer);
+    }
+
+    @Override public BeaconSpawnSettings getBeaconSpawnSettings() {
+        return registry.getGameplayState().getReviveBeaconState().getBeaconSpawnSettings();
+    }
+
+    @Override public BeaconSpawnService getBeaconSpawnService() {
+        return runtime.getBeaconSpawnService();
     }
 
 }

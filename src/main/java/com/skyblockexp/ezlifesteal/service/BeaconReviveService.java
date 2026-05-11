@@ -3,6 +3,7 @@ package com.skyblockexp.ezlifesteal.service;
 import com.skyblockexp.ezlifesteal.config.MessageService;
 import com.skyblockexp.ezlifesteal.config.ReviveAnimationSettings;
 import com.skyblockexp.ezlifesteal.model.LifestealProfile;
+import com.skyblockexp.ezlifesteal.model.SpawnedBeaconStatus;
 import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
 import com.skyblockexp.ezlifesteal.storage.StorageException;
 import com.skyblockexp.ezlifesteal.storage.repository.BanRepository;
@@ -76,6 +77,16 @@ public class BeaconReviveService {
             maybeConsumeVoucherOnFailure(heldItem);
             sendFailure(player, "beacon-revive-not-whitelisted", "This beacon is not whitelisted for revive usage.");
             return true;
+        }
+
+        // If this is a plugin-spawned beacon, ensure it is in AVAILABLE state before proceeding
+        final BeaconSpawnService beaconSpawnService = plugin.getBeaconSpawnService();
+        if (beaconSpawnService != null) {
+            final var spawned = beaconSpawnService.findByLocation(clickedBlock.getLocation());
+            if (spawned.isPresent() && spawned.get().getStatus() != SpawnedBeaconStatus.AVAILABLE) {
+                sendFailure(player, "beacon-spawn-not-available", "This beacon is not yet available for use.");
+                return true;
+            }
         }
 
         final String configuredVoucherId = resolveVoucherHeartId();
@@ -158,6 +169,11 @@ public class BeaconReviveService {
                     }
                     SELECTED_TARGETS.remove(player.getUniqueId());
                     consumeSingleVoucher(heldItem);
+                    // If this was a plugin-spawned beacon, mark it as used
+                    final BeaconSpawnService spawnSvc = plugin.getBeaconSpawnService();
+                    if (spawnSvc != null) {
+                        spawnSvc.markUsedByLocation(clickedBlock.getLocation(), plugin);
+                    }
                     applyOnlineEffects(manager, result);
                     final ReviveAnimationSettings settings = plugin.getReviveAnimationSettings();
                     reviveAnimationService.playReviveAnimation(clickedBlock.getLocation(), player, settings);

@@ -13,6 +13,11 @@ health-scale: 20.0
 
 hearts-per-kill: 1.0
 hearts-lost-on-death: 1.0
+team-kill-bypass-with-teams-api: false
+
+team-bank:
+  enabled: false
+  max-hearts: 200.0
 
 ban-when-zero-hearts: false
 zero-heart-ban-message: "You have run out of hearts."

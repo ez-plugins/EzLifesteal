@@ -1,5 +1,6 @@
 package com.skyblockexp.ezlifesteal.runtime.state;
 
+import com.skyblockexp.ezlifesteal.config.BeaconSpawnSettings;
 import com.skyblockexp.ezlifesteal.config.ReviveAnimationSettings;
 import java.util.List;
 
@@ -31,12 +32,15 @@ public final class ReviveBeaconState {
 
     private String reviveBeaconBroadcastCompleteMessageKey;
 
+    private BeaconSpawnSettings beaconSpawnSettings;
+
 
     ReviveBeaconState() {
         this.reviveBeaconWhitelistedBeacons = List.of();
         this.reviveAnimationSettings = ReviveAnimationSettings.defaults();
         this.reviveBeaconBroadcastHoldStartMessageKey = "beacon-revive-broadcast-hold-start";
         this.reviveBeaconBroadcastCompleteMessageKey = "beacon-revive-broadcast-complete";
+        this.beaconSpawnSettings = BeaconSpawnSettings.disabled();
     }
 
     public static ReviveBeaconState defaults() {
@@ -145,5 +149,13 @@ public final class ReviveBeaconState {
 
     public void setReviveBeaconBroadcastCompleteMessageKey(String reviveBeaconBroadcastCompleteMessageKey) {
         this.reviveBeaconBroadcastCompleteMessageKey = reviveBeaconBroadcastCompleteMessageKey;
+    }
+
+    public BeaconSpawnSettings getBeaconSpawnSettings() {
+        return beaconSpawnSettings;
+    }
+
+    public void setBeaconSpawnSettings(BeaconSpawnSettings beaconSpawnSettings) {
+        this.beaconSpawnSettings = beaconSpawnSettings;
     }
 }

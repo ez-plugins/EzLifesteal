@@ -133,6 +133,7 @@ public class HelpSubcommand implements Subcommand {
         descriptions.put("shop", "Open the heart shop menu.");
         descriptions.put("hearts", "View a player's hearts.");
         descriptions.put("transfer", "Transfer hearts to another player.");
+        descriptions.put("teambank", "Manage your team's shared heart bank.");
         descriptions.put("top", "Show the top hearts leaderboard.");
         descriptions.put("banlist", "List active lifesteal bans.");
         descriptions.put("set", "Set a player's heart count.");
