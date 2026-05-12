@@ -1,6 +1,6 @@
 ---
 title: Developer Guide
-nav_order: 8
+nav_order: 9
 description: "Architecture overview, contribution workflow, and EzSeasons API integration"
 ---
 

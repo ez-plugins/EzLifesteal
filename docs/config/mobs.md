@@ -49,7 +49,7 @@ description: "Reference for lifesteal-mobs.yml — mob death behavior and per-mo
 Each entry supports:
 
 | Field | Type | Required | Description |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `hearts` | number | yes | Hearts granted to the player on kill. |
 | `permission` | string | no | Permission node required to receive the reward. Omit to grant to all players. |
 | `worlds` | list of strings | no | Worlds where the reward applies. Empty = all worlds. |

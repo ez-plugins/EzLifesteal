@@ -1,5 +1,12 @@
 # EzLifesteal
 
+[![CI](https://github.com/ez-plugins/EzLifesteal/actions/workflows/ci.yml/badge.svg)](https://github.com/ez-plugins/EzLifesteal/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/ez-plugins/EzLifesteal/graph/badge.svg)](https://codecov.io/gh/ez-plugins/EzLifesteal)
+[![Modrinth](https://img.shields.io/modrinth/v/ezlifesteal?logo=modrinth&label=Modrinth)](https://modrinth.com/plugin/ezlifesteal)
+[![Downloads](https://img.shields.io/modrinth/dt/ezlifesteal?logo=modrinth&label=Downloads)](https://modrinth.com/plugin/ezlifesteal)
+[![Java](https://img.shields.io/badge/Java-25-orange?logo=openjdk)](https://adoptium.net/)
+[![License](https://img.shields.io/github/license/ez-plugins/EzLifesteal)](LICENSE)
+
 EzLifesteal is a production-ready Paper plugin for running Lifesteal game modes on Minecraft servers. It gives server owners full control over heart gain/loss, progression, anti-abuse systems, seasonal resets, and monetization-friendly options while staying lightweight and configurable.
 
 ## Quick links
@@ -36,14 +43,18 @@ EzLifesteal is a production-ready Paper plugin for running Lifesteal game modes 
 - Killstreak reward pipeline.
 - Player/mob listener hooks for custom reward flows.
 - Top hologram and overlay support.
+- Revive beacon system for banned player revives.
+- Beacon spawn subsystem: auto-places BEACON blocks in the world on a schedule or on demand.
 
 ## Optional integrations
 
 EzLifesteal runs standalone, but can integrate with:
 
-- **Vault** for economy rewards and money-based incentives.
-- **PlaceholderAPI** for placeholders in scoreboards, tab lists, and other plugins.
-- **EzSeasons** for season reset workflows and season-aware progression.
+- **[Vault](https://modrinth.com/plugin/vault)** for economy rewards and money-based incentives.
+- **[PlaceholderAPI](https://modrinth.com/plugin/placeholderapi)** for placeholders in scoreboards, tab lists, and other plugins.
+- **[EzSeasons](https://modrinth.com/plugin/ezseasons)** for season reset workflows and season-aware progression.
+- **[WorldGuard](https://modrinth.com/plugin/worldguard)** for automatic region protection around plugin-spawned beacons.
+- **[EzCountdown](https://modrinth.com/plugin/ezcountdown)** for a visible countdown timer during the beacon warm-up phase.
 
 If these plugins are not installed, EzLifesteal keeps running and only disables the corresponding integration behavior.
 

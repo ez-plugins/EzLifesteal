@@ -23,7 +23,7 @@ Heart items are the in-game representation of hearts. They can be given to playe
 ## Field Reference
 
 | Field | Type | Required | Description |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `display` | string | yes | Display name shown on the item. Supports `&` colour codes. |
 | `tier` | integer | yes | Numeric tier used for ordering and comparison (e.g. in the shop). Higher = rarer. |
 | `hearts` | number | yes | Heart count granted when this item is consumed. Supports decimals (e.g. `0.5`). |

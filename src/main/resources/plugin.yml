@@ -11,10 +11,13 @@ softdepend:
   - PlaceholderAPI
   - Vault
   - EzSeasons
+  - WorldGuard
+  - EzCountdown
+  - TeamsAPI
 commands:
   lifesteal:
     description: Main command for EzLifesteal
-    usage: /lifesteal <help|about|hearts|set|add|remove|reset|revive|resetall|transfer|withdraw|top|shop|smurf|reload|test|hologram>
+    usage: /lifesteal <help|about|hearts|set|add|remove|reset|revive|resetall|transfer|teambank|withdraw|top|shop|smurf|reload|test|hologram|beacon>
     permission: lifesteal.command.base
   hearts:
     description: Open the heart voucher shop
@@ -23,6 +26,10 @@ commands:
   revive:
     description: Select a revive target for beacon revives
     usage: /revive <player>
+    permission: lifesteal.command.base
+  beacon:
+    description: Manage and inspect revive beacons
+    usage: /beacon <add|remove|list|clear|spawn|despawn|spawns>
     permission: lifesteal.command.base
 permissions:
   # ── Leaf permissions ────────────────────────────────────────────────────────
@@ -37,6 +44,15 @@ permissions:
     default: true
   lifesteal.withdraw:
     description: Withdraw hearts as a voucher item
+    default: true
+  lifesteal.teambank.balance:
+    description: View your team heart bank balance
+    default: true
+  lifesteal.teambank.deposit:
+    description: Deposit hearts into your team heart bank
+    default: true
+  lifesteal.teambank.withdraw:
+    description: Withdraw hearts from your team heart bank
     default: true
   lifesteal.manage.view:
     description: View stored hearts for other players
@@ -96,6 +112,9 @@ permissions:
       lifesteal.command.base: true
       lifesteal.top: true
       lifesteal.transfer: true
+      lifesteal.teambank.balance: true
+      lifesteal.teambank.deposit: true
+      lifesteal.teambank.withdraw: true
       lifesteal.withdraw: true
   lifesteal.mod:
     description: Moderate EzLifesteal gameplay

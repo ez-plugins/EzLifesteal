@@ -39,7 +39,7 @@ description: "Reference for lifesteal-worlds.yml — per-world enable/disable ru
 **Priority summary:**
 
 | `enabled-worlds` | `disabled-worlds` | Result |
-|---|---|---|
+| --- | --- | --- |
 | empty | empty | Lifesteal runs in all worlds |
 | non-empty | (ignored) | Only listed worlds run lifesteal |
 | empty | non-empty | All worlds except listed ones run lifesteal |
@@ -53,7 +53,7 @@ description: "Reference for lifesteal-worlds.yml — per-world enable/disable ru
 Supported override keys:
 
 | Key | Type | Description |
-|---|---|---|
+| --- | --- | --- |
 | `hearts-per-kill` | number | Overrides global `hearts-per-kill` for this world. |
 | `hearts-lost-on-death` | number | Overrides global `hearts-lost-on-death` for this world. |
 | `ban-when-zero` | boolean | Overrides global `ban-when-zero-hearts` for this world. |

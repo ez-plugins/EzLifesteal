@@ -1,9 +1,11 @@
 package com.skyblockexp.ezlifesteal.runtime;
 
 import com.skyblockexp.ezlifesteal.EzLifestealPlugin;
+import com.skyblockexp.ezlifesteal.config.BeaconSpawnSettings;
 import com.skyblockexp.ezlifesteal.config.LifestealConfigAdapter;
 import com.skyblockexp.ezlifesteal.config.MessageService;
 import com.skyblockexp.ezlifesteal.config.ReviveAnimationSettings;
+import com.skyblockexp.ezlifesteal.service.BeaconSpawnService;
 import com.skyblockexp.ezlifesteal.detector.AdminDetector;
 import com.skyblockexp.ezlifesteal.detector.SmurfDetector;
 import com.skyblockexp.ezlifesteal.heart.HeartRegistry;
@@ -11,9 +13,11 @@ import com.skyblockexp.ezlifesteal.hologram.TopHologramManager;
 import com.skyblockexp.ezlifesteal.killstreak.KillStreakManager;
 import com.skyblockexp.ezlifesteal.model.MobReward;
 import com.skyblockexp.ezlifesteal.service.LifestealManager;
+import com.skyblockexp.ezlifesteal.service.TeamBankService;
 import com.skyblockexp.ezlifesteal.storage.Storage;
 import com.skyblockexp.ezlifesteal.storage.repository.BanRepository;
 import com.skyblockexp.ezlifesteal.storage.repository.ProfileRepository;
+import com.skyblockexp.ezlifesteal.storage.repository.TeamBankRepository;
 import com.skyblockexp.ezlifesteal.util.PlayerLookupService;
 import java.util.logging.Logger;
 import org.bukkit.entity.EntityType;
@@ -60,11 +64,35 @@ public interface PluginAccessor {
         return getStorage();
     }
 
+    default TeamBankRepository getTeamBankRepository() {
+        return null;
+    }
+
+    default TeamBankService getTeamBankService() {
+        return null;
+    }
+
     MobReward getMobReward(EntityType entityType);
 
     boolean isGlobalLifestealEnabled();
 
     boolean isLifestealEnabledInWorld(String worldName);
+
+    default boolean isTeamBankEnabled() {
+        return false;
+    }
+
+    default double getTeamBankMaxHearts() {
+        return 0.0D;
+    }
+
+    default boolean isTeamKillBypassEnabled() {
+        return false;
+    }
+
+    default boolean shouldBypassForTeamKill(org.bukkit.entity.Player killer, org.bukkit.entity.Player victim) {
+        return false;
+    }
 
     boolean isAdminBypassHeartLoss();
 
@@ -161,5 +189,13 @@ public interface PluginAccessor {
         catch (Throwable t) {
             return null;
         }
+    }
+
+    default BeaconSpawnSettings getBeaconSpawnSettings() {
+        return BeaconSpawnSettings.disabled();
+    }
+
+    default BeaconSpawnService getBeaconSpawnService() {
+        return null;
     }
 }

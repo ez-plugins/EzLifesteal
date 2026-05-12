@@ -13,11 +13,23 @@ import com.skyblockexp.ezlifesteal.hologram.TopHologramManager;
 import com.skyblockexp.ezlifesteal.killstreak.KillStreakManager;
 import com.skyblockexp.ezlifesteal.killstreak.KillStreakReward;
 import com.skyblockexp.ezlifesteal.killstreak.KillStreakSettings;
+import com.skyblockexp.ezlifesteal.gui.BeaconGuiListener;
+import com.skyblockexp.ezlifesteal.integration.BeaconAreaProtection;
+import com.skyblockexp.ezlifesteal.integration.BeaconCountdownProvider;
+import com.skyblockexp.ezlifesteal.integration.EzCountdownBeaconHook;
+import com.skyblockexp.ezlifesteal.integration.TeamKillBypassService;
+import com.skyblockexp.ezlifesteal.integration.TeamsApiTeamResolver;
+import com.skyblockexp.ezlifesteal.integration.WorldGuardBeaconHook;
 import com.skyblockexp.ezlifesteal.listener.PlayerListener;
+import com.skyblockexp.ezlifesteal.listener.SpawnedBeaconListener;
 import com.skyblockexp.ezlifesteal.model.LifestealProfile;
 import com.skyblockexp.ezlifesteal.model.MobReward;
 import com.skyblockexp.ezlifesteal.overlay.HeartOverlayManager;
 import com.skyblockexp.ezlifesteal.placeholder.PlaceholderHook;
+import com.skyblockexp.ezlifesteal.service.BeaconAvailabilityService;
+import com.skyblockexp.ezlifesteal.service.BeaconScheduleService;
+import com.skyblockexp.ezlifesteal.service.BeaconSpawnService;
+import com.skyblockexp.ezlifesteal.storage.SpawnedBeaconRepository;
 import com.skyblockexp.ezlifesteal.runtime.state.GameplayState;
 import com.skyblockexp.ezlifesteal.service.AdminSettingsFactory;
 import com.skyblockexp.ezlifesteal.service.ConfigService;
@@ -36,6 +48,7 @@ import com.skyblockexp.ezlifesteal.service.PlaceholderService;
 import com.skyblockexp.ezlifesteal.service.RecipeService;
 import com.skyblockexp.ezlifesteal.service.SmurfSettingsFactory;
 import com.skyblockexp.ezlifesteal.service.StorageService;
+import com.skyblockexp.ezlifesteal.service.TeamBankService;
 import com.skyblockexp.ezlifesteal.storage.BanRecord;
 import com.skyblockexp.ezlifesteal.storage.RepositoryBackedStorageBridge;
 import com.skyblockexp.ezlifesteal.storage.Storage;
@@ -44,6 +57,7 @@ import com.skyblockexp.ezlifesteal.storage.mysql.MySqlStorageProvider;
 import com.skyblockexp.ezlifesteal.storage.provider.StorageProvider;
 import com.skyblockexp.ezlifesteal.storage.repository.BanRepository;
 import com.skyblockexp.ezlifesteal.storage.repository.ProfileRepository;
+import com.skyblockexp.ezlifesteal.storage.repository.TeamBankRepository;
 import com.skyblockexp.ezlifesteal.storage.yaml.YamlStorageProvider;
 import com.skyblockexp.ezlifesteal.util.PlayerLookupService;
 import com.skyblockexp.ezlifesteal.util.PluginLifecycleSupport;
@@ -240,6 +254,8 @@ public final class DefaultPluginRuntimeServices {
 
     private BanRepository banRepository;
 
+    private TeamBankRepository teamBankRepository;
+
     private String storageSummary;
 
     private ExecutorService storageExecutor;
@@ -314,6 +330,18 @@ public final class DefaultPluginRuntimeServices {
 
     private PlayerListener playerListener;
 
+    private BeaconSpawnService beaconSpawnService;
+
+    private BeaconScheduleService beaconScheduleService;
+
+    private PluginAccessor beaconPluginAccessor;
+
+    private TeamKillBypassService teamKillBypassService;
+
+    private TeamsApiTeamResolver teamsApiTeamResolver;
+
+    private TeamBankService teamBankService;
+
 
     public void initializeCoreState() {
 
@@ -356,6 +384,9 @@ public final class DefaultPluginRuntimeServices {
         killStreakParsingService = new KillStreakParsingService(this);
         gameplayParsingService = new GameplayParsingService(this);
         playerLookupService = new PlayerLookupService(plugin);
+        teamKillBypassService = new TeamKillBypassService(this);
+        teamsApiTeamResolver = new TeamsApiTeamResolver(this);
+        teamBankService = new TeamBankService(new RuntimePluginFacade(plugin, this), teamsApiTeamResolver);
         managerState.setPlayerLookupService(playerLookupService);
         registry.setPlayerLookupService(playerLookupService);
     }
@@ -391,6 +422,7 @@ public final class DefaultPluginRuntimeServices {
         storageProvider = null;
         profileRepository = null;
         banRepository = null;
+        teamBankRepository = null;
     }
 
     public void shutdownStorageExecutor() {
@@ -461,6 +493,14 @@ public final class DefaultPluginRuntimeServices {
     public BanRepository getBanRepository() {
         return storageService != null ? storageService
                 .getBanRepository() : (banRepository == null ? storage : banRepository);
+    }
+
+    public TeamBankRepository getTeamBankRepository() {
+        return storageService != null ? storageService.getTeamBankRepository() : teamBankRepository;
+    }
+
+    public TeamBankService getTeamBankService() {
+        return teamBankService;
     }
 
     public PluginContext getPluginContext() {
@@ -702,6 +742,7 @@ public final class DefaultPluginRuntimeServices {
         storage = storageService.getStorage();
         profileRepository = storageService.getProfileRepository();
         banRepository = storageService.getBanRepository();
+        teamBankRepository = storageService.getTeamBankRepository();
         storageExecutor = storageService.getStorageExecutor();
     }
 
@@ -791,6 +832,7 @@ public final class DefaultPluginRuntimeServices {
             storage = new RepositoryBackedStorageBridge(storageProvider);
             profileRepository = storageProvider.profiles();
             banRepository = storageProvider.bans();
+            teamBankRepository = storageProvider.teamBanks();
             storage.init();
             reconcileRuntimeBans();
         }
@@ -979,6 +1021,83 @@ public final class DefaultPluginRuntimeServices {
 
     public PlaceholderHook getPlaceholderExpansion() {
         return placeholderExpansion;
+    }
+
+    public BeaconSpawnService getBeaconSpawnService() {
+        return beaconSpawnService;
+    }
+
+    /**
+     * Starts the beacon spawn feature by detecting optional integrations (WorldGuard, EzCountdown),
+     * creating the services, registering the listener, and starting the schedule.
+     */
+    public void startBeaconSpawnFeature(PluginAccessor pluginAccessor) {
+        this.beaconPluginAccessor = pluginAccessor;
+
+        // Stop any previous run (in case of reload)
+        stopBeaconSpawnFeature();
+
+        if (!pluginAccessor.getBeaconSpawnSettings().enabled()) {
+            return;
+        }
+
+        final SpawnedBeaconRepository repository = new SpawnedBeaconRepository();
+        final BeaconAvailabilityService availabilityService =
+                new BeaconAvailabilityService(plugin.getLogger());
+        beaconSpawnService = new BeaconSpawnService(repository, availabilityService, plugin.getLogger());
+
+        // Optional WorldGuard integration
+        if (Bukkit.getPluginManager().isPluginEnabled("WorldGuard")) {
+            try {
+                final BeaconAreaProtection hook = new WorldGuardBeaconHook(plugin.getLogger());
+                beaconSpawnService.setAreaProtection(hook);
+                plugin.getLogger().info("BeaconSpawnFeature: WorldGuard protection enabled.");
+            } catch (Throwable t) {
+                plugin.getLogger().warning("BeaconSpawnFeature: WorldGuard hook failed: " + t.getMessage());
+            }
+        }
+
+        // Optional EzCountdown integration
+        if (Bukkit.getPluginManager().isPluginEnabled("EzCountdown")) {
+            try {
+                final BeaconCountdownProvider hook = new EzCountdownBeaconHook(plugin.getLogger());
+                beaconSpawnService.setCountdownProvider(hook);
+                plugin.getLogger().info("BeaconSpawnFeature: EzCountdown integration enabled.");
+            } catch (Throwable t) {
+                plugin.getLogger().warning("BeaconSpawnFeature: EzCountdown hook failed: " + t.getMessage());
+            }
+        }
+
+        // Register listener
+        final SpawnedBeaconListener listener =
+                new SpawnedBeaconListener(beaconSpawnService, pluginAccessor, plugin.getLogger());
+        plugin.getServer().getPluginManager().registerEvents(listener, plugin);
+        plugin.getServer().getPluginManager().registerEvents(new BeaconGuiListener(), plugin);
+
+        // Start schedule
+        beaconScheduleService = new BeaconScheduleService(beaconSpawnService, plugin.getLogger());
+        beaconScheduleService.start(pluginAccessor);
+    }
+
+    /**
+     * Stops the beacon schedule and despawns all active beacons.
+     */
+    public void stopBeaconSpawnFeature() {
+        if (beaconScheduleService != null) {
+            beaconScheduleService.stop();
+            beaconScheduleService = null;
+        }
+        if (beaconSpawnService != null && beaconPluginAccessor != null) {
+            beaconSpawnService.despawnAll(beaconPluginAccessor);
+        }
+        beaconSpawnService = null;
+    }
+
+    /**
+     * Reloads the beacon spawn feature by stopping and restarting with updated settings.
+     */
+    public void reloadBeaconSpawnFeature(PluginAccessor pluginAccessor) {
+        startBeaconSpawnFeature(pluginAccessor);
     }
 
     public org.bukkit.plugin.PluginDescriptionFile getDescription() {
@@ -1469,6 +1588,22 @@ public final class DefaultPluginRuntimeServices {
 
     public boolean isGlobalLifestealEnabled() {
         return gameplayState.getHeartRulesState().isGlobalLifestealEnabled();
+    }
+
+    public boolean isTeamKillBypassEnabled() {
+        return gameplayState.getHeartRulesState().isTeamKillBypassWithTeamsApi();
+    }
+
+    public boolean isTeamBankEnabled() {
+        return gameplayState.getHeartRulesState().isTeamBankEnabled();
+    }
+
+    public double getTeamBankMaxHearts() {
+        return gameplayState.getHeartRulesState().getTeamBankMaxHearts();
+    }
+
+    public boolean shouldBypassForTeamKill(Player killer, Player victim) {
+        return teamKillBypassService != null && teamKillBypassService.shouldBypass(killer, victim);
     }
 
     public boolean isAdminBypassHeartLoss() {

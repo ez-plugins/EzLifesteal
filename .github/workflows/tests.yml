@@ -19,10 +19,11 @@ jobs:
           java-version: '25'
           cache: maven
 
-      - name: Build and install MockBukkit dev/26.1.1
+      - name: Build and install MockBukkit minecraft/v26
         run: |
-          git clone --depth=1 --branch dev/26.1.1 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
-          cd /tmp/MockBukkit && ./gradlew publishToMavenLocal -xtest -xjavadoc
+          git clone --depth=1 --branch minecraft/v26 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
+          sed -i 's/^mockbukkit\.version=$/mockbukkit.version=local/' /tmp/MockBukkit/gradle.properties
+          cd /tmp/MockBukkit && GITHUB_REPOSITORY=MockBukkit/MockBukkit ./gradlew publishToMavenLocal -xtest -xjavadoc
 
       - name: Run unit tests
         run: mvn -B -ntp test -Dtest='*Test,!*FeatureTest'
@@ -38,10 +39,11 @@ jobs:
           java-version: '25'
           cache: maven
 
-      - name: Build and install MockBukkit dev/26.1.1
+      - name: Build and install MockBukkit minecraft/v26
         run: |
-          git clone --depth=1 --branch dev/26.1.1 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
-          cd /tmp/MockBukkit && ./gradlew publishToMavenLocal -xtest -xjavadoc
+          git clone --depth=1 --branch minecraft/v26 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
+          sed -i 's/^mockbukkit\.version=$/mockbukkit.version=local/' /tmp/MockBukkit/gradle.properties
+          cd /tmp/MockBukkit && GITHUB_REPOSITORY=MockBukkit/MockBukkit ./gradlew publishToMavenLocal -xtest -xjavadoc
 
       - name: Generate unit test coverage report
         run: mvn -B -ntp clean verify -Djacoco.haltOnFailure=false
@@ -112,10 +114,11 @@ jobs:
           java-version: '25'
           cache: maven
 
-      - name: Build and install MockBukkit dev/26.1.1
+      - name: Build and install MockBukkit minecraft/v26
         run: |
-          git clone --depth=1 --branch dev/26.1.1 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
-          cd /tmp/MockBukkit && ./gradlew publishToMavenLocal -xtest -xjavadoc
+          git clone --depth=1 --branch minecraft/v26 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
+          sed -i 's/^mockbukkit\.version=$/mockbukkit.version=local/' /tmp/MockBukkit/gradle.properties
+          cd /tmp/MockBukkit && GITHUB_REPOSITORY=MockBukkit/MockBukkit ./gradlew publishToMavenLocal -xtest -xjavadoc
 
       - name: Check language file completeness
         run: mvn -B -ntp test -Dtest='LanguageFilesCompletenessTest'
@@ -131,10 +134,11 @@ jobs:
           java-version: '25'
           cache: maven
 
-      - name: Build and install MockBukkit dev/26.1.1
+      - name: Build and install MockBukkit minecraft/v26
         run: |
-          git clone --depth=1 --branch dev/26.1.1 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
-          cd /tmp/MockBukkit && ./gradlew publishToMavenLocal -xtest -xjavadoc
+          git clone --depth=1 --branch minecraft/v26 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
+          sed -i 's/^mockbukkit\.version=$/mockbukkit.version=local/' /tmp/MockBukkit/gradle.properties
+          cd /tmp/MockBukkit && GITHUB_REPOSITORY=MockBukkit/MockBukkit ./gradlew publishToMavenLocal -xtest -xjavadoc
 
       - name: Run feature tests
         run: mvn -B -ntp test -Dtest='*FeatureTest'

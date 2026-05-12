@@ -28,12 +28,14 @@ class YamlStorageProviderTest {
 
         assertNotNull(provider.profiles());
         assertNotNull(provider.bans());
+        assertNotNull(provider.teamBanks());
         assertInstanceOf(YamlProfileRepository.class, provider.profiles());
         assertInstanceOf(YamlBanRepository.class, provider.bans());
 
         assertDoesNotThrow(provider::init);
         assertTrue(tempDir.resolve("players").toFile().isDirectory());
         assertTrue(tempDir.resolve("bans").toFile().isDirectory());
+        assertTrue(tempDir.resolve("team-banks").toFile().isDirectory());
     }
 
     @Test

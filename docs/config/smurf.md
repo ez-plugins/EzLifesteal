@@ -122,7 +122,7 @@ exempted-players:
 ## Common False-Positive Scenarios
 
 | Scenario | Symptom | Recommended fix |
-|---|---|---|
+| --- | --- | --- |
 | Organised duels / duel arena | Frequent alerts between the same two players | Raise `same-victim-threshold` to 5+ or add participant UUIDs to `exempted-players` |
 | Tournament or scheduled server event | Alert storm during the event | Add all participants to `exempted-players` for the duration |
 | Very busy server with low threshold | Too many alerts to act on meaningfully | Raise `same-victim-threshold` and/or increase `time-window-minutes` |

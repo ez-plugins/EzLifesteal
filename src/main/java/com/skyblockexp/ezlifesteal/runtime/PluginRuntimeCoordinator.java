@@ -56,6 +56,7 @@ public final class PluginRuntimeCoordinator {
         runtime.reloadManagerState();
         registerCoreListeners();
         integrationRuntimeService.start();
+        runtime.startBeaconSpawnFeature(pluginAccessor);
         recipeRuntimeService.start();
         commandRegistrationService.start();
         runtime.setupPlaceholderExpansion(pluginAccessor);
@@ -66,6 +67,7 @@ public final class PluginRuntimeCoordinator {
     public void shutdownPlugin() {
         recipeRuntimeService.stop();
         integrationRuntimeService.stop();
+        runtime.stopBeaconSpawnFeature();
         runtime.shutdownManagers();
         storageRuntimeService.stop();
     }
@@ -76,6 +78,7 @@ public final class PluginRuntimeCoordinator {
         storageRuntimeService.reload();
         runtime.reloadManagerState();
         integrationRuntimeService.reload();
+        runtime.reloadBeaconSpawnFeature(pluginAccessor);
         recipeRuntimeService.reload();
         commandRegistrationService.reload();
         runtime.setupPlaceholderExpansion(pluginAccessor);

@@ -50,6 +50,14 @@ public class PlayerDeathService {
                     + " in disabled world " + victim.getWorld().getName());
             return;
         }
+        if (killer != null
+                && !killer.getUniqueId().equals(victim.getUniqueId())
+                && plugin.isTeamKillBypassEnabled()
+                && plugin.shouldBypassForTeamKill(killer, victim)) {
+            plugin.getLogger().fine("Skipping lifesteal transfer for teammate kill: "
+                    + killer.getName() + " -> " + victim.getName());
+            return;
+        }
 
         final UUID victimId = victim.getUniqueId();
         final LifestealManager manager = plugin.getLifestealManager();

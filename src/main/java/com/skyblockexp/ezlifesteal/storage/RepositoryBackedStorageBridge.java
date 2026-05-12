@@ -4,6 +4,7 @@ import com.skyblockexp.ezlifesteal.model.LifestealProfile;
 import com.skyblockexp.ezlifesteal.storage.provider.StorageProvider;
 import com.skyblockexp.ezlifesteal.storage.repository.BanRepository;
 import com.skyblockexp.ezlifesteal.storage.repository.ProfileRepository;
+import com.skyblockexp.ezlifesteal.storage.repository.TeamBankRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -76,5 +77,9 @@ public class RepositoryBackedStorageBridge implements Storage {
 
     public StorageProvider provider() {
         return provider;
+    }
+
+    public TeamBankRepository teamBanks() {
+        return provider.teamBanks();
     }
 }

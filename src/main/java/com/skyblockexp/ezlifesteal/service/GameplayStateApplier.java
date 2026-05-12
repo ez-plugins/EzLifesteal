@@ -30,6 +30,9 @@ public class GameplayStateApplier {
 
         heartRulesState.setHeartsPerKill(lifestealSettings.heartsPerKill());
         heartRulesState.setHeartsLostOnDeath(lifestealSettings.heartsLostOnDeath());
+        heartRulesState.setTeamKillBypassWithTeamsApi(lifestealSettings.teamKillBypassWithTeamsApi());
+        heartRulesState.setTeamBankEnabled(lifestealSettings.teamBankEnabled());
+        heartRulesState.setTeamBankMaxHearts(lifestealSettings.teamBankMaxHearts());
         heartRulesState.setBanWhenZeroHearts(lifestealSettings.banWhenZeroHearts());
         heartRulesState.setGlobalLifestealEnabled(lifestealSettings.globalLifestealEnabled());
         heartRulesState.setAdminBypassHeartLoss(adminSettings.adminBypassHeartLoss());
@@ -58,6 +61,7 @@ public class GameplayStateApplier {
         reviveBeaconState.setReviveBeaconBroadcastCompleteMessageKey(
                 lifestealSettings.reviveBeaconBroadcastCompleteMessageKey()
         );
+        reviveBeaconState.setBeaconSpawnSettings(lifestealSettings.beaconSpawnSettings());
 
         mobRulesState.setDontRemoveHeartsFromMobs(lifestealSettings.dontRemoveHeartsFromMobs());
         mobRulesState.setMobRemoveHeartsGreaterThan(lifestealSettings.mobRemoveHeartsGreaterThan());

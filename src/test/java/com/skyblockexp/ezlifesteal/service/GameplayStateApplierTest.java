@@ -1,5 +1,6 @@
 package com.skyblockexp.ezlifesteal.service;
 
+import com.skyblockexp.ezlifesteal.config.BeaconSpawnSettings;
 import com.skyblockexp.ezlifesteal.config.ReviveAnimationSettings;
 import com.skyblockexp.ezlifesteal.killstreak.KillStreakSettings;
 import com.skyblockexp.ezlifesteal.runtime.state.GameplayState;
@@ -26,6 +27,9 @@ class GameplayStateApplierTest {
                 2.5,
                 1.5,
                 true,
+                true,
+                100.0,
+                true,
                 7.0,
                 true,
                 true,
@@ -45,6 +49,7 @@ class GameplayStateApplierTest {
                 true,
                 "hold-start",
                 "complete",
+                BeaconSpawnSettings.disabled(),
                 true,
                 List.of("say hi"),
                 false,

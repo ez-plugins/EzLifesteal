@@ -10,6 +10,7 @@ import com.skyblockexp.ezlifesteal.storage.mysql.MySqlStorageProvider;
 import com.skyblockexp.ezlifesteal.storage.provider.StorageProvider;
 import com.skyblockexp.ezlifesteal.storage.repository.BanRepository;
 import com.skyblockexp.ezlifesteal.storage.repository.ProfileRepository;
+import com.skyblockexp.ezlifesteal.storage.repository.TeamBankRepository;
 import com.skyblockexp.ezlifesteal.storage.yaml.YamlStorageProvider;
 import com.skyblockexp.ezlifesteal.util.PluginLifecycleSupport;
 import java.io.File;
@@ -42,6 +43,8 @@ public class StorageService {
     private ProfileRepository profileRepository;
 
     private BanRepository banRepository;
+
+    private TeamBankRepository teamBankRepository;
 
     private ExecutorService storageExecutor;
 
@@ -171,6 +174,7 @@ public class StorageService {
             storage = new RepositoryBackedStorageBridge(storageProvider);
             profileRepository = storageProvider.profiles();
             banRepository = storageProvider.bans();
+            teamBankRepository = storageProvider.teamBanks();
             storage.init();
             reconcileRuntimeBans();
         }
@@ -180,6 +184,7 @@ public class StorageService {
             storageProvider = null;
             profileRepository = null;
             banRepository = null;
+            teamBankRepository = null;
         }
     }
 
@@ -261,6 +266,7 @@ public class StorageService {
         storageProvider = null;
         profileRepository = null;
         banRepository = null;
+        teamBankRepository = null;
     }
 
     public Storage getStorage() {
@@ -277,6 +283,10 @@ public class StorageService {
 
     public ExecutorService getStorageExecutor() {
         return storageExecutor;
+    }
+
+    public TeamBankRepository getTeamBankRepository() {
+        return teamBankRepository;
     }
 
     public String getStorageSummary() {

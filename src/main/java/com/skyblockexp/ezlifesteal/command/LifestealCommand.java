@@ -20,6 +20,7 @@ import com.skyblockexp.ezlifesteal.command.subcommand.Subcommand;
 import com.skyblockexp.ezlifesteal.command.subcommand.TestSubcommand;
 import com.skyblockexp.ezlifesteal.command.subcommand.TopSubcommand;
 import com.skyblockexp.ezlifesteal.command.subcommand.TransferSubcommand;
+import com.skyblockexp.ezlifesteal.command.subcommand.TeamBankSubcommand;
 import com.skyblockexp.ezlifesteal.command.subcommand.WithdrawSubcommand;
 import com.skyblockexp.ezlifesteal.model.LifestealProfile;
 import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
@@ -201,6 +202,9 @@ public class LifestealCommand implements org.bukkit.command.CommandExecutor {
                 requirement(false, "lifesteal.admin.banlist", "lifesteal.admin"));
         registry.register("transfer", new TransferSubcommand(),
                 requirement(true, "lifesteal.transfer", "lifesteal.admin"));
+        registry.register("teambank", new TeamBankSubcommand(),
+                requirement(true, "lifesteal.teambank.balance", "lifesteal.teambank.deposit",
+                        "lifesteal.teambank.withdraw", "lifesteal.admin"), "tb");
         registry.register("top", new TopSubcommand(), requirement(false, "lifesteal.top", "lifesteal.admin"));
         registry.register("shop", new ShopSubcommand(), requirement(true));
         registry.register("help", new HelpSubcommand(), requirement(false, "lifesteal.command.base"));
@@ -248,6 +252,13 @@ public class LifestealCommand implements org.bukkit.command.CommandExecutor {
             Map.entry("shop", new SubcommandRequirement(true, Collections.emptyList(), null)),
             Map.entry("transfer",
                     new SubcommandRequirement(true, List.of("lifesteal.transfer", "lifesteal.admin"), null)),
+            Map.entry("teambank",
+                    new SubcommandRequirement(true, List.of(
+                            "lifesteal.teambank.balance",
+                            "lifesteal.teambank.deposit",
+                            "lifesteal.teambank.withdraw",
+                            "lifesteal.admin"
+                    ), null)),
             Map.entry("smurf",
                     new SubcommandRequirement(true, List.of("lifesteal.smurf.manage", "lifesteal.admin"), null)),
             Map.entry("top", new SubcommandRequirement(false, List.of("lifesteal.top", "lifesteal.admin"), null)),

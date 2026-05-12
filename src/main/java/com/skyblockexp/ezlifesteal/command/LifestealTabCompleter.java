@@ -64,16 +64,41 @@ public class LifestealTabCompleter implements TabCompleter {
                     return filter(List.of("place", "remove"), prefix);
                 }
                 case "beacon": {
-                    return filter(List.of("add", "remove", "list", "clear"), prefix);
+                    return filter(List.of("add", "remove", "list", "clear", "spawn", "despawn", "spawns"), prefix);
                 }
                 case "test": {
                     return filter(List.of("kill", "death"), prefix);
+                }
+                case "teambank": {
+                    return filter(List.of("balance", "deposit", "withdraw"), prefix);
                 }
                 case "top": {
                     return filter(List.of("1", "2", "3", "4", "5"), prefix);
                 }
                 default:
                     return Collections.emptyList();
+            }
+        }
+
+        // beacon: third arg is world (spawn) or short-id / "all" (despawn)
+        if (sub.equals("beacon") && args.length == 3) {
+            final String prefix = args[2] == null ? "" : args[2];
+            if ("despawn".equalsIgnoreCase(args[1])) {
+                final List<String> ids = new ArrayList<>();
+                ids.add("all");
+                final var accessor = plugin.getPluginAccessor();
+                if (accessor != null) {
+                    final var svc = accessor.getBeaconSpawnService();
+                    if (svc != null) {
+                        svc.getActiveBeacons().stream().map(b -> b.shortId()).forEach(ids::add);
+                    }
+                }
+                return filter(ids, prefix);
+            }
+            if ("spawn".equalsIgnoreCase(args[1])) {
+                return filter(
+                        Bukkit.getWorlds().stream().map(w -> w.getName()).collect(Collectors.toList()),
+                        prefix);
             }
         }
 
@@ -90,6 +115,11 @@ public class LifestealTabCompleter implements TabCompleter {
                     .distinct().collect(Collectors.toList());
             ids.addAll(tiers);
             return filter(ids, prefix);
+        }
+
+        if (sub.equals("teambank") && args.length == 3 && ("deposit".equalsIgnoreCase(args[1])
+                || "withdraw".equalsIgnoreCase(args[1]))) {
+            return filter(List.of("1", "2", "5", "10"), args[2] == null ? "" : args[2]);
         }
 
         return Collections.emptyList();

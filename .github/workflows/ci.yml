@@ -6,6 +6,9 @@ on:
       - main
       - master
   pull_request:
+  release:
+    types:
+      - published
 
 jobs:
   build:
@@ -23,10 +26,53 @@ jobs:
           java-version: '25'
           cache: maven
 
-      - name: Build and install MockBukkit dev/26.1.1
+      - name: Build and install MockBukkit minecraft/v26
         run: |
-          git clone --depth=1 --branch dev/26.1.1 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
-          cd /tmp/MockBukkit && ./gradlew publishToMavenLocal -xtest -xjavadoc
+          git clone --depth=1 --branch minecraft/v26 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
+          sed -i 's/^mockbukkit\.version=$/mockbukkit.version=local/' /tmp/MockBukkit/gradle.properties
+          cd /tmp/MockBukkit && GITHUB_REPOSITORY=MockBukkit/MockBukkit ./gradlew publishToMavenLocal -xtest -xjavadoc
 
       - name: Verify plugin build
         run: mvn -B -ntp clean verify
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v6
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: target/jacoco.exec
+          flags: unittests
+          fail_ci_if_error: false
+
+  publish-github-packages:
+    name: Publish to GitHub Packages
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          server-id: github
+          server-username: GITHUB_ACTOR
+          server-password: GITHUB_TOKEN
+
+      - name: Build and install MockBukkit minecraft/v26
+        run: |
+          git clone --depth=1 --branch minecraft/v26 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
+          sed -i 's/^mockbukkit\.version=$/mockbukkit.version=local/' /tmp/MockBukkit/gradle.properties
+          cd /tmp/MockBukkit && GITHUB_REPOSITORY=MockBukkit/MockBukkit ./gradlew publishToMavenLocal -xtest -xjavadoc
+
+      - name: Publish Maven artifacts
+        run: mvn -B -ntp -DskipTests deploy
+          -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/${{ github.repository }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

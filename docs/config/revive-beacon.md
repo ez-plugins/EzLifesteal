@@ -81,7 +81,7 @@ The revive beacon system allows a banned player to be revived by right-clicking 
 - Controls how the revive target is chosen. Accepted values:
 
 | Strategy | Description |
-|---|---|
+| --- | --- |
 | `NEAREST_BANNED` | Revives the closest banned player within `max-distance`. Ties are broken by UUID lexical order. |
 | `COMMAND_SELECTION` | The reviver must first run `/revive <player>` to pre-select a target. The beacon interaction then revives that specific player. |
 
@@ -147,7 +147,7 @@ Visual effects played on the reviver and in the world during and after a success
 Three named particle effects are configurable: `spiral`, `ring`, and `impact`. Each supports:
 
 | Field | Type | Description |
-|---|---|---|
+| --- | --- | --- |
 | `type` | string | Bukkit particle name (e.g. `END_ROD`, `ENCHANT`, `TOTEM_OF_UNDYING`). |
 | `count` | integer | Particles per burst. |
 | `offset-x/y/z` | number | Spread radius on each axis. |
@@ -158,7 +158,7 @@ Three named particle effects are configurable: `spiral`, `ring`, and `impact`. E
 Two sounds fire during the animation: `loop` (played during the hold) and `impact` (played on completion). Each supports:
 
 | Field | Type | Description |
-|---|---|---|
+| --- | --- | --- |
 | `type` | string | Bukkit sound name (e.g. `BLOCK_BEACON_AMBIENT`). |
 | `volume` | number | Playback volume (0.0–1.0+). |
 | `pitch` | number | Playback pitch (0.5–2.0). |
@@ -221,3 +221,152 @@ revive-beacon-whitelist:
 ```
 
 Each entry added at runtime stores world, x, y, z coordinates. Leave `whitelist-enabled: false` (the default) to allow any beacon to be used.
+
+---
+
+## Beacon Spawn
+
+The beacon spawn subsystem lets the plugin place BEACON blocks in the world automatically — on a recurring schedule, manually via command, or from a fixed set of coordinates. It lives under the `spawn:` key inside `revive-beacon.yml` and requires `revive-beacon.enabled: true`.
+
+### `spawn.enabled`
+
+- Type: boolean
+- Default: `false`
+- Master switch for the whole spawn subsystem.
+
+### `spawn.max-concurrent`
+
+- Type: integer
+- Default: `1`
+- Maximum number of plugin-spawned beacons that may be active at the same time. A new spawn is rejected until the count drops below this value.
+
+---
+
+### WorldGuard protection (`spawn.worldguard`)
+
+When WorldGuard is installed, a cuboid region is automatically created around each spawned beacon. If WorldGuard is absent the section is silently ignored.
+
+| Key | Type | Default | Description |
+| --- | --- | --- | --- |
+| `worldguard.enabled` | boolean | `true` | Create a protected region. |
+| `worldguard.radius` | integer | `10` | Half-size of the protected cuboid in blocks. |
+| `worldguard.deny-build` | boolean | `true` | Deny block placement/breaking inside the region. |
+| `worldguard.deny-pvp` | boolean | `false` | Deny PvP inside the region. |
+| `worldguard.deny-mob-damage` | boolean | `false` | Deny mob damage inside the region. |
+| `worldguard.deny-explosions` | boolean | `false` | Deny explosion damage inside the region. |
+
+The region is removed automatically when the beacon is despawned.
+
+---
+
+### Countdown timer (`spawn.countdown`)
+
+When EzCountdown is installed and `countdown.enabled: true`, a visible countdown is shown to all players from the moment the beacon is placed until it becomes _available_. If EzCountdown is absent, an internal Bukkit scheduler is used as a silent fallback.
+
+| Key | Type | Default | Description |
+| --- | --- | --- | --- |
+| `countdown.enabled` | boolean | `true` | Show an EzCountdown timer. |
+| `countdown.duration-seconds` | integer | `300` | Warm-up time in seconds before the beacon becomes interactive. |
+| `countdown.display-types` | list | `ACTION_BAR`, `BOSS_BAR` | EzCountdown display modes. Accepted values: `ACTION_BAR`, `BOSS_BAR`, `CHAT`, `TITLE`, `SCOREBOARD`. |
+
+---
+
+### Random spawn bounds (`spawn.random-spawn`)
+
+Used by the auto-schedule and by `/lifesteal beacon spawn` when no explicit coordinates are provided.
+
+| Key | Type | Default | Description |
+| --- | --- | --- | --- |
+| `random-spawn.enabled` | boolean | `false` | Allow random coordinate selection. |
+| `random-spawn.world` | string | `world` | World in which to spawn. |
+| `random-spawn.min-x` | integer | `-1000` | Minimum X coordinate. |
+| `random-spawn.max-x` | integer | `1000` | Maximum X coordinate. |
+| `random-spawn.min-z` | integer | `-1000` | Minimum Z coordinate. |
+| `random-spawn.max-z` | integer | `1000` | Maximum Z coordinate. |
+
+The beacon is always placed at the highest solid block at the chosen x/z pair.
+
+---
+
+### Auto-schedule (`spawn.schedule`)
+
+| Key | Type | Default | Description |
+| --- | --- | --- | --- |
+| `schedule.enabled` | boolean | `false` | Enable recurring auto-spawn. |
+| `schedule.interval-minutes` | integer | `60` | How often a new beacon is spawned when the active count is below `max-concurrent`. |
+
+---
+
+### Expiry (`spawn.expiry-minutes`)
+
+- Type: integer
+- Default: `30`
+- Minutes after which an _available_ but unused spawned beacon is automatically removed. Set to `0` to keep beacons indefinitely.
+
+---
+
+### Availability event (`spawn.availability-event`)
+
+Fired when a spawned beacon finishes its countdown and becomes interactive.
+
+| Key | Type | Default | Description |
+| --- | --- | --- | --- |
+| `availability-event.broadcast.enabled` | boolean | `true` | Server-wide broadcast when the beacon is ready. |
+| `availability-event.broadcast.message-key` | string | `beacon-spawn-available-broadcast` | Language key for the broadcast message. |
+| `availability-event.title.enabled` | boolean | `true` | Show a title/subtitle overlay to all players. |
+| `availability-event.title.title-key` | string | `beacon-spawn-available-title` | Language key for the title line. |
+| `availability-event.title.subtitle-key` | string | `beacon-spawn-available-subtitle` | Language key for the subtitle line. |
+| `availability-event.particles.enabled` | boolean | `true` | Spawn a particle burst at the beacon location. |
+| `availability-event.fireworks.enabled` | boolean | `true` | Launch fireworks at the beacon location. |
+
+---
+
+### Full spawn example
+
+```yaml
+spawn:
+  enabled: true
+  max-concurrent: 1
+
+  worldguard:
+    enabled: true
+    radius: 10
+    deny-build: true
+    deny-pvp: false
+    deny-mob-damage: false
+    deny-explosions: false
+
+  countdown:
+    enabled: true
+    duration-seconds: 300
+    display-types:
+      - ACTION_BAR
+      - BOSS_BAR
+
+  random-spawn:
+    enabled: true
+    world: world
+    min-x: -2000
+    max-x: 2000
+    min-z: -2000
+    max-z: 2000
+
+  schedule:
+    enabled: true
+    interval-minutes: 60
+
+  expiry-minutes: 30
+
+  availability-event:
+    broadcast:
+      enabled: true
+      message-key: beacon-spawn-available-broadcast
+    title:
+      enabled: true
+      title-key: beacon-spawn-available-title
+      subtitle-key: beacon-spawn-available-subtitle
+    particles:
+      enabled: true
+    fireworks:
+      enabled: true
+```

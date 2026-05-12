@@ -10,7 +10,10 @@
 [*]Combat logout protection tags PvP combat for a configurable window and punishes quitters so duels stay fair.
 [*]Built-in overlays show action-bar or boss-bar updates. `/lifesteal top` leaderboards, the hologram, and PlaceholderAPI placeholders share live standings anywhere.
 [*]`/lifesteal hologram place` drops a self-updating leaderboard that survives restarts and can be cleared with one command. The scoreboard wildcard (`lifesteal.scoreboard.*`) makes it easy to hand out place/remove access.
-[*]Need competitive seasons? Install the companion [B]EzSeasons[/B] plugin for automatic heart resets, start/end scheduling, countdowns, and reminder broadcasts. EzLifesteal now hooks into its public API automatically, so no extra bridge jars are required.
+[*]Need competitive seasons? Install the companion [URL=https://modrinth.com/plugin/ezseasons][B]EzSeasons[/B][/URL] plugin for automatic heart resets, start/end scheduling, countdowns, and reminder broadcasts. EzLifesteal now hooks into its public API automatically, so no extra bridge jars are required.
+[*]Revive banned players when a teammate right-clicks a beacon block with a voucher item. The plugin validates the item, restores the target, and plays the revive animation. Admins whitelist existing beacons or use [ICODE]/beacon spawn[/ICODE] to have the plugin place one automatically.
+[*][B]Beacon spawn subsystem[/B]: the plugin places BEACON blocks in the world on a schedule or on demand at random or explicit coordinates. Each beacon tracks its own lifecycle — optional WorldGuard protection region, optional EzCountdown warm-up timer, availability broadcast with title, particles, and fireworks, and automatic expiry removal.
+[*]Optional [B]TeamsAPI[/B] integration skips heart transfers when the killer and victim share a team. Toggle via [ICODE]team-kill-bypass-with-teams-api[/ICODE] in [ICODE]lifesteal-core.yml[/ICODE].
 [*]Smurf detection watches for players farming the same target or rotating killers, keeps history GUIs ready, and only alerts trusted staff.
 [*]`admin.yml` lists staff by ops, permission nodes, UUIDs, or names, chooses if admins bypass heart gain or loss, and decides whether smurf alerts stay admin-only.
 [*]Translate player messages quickly with built-in English and Dutch files in [code]languages/*.yml[/code].
@@ -30,7 +33,7 @@
 [IMG]https://i.ibb.co/Y4NzV3Vd/ez-lifesteal-top-scoreboard.png[/IMG]
 
 [LIST]
-[*][B]EzSeasons[/B] lets you set a season length with `length-days` or pick exact `start`/`end` timestamps, including optional recurring windows.
+[*][URL=https://modrinth.com/plugin/ezseasons][B]EzSeasons[/B][/URL] lets you set a season length with `length-days` or pick exact `start`/`end` timestamps, including optional recurring windows.
 [*]Broadcast reminders and show the countdown with `/season` from the EzSeasons plugin while EzLifesteal handles smurf protection and automatically resets hearts when the season rolls over.
 [*]Smurf detection logs kills per killer and victim, watches for rotating killer rings, saves alert and kill history, and lets you exempt trusted players.
 [*]Give moderators `lifesteal.alert` and edit `smurf.yml` to tweak thresholds or exempt trusted UUIDs.
@@ -40,26 +43,29 @@
 [LIST]
 [*]Java 25 runtime (matches Paper 26.1 requirements).
 [*]Paper, Spigot, Folia, or Bukkit 26.1 or newer.
-[*]Optional: PlaceholderAPI for placeholders, MySQL 8+ for database storage.
-[*]Optional: Vault plus an economy provider for kill streak currency rewards.
+[*]Optional: [URL=https://modrinth.com/plugin/placeholderapi]PlaceholderAPI[/URL] for placeholders, MySQL 8+ for database storage.
+[*]Optional: [URL=https://modrinth.com/plugin/vault]Vault[/URL] plus an economy provider for kill streak currency rewards.
+[*]Optional: [URL=https://modrinth.com/plugin/worldguard]WorldGuard[/URL] for automatic region protection around plugin-spawned beacons.
+[*]Optional: [URL=https://modrinth.com/plugin/ezcountdown]EzCountdown[/URL] for a visible countdown timer during beacon warm-up. Falls back to a built-in Bukkit timer when absent.
+[*]Optional: TeamsAPI for team-kill bypass between teammates.
 [/LIST]
 
 [SIZE=4][B]Quick start[/B][/SIZE]
 [LIST=1]
 [*]Place the jar in your server's `plugins` folder and restart the server.
-[*]Choose `YAML` (default) or `MYSQL` storage in `storage.yml`. Set the default language in `config.yml`. Adjust heart rules in `lifesteal-core.yml`, world scoping in `lifesteal-worlds.yml`, and overlays in `features.yml`. Install EzSeasons if you want scheduled resets.
+[*]Choose `YAML` (default) or `MYSQL` storage in `storage.yml`. Set the default language in `config.yml`. Adjust heart rules in `lifesteal-core.yml`, world scoping in `lifesteal-worlds.yml`, and overlays in `features.yml`. Install [URL=https://modrinth.com/plugin/ezseasons]EzSeasons[/URL] if you want scheduled resets.
 [*]Review `admin.yml` to decide who counts as staff, whether they bypass heart gain or loss, and who receives smurf alerts.
 [*]Use `/lifesteal reload` after configuration changes and give your staff the permissions listed below.
 [*]Run `/lifesteal test <kill|death>` on a staging server to check kill and death flows before you go live.
 [/LIST]
 
 [SIZE=4][B]Commands & permissions[/B][/SIZE]
-Player commands include [ICODE]/lifesteal[/ICODE], [ICODE]/lifesteal top[/ICODE], [ICODE]/lifesteal transfer[/ICODE], and [ICODE]/lifesteal shop[/ICODE]. Staff commands cover heart management, reviving players, reloading config, and moderation. Shortcut bundles — [ICODE]lifesteal.player[/ICODE], [ICODE]lifesteal.mod[/ICODE], and [ICODE]lifesteal.admin[/ICODE] — cover the most common permission setups.
+Player commands include [ICODE]/lifesteal[/ICODE], [ICODE]/lifesteal top[/ICODE], [ICODE]/lifesteal transfer[/ICODE], and [ICODE]/lifesteal shop[/ICODE]. Staff commands cover heart management, reviving players, reloading config, and moderation. A dedicated [ICODE]/beacon[/ICODE] command shortcuts all beacon subcommands ([ICODE]add[/ICODE], [ICODE]remove[/ICODE], [ICODE]list[/ICODE], [ICODE]clear[/ICODE], [ICODE]spawn[/ICODE], [ICODE]despawn[/ICODE], [ICODE]spawns[/ICODE]). Shortcut bundles — [ICODE]lifesteal.player[/ICODE], [ICODE]lifesteal.mod[/ICODE], and [ICODE]lifesteal.admin[/ICODE] — cover the most common permission setups.
 
 See the full [URL=https://ez-plugins.github.io/EzLifesteal/commands]Commands reference[/URL] and [URL=https://ez-plugins.github.io/EzLifesteal/permissions]Permissions list[/URL] in the documentation.
 
 [SIZE=4][B]Configuration[/B][/SIZE]
-Configuration is split across focused YAML files under [ICODE]plugins/EzLifesteal/[/ICODE]. Heart rules live in [ICODE]lifesteal-core.yml[/ICODE], world scoping in [ICODE]lifesteal-worlds.yml[/ICODE], mob rewards in [ICODE]lifesteal-mobs.yml[/ICODE], and overlays in [ICODE]features.yml[/ICODE]. Use [ICODE]/lifesteal reload[/ICODE] to pick up changes without restarting.
+Configuration is split across focused YAML files under [ICODE]plugins/EzLifesteal/[/ICODE]. Heart rules live in [ICODE]lifesteal-core.yml[/ICODE], world scoping in [ICODE]lifesteal-worlds.yml[/ICODE], mob rewards in [ICODE]lifesteal-mobs.yml[/ICODE], overlays in [ICODE]features.yml[/ICODE], and beacon spawn settings in [ICODE]revive-beacon.yml[/ICODE]. Use [ICODE]/lifesteal reload[/ICODE] to pick up changes without restarting.
 
 See the [URL=https://ez-plugins.github.io/EzLifesteal/configuration]Configuration overview[/URL] for the full file list and per-file references.
 
@@ -100,7 +106,7 @@ world-overrides:
 
 [SIZE=4][B]PlaceholderAPI[/B][/SIZE]
 [LIST]
-[*]Install [URL=https://www.spigotmc.org/resources/placeholderapi.6245/]PlaceholderAPI[/URL] alongside EzLifesteal. The expansion registers automatically and caches lookups briefly to stay responsive.
+[*]Install [URL=https://modrinth.com/plugin/placeholderapi]PlaceholderAPI[/URL] alongside EzLifesteal. The expansion registers automatically and caches lookups briefly to stay responsive.
 [*]Player-centric placeholders: [ICODE]%ezlifesteal_hearts%[/ICODE] / [ICODE]%ezlifesteal_current_hearts%[/ICODE] (stored hearts), [ICODE]%ezlifesteal_default_hearts%[/ICODE], [ICODE]%ezlifesteal_min_hearts%[/ICODE], and [ICODE]%ezlifesteal_max_hearts%[/ICODE].
 [*]Leaderboard placeholders: [ICODE]%ezlifesteal_top_<position>_hearts%[/ICODE], [ICODE]%ezlifesteal_top_<position>_current_hearts%[/ICODE], [ICODE]%ezlifesteal_top_<position>_name%[/ICODE], and [ICODE]%ezlifesteal_top_<position>_uuid%[/ICODE].
 [/LIST]
@@ -113,7 +119,17 @@ world-overrides:
 [*]Mob rewards support fractional payouts, per-entity permissions, and world allow/deny lists so you can shape lifesteal progress everywhere.
 [/LIST]
 
-[SIZE=4][B]Heart Objects (new)[/B][/SIZE]
+[SIZE=4][B]Revive Beacon & Beacon Spawn[/B][/SIZE]
+[LIST]
+[*]Banned players can be revived when a teammate right-clicks a beacon block with a voucher item. Configure the item, distance, and animation in [ICODE]revive-beacon.yml[/ICODE].
+[*]Admins whitelist existing beacon blocks with [ICODE]/lifesteal beacon add[/ICODE], or have the plugin place a tracked beacon with [ICODE]/beacon spawn [world x y z][/ICODE]. Omit coordinates to let the plugin pick a random location within the configured XZ bounding box.
+[*]The [B]beacon spawn subsystem[/B] manages the full lifecycle: placement → optional WorldGuard protection region → optional EzCountdown warm-up timer → AVAILABLE state → expiry removal. Set [ICODE]expiry-minutes: 0[/ICODE] to keep beacons indefinitely.
+[*][URL=https://modrinth.com/plugin/worldguard][B]WorldGuard[/B][/URL] (optional): a protection region is created around each spawned beacon with a configurable radius and flag overrides ([ICODE]deny-build[/ICODE], [ICODE]deny-pvp[/ICODE], [ICODE]deny-mob-damage[/ICODE], [ICODE]deny-explosions[/ICODE]). Silently skipped when WorldGuard is absent.
+[*][URL=https://modrinth.com/plugin/ezcountdown][B]EzCountdown[/B][/URL] (optional): shows warm-up progress via [ICODE]ACTION_BAR[/ICODE], [ICODE]BOSS_BAR[/ICODE], [ICODE]CHAT[/ICODE], [ICODE]TITLE[/ICODE], or [ICODE]SCOREBOARD[/ICODE]. Falls back to an internal Bukkit task when absent.
+[*]When a beacon becomes claimable, the plugin fires a server-wide broadcast, title overlay, particles, and fireworks. Fully configurable under [ICODE]revive-beacon.spawn.availability-event[/ICODE].
+[/LIST]
+
+[SIZE=4][B]Heart Objects[/B][/SIZE]
 [LIST]
 [*]Create configurable heart items in `hearts.yml` to represent physical heart objects (custom tier, value, material, texture and optional NBT). These items can be given to players, sold, or consumed to add hearts.
 [*]Default items are provided in `hearts.yml` inside the plugin jar. Edit `plugins/EzLifesteal/hearts.yml` to add or change objects.

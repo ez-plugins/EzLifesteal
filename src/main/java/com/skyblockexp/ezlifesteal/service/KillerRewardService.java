@@ -55,7 +55,7 @@ public class KillerRewardService {
                 final ItemStack toGive = stack.clone();
                 final Map<Integer, ItemStack> leftover = killer.getInventory().addItem(toGive);
                 if (!leftover.isEmpty()) {
-                    killer.getWorld().dropItemNaturally(victim.getLocation(), toGive);
+                    killer.getWorld().dropItemNaturally(killer.getLocation(), toGive);
                 }
             }
         });
