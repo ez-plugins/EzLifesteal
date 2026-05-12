@@ -76,7 +76,7 @@ revive-beacon:
 
 ## Beacon lifecycle
 
-```
+```text
 SPAWNED → (countdown) → AVAILABLE → (used or expired) → removed
 ```
 
@@ -89,7 +89,7 @@ SPAWNED → (countdown) → AVAILABLE → (used or expired) → removed
 ## Manual commands
 
 | Command | Description |
-|---|---|
+| --- | --- |
 | `/lifesteal beacon spawn [x y z]` | Spawn a beacon. Uses random-spawn bounds if no coordinates given. |
 | `/lifesteal beacon despawn <id\|all>` | Despawn a specific beacon by ID, or all active beacons. |
 | `/lifesteal beacon spawns` | List all active plugin-spawned beacons and their current status. |

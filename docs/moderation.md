@@ -45,7 +45,7 @@ Full field reference: [admin.yml reference]({{ site.baseurl }}/config/admin).
 EzLifesteal ships with three role bundles. Assign them via your permissions plugin (LuckPerms, PermissionsEx, etc.):
 
 | Bundle | Includes | Who gets it |
-|---|---|---|
+| --- | --- | --- |
 | `lifesteal.player` | `command.base`, `top`, `transfer`, `withdraw` | All regular players |
 | `lifesteal.mod` | `lifesteal.player` + `alert`, `manage.view`, `smurf.manage`, `scoreboard.*` | Trusted moderators |
 | `lifesteal.admin` | `lifesteal.mod` + `manage.*`, `admin.banlist`, `reload`, `test` | Server administrators |
@@ -69,7 +69,7 @@ Works for offline players. Returns the stored heart total from the data layer, n
 ### Adjusting Hearts
 
 | Situation | Command |
-|---|---|
+| --- | --- |
 | Override to an exact value | `/lifesteal set <player> <hearts>` |
 | Add hearts (e.g. compensate a rollback) | `/lifesteal add <player> <hearts>` |
 | Remove hearts (e.g. punish cheating) | `/lifesteal remove <player> <hearts>` |
@@ -134,7 +134,7 @@ Check whether the victim has been bled down significantly and whether the suspec
 **4. Take action:**
 
 | Finding | Recommended action |
-|---|---|
+| --- | --- |
 | Confirmed one-sided farming | `/lifesteal remove` hearts from suspect; `/lifesteal add` hearts to victim |
 | Suspected alt or shared account | Restore victim's hearts; investigate IPs via server management tools |
 | False positive (legitimate rivalry) | Raise `same-victim-threshold` in `smurf.yml` or add both UUIDs to `exempted-players` |

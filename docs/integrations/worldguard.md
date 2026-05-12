@@ -50,13 +50,13 @@ The entire `worldguard` subsection in `revive-beacon.yml` is silently ignored. N
 1. Install **WorldGuard** (and its dependency **WorldEdit**) on the same server.
 2. Enable region protection in `revive-beacon.yml`:
 
-```yaml
-spawn:
-  worldguard:
-    enabled: true
-    radius: 5          # blocks from beacon centre in each horizontal direction
-    region-flags: {}   # optional: WorldGuard flag overrides (e.g. pvp: allow)
-```
+   ```yaml
+   spawn:
+     worldguard:
+       enabled: true
+       radius: 5          # blocks from beacon centre in each horizontal direction
+       region-flags: {}   # optional: WorldGuard flag overrides (e.g. pvp: allow)
+   ```
 
 3. No additional WorldGuard configuration is required. EzLifesteal manages region creation and deletion automatically.
 

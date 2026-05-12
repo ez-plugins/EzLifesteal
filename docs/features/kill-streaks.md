@@ -74,7 +74,7 @@ kill-streaks:
 ## Available reward types
 
 | Field | Requires | Description |
-|---|---|---|
+| --- | --- | --- |
 | `money` | Vault + economy plugin | Currency added to the player's balance. |
 | `items` | — | Item stacks given to the player (drop at feet if inventory full). Each entry needs `material` and optionally `amount`. |
 | `commands` | — | Console commands. Supports `%player%` and `%streak%`. |

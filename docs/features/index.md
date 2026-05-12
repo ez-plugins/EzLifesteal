@@ -15,7 +15,7 @@ This section contains one guide page per core EzLifesteal feature. Each page exp
 ## Feature list
 
 | Feature | Summary |
-|---|---|
+| --- | --- |
 | [Lifesteal](lifesteal) | Heart gain / loss on PvP kill and death, per-world rules, zero-heart policy |
 | [Heart Items](heart-items) | Voucher item definitions, drops on kill, and crafting recipes |
 | [Shop](shop) | GUI shop where players spend in-game currency on heart vouchers |

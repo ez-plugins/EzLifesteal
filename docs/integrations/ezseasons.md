@@ -42,7 +42,7 @@ The reset is equivalent to running `/lifesteal resetall` — it affects every pl
 
 Season resets must be triggered manually by an admin:
 
-```
+```text
 /lifesteal resetall
 ```
 

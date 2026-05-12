@@ -43,7 +43,7 @@ EzLifesteal does not depend on a specific economy plugin — only on the Vault A
 ## When absent
 
 | Feature | Fallback behaviour |
-|---|---|
+| --- | --- |
 | Shop item with `price` set | Item is offered for free |
 | Kill streak `money` reward | Reward entry is silently ignored |
 
@@ -57,13 +57,13 @@ No errors are logged. The shop and kill streak features continue to work; only t
 2. Install a Vault-compatible economy plugin (e.g. EssentialsX).
 3. Add a `price` to one or more shop entries in `shop.yml`:
 
-```yaml
-slots:
-  - slot: 11
-    heart: standard
-    price: 500.0
-    amount: 1
-```
+   ```yaml
+   slots:
+     - slot: 11
+       heart: standard
+       price: 500.0
+       amount: 1
+   ```
 
 4. Or add a `money` reward in `lifesteal-killstreaks.yml`:
 

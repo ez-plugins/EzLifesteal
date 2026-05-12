@@ -51,12 +51,12 @@ No errors are logged. All other beacon spawn behaviour continues normally.
 1. Install **EzCountdown** on the same server.
 2. Configure the duration in `revive-beacon.yml`:
 
-```yaml
-spawn:
-  countdown:
-    enabled: true
-    duration-seconds: 60
-```
+   ```yaml
+   spawn:
+     countdown:
+       enabled: true
+       duration-seconds: 60
+   ```
 
 3. Configure how the countdown is displayed in EzCountdown's own configuration (display type, format, etc.).
 

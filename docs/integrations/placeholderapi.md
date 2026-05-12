@@ -27,12 +27,13 @@ description: "PlaceholderAPI integration — exposes heart placeholders and reso
 Other plugins (scoreboards, tab lists, chat formatters, etc.) can read live EzLifesteal data via PAPI placeholders:
 
 | Placeholder | Value |
-|---|---|
+| --- | --- |
 | `%ezlifesteal_hearts%` | Player's current heart count |
 
 ### Consumed placeholders
 
 EzLifesteal processes PAPI tokens inside:
+
 - Language message templates (player-facing messages)
 - Kill streak command reward strings (the `command` field in streak rewards)
 
@@ -43,7 +44,7 @@ This lets you embed any PAPI placeholder inside a kill streak command or broadca
 ## When absent
 
 | Context | Fallback behaviour |
-|---|---|
+| --- | --- |
 | Third-party plugin using `%ezlifesteal_hearts%` | Placeholder token passes through unresolved |
 | Kill streak command reward containing `%some_papi_token%` | Token remains as literal text in the executed command |
 | Internal message template containing a PAPI token | Token remains as literal text in the displayed message |

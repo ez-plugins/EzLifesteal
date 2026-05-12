@@ -127,7 +127,7 @@ kill-streaks:
 Placeholders can be used in `commands`, `messages`, and `broadcast-message`:
 
 | Placeholder | Resolves to |
-|---|---|
+| --- | --- |
 | `%player%` | Display name of the streaking player |
 | `%streak%` | Current streak count at the time the reward fires |
 

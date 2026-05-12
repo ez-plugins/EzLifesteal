@@ -19,7 +19,7 @@ Install any of the following plugins alongside EzLifesteal to unlock the corresp
 ## Integration overview
 
 | Integration | Enables | Behaviour when absent |
-|---|---|---|
+| --- | --- | --- |
 | [Vault](vault) | Shop pricing, kill streak money rewards | Items are free; money rewards ignored |
 | [PlaceholderAPI](placeholderapi) | Heart placeholders in other plugins | Placeholders remain unresolved |
 | [EzSeasons](ezseasons) | Automatic heart reset on season end | Manual `/lifesteal resetall` required |

@@ -20,7 +20,7 @@ This file documents every permission node declared by EzLifesteal and how inheri
 ## Wildcard / Group Permissions
 
 | Node | Default | Includes |
-|---|---|---|
+| --- | --- | --- |
 | `lifesteal.*` | op | `lifesteal.admin`, `lifesteal.mod`, `lifesteal.player` |
 | `lifesteal.player` | true | `lifesteal.command.base`, `lifesteal.top`, `lifesteal.transfer`, `lifesteal.withdraw`, `lifesteal.teambank.balance`, `lifesteal.teambank.deposit`, `lifesteal.teambank.withdraw` |
 | `lifesteal.mod` | op | `lifesteal.player`, `lifesteal.alert`, `lifesteal.manage.view`, `lifesteal.smurf.manage`, `lifesteal.scoreboard.*` |
@@ -31,7 +31,7 @@ This file documents every permission node declared by EzLifesteal and how inheri
 ## Core Permissions
 
 | Node | Default | Purpose |
-|---|---|---|
+| --- | --- | --- |
 | `lifesteal.command.base` | true | Use `/lifesteal` and basic command entrypoints. |
 | `lifesteal.top` | true | View `/lifesteal top` leaderboard. |
 | `lifesteal.transfer` | true | Transfer hearts using `/lifesteal transfer`. |
@@ -43,7 +43,7 @@ This file documents every permission node declared by EzLifesteal and how inheri
 ## Management Permissions
 
 | Node | Default | Purpose |
-|---|---|---|
+| --- | --- | --- |
 | `lifesteal.manage.view` | false | View other players' stored hearts. |
 | `lifesteal.manage.modify` | false | Set/add/remove/reset/revive/giveheart operations. |
 | `lifesteal.manage.resetall` | false | Reset all stored player profiles. |
@@ -51,7 +51,7 @@ This file documents every permission node declared by EzLifesteal and how inheri
 ## Admin / Feature Permissions
 
 | Node | Default | Purpose |
-|---|---|---|
+| --- | --- | --- |
 | `lifesteal.reload` | false | Reload plugin config/services. |
 | `lifesteal.test` | false | Use `/lifesteal test` simulation commands. |
 | `lifesteal.alert` | false | Receive smurf behavior alerts. |

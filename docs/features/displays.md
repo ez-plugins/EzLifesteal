@@ -82,7 +82,7 @@ The leaderboard hologram displays a live ranking of players by heart count. It f
 
 The hologram must be placed by an admin at runtime:
 
-```
+```text
 /lifesteal hologram place    # places at your current location
 /lifesteal hologram remove   # removes the hologram
 ```

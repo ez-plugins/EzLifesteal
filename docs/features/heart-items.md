@@ -44,7 +44,7 @@ hearts:
 ```
 
 | Field | Required | Description |
-|---|---|---|
+| --- | --- | --- |
 | `display` | yes | Item display name. Supports `&` colour codes. |
 | `tier` | yes | Numeric tier for ordering (e.g. in the shop). |
 | `hearts` | yes | Hearts granted on consumption. Supports decimals. |
@@ -59,11 +59,12 @@ Rename or remove a heart ID by updating all files that reference that ID (`drops
 
 Use the management command to give items directly to a player:
 
-```
+```text
 /lifesteal giveheart <player> <heartId|tier> [amount]
 ```
 
 Examples:
+
 - `/lifesteal giveheart Alex basic 3` — give Alex 3 basic heart vouchers.
 - `/lifesteal giveheart Alex 2` — give Alex a heart voucher whose tier is 2.
 

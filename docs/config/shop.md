@@ -53,7 +53,7 @@ The shop GUI opens when a player runs `/lifesteal shop` or `/hearts`. Items are 
 Each entry in the `items:` list represents one purchasable slot.
 
 | Field | Type | Required | Description |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `slot` | integer | yes | Inventory slot index (0-based, left-to-right, top-to-bottom). Max slot is `size - 1`. |
 | `heart` | string | yes | The heart ID to give on purchase. Must match a key defined in `hearts.yml`. |
 | `price` | number | no | Cost in the server's Vault economy. `0` or omitted means free. |

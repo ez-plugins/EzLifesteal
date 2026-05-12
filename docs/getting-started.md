@@ -18,7 +18,7 @@ description: "Install EzLifesteal and set up your first lifesteal server"
 ## Requirements
 
 | Requirement | Minimum version |
-|---|---|
+| --- | --- |
 | Server software | Paper 26.1 (or a compatible fork) |
 | Java | 25 |
 

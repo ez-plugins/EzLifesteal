@@ -50,7 +50,7 @@ revive-beacon:
 ## Target strategies
 
 | Strategy | How the target is chosen |
-|---|---|
+| --- | --- |
 | `NEAREST_BANNED` | Picks the nearest banned player within `max-distance`. Ties broken by UUID lexical order. |
 | `COMMAND_SELECTION` | The reviver first runs `/revive <player>` to nominate a target, then uses the beacon to confirm. |
 
@@ -70,7 +70,7 @@ Set `require-voucher-in-beacon: false` for an instant revive on first right-clic
 
 When `whitelist-enabled: true`, only specific beacon blocks (stored in `revive-beacon-whitelist.yml`) can trigger revives. Manage whitelist entries with admin commands:
 
-```
+```text
 /lifesteal beacon add          # whitelist the beacon you are looking at
 /lifesteal beacon remove       # remove the beacon you are looking at
 /lifesteal beacon list         # view all whitelisted beacons

@@ -18,7 +18,7 @@ kill streaks, smurf detection, and optional EzSeasons integration for seasonal r
 ## Feature overview
 
 | Feature | Details |
-|---|---|
+| --- | --- |
 | Lifesteal on kill/death | Configurable hearts gained/lost per PvP interaction |
 | Per-world overrides | Different lifesteal rates per world |
 | Ban on zero hearts | Optionally bans players who reach zero hearts |
@@ -39,7 +39,7 @@ kill streaks, smurf detection, and optional EzSeasons integration for seasonal r
 ## Compatibility
 
 | Requirement | Version |
-|---|---|
+| --- | --- |
 | Minecraft / Paper | 26.1 or later |
 | Java | 25 or later |
 | Plugin version | 1.1.0 |

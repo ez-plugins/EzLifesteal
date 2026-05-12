@@ -84,7 +84,7 @@ Useful for duel-arena regulars, automated test accounts, or event participants.
 ## Tuning guidance
 
 | Server type | Recommended settings |
-|---|---|
+| --- | --- |
 | General SMP | `threshold: 3`, `window: 15` (defaults) |
 | Active duel servers | Raise `threshold` to 5–10, `window` to 30–60 |
 | Tight competitive seasons | Lower `window` to 10, keep `threshold` at 3 |

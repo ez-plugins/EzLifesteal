@@ -27,7 +27,7 @@ type: YAML   # or MYSQL
 ```
 
 | Backend | Best for |
-|---|---|
+| --- | --- |
 | `YAML` | Small servers, simple setup, no database infrastructure required |
 | `MYSQL` | Large servers, shared data across a BungeeCord/Velocity network, or when you want SQL-level query access |
 
@@ -62,7 +62,7 @@ mysql:
 The plugin creates two tables automatically:
 
 | Table | Content |
-|---|---|
+| --- | --- |
 | `lifesteal_players` | Heart profiles (`uuid`, `hearts`) |
 | `lifesteal_players_bans` | Ban records with full audit fields |
 
