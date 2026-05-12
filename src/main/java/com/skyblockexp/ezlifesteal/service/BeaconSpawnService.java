@@ -110,9 +110,10 @@ public final class BeaconSpawnService {
             ).orElse(null);
         }
 
-        final SpawnedBeaconStatus initialStatus = countdownEnabled
-                ? SpawnedBeaconStatus.COUNTDOWN
-                : SpawnedBeaconStatus.AVAILABLE;
+        // Always start in COUNTDOWN so markAvailable() can perform the full
+        // transition (fire event, schedule expiry) regardless of whether a
+        // timed countdown is configured.
+        final SpawnedBeaconStatus initialStatus = SpawnedBeaconStatus.COUNTDOWN;
 
         final long expiryMillis = 0; // set when beacon becomes AVAILABLE
         final SpawnedBeacon beacon = new SpawnedBeacon(

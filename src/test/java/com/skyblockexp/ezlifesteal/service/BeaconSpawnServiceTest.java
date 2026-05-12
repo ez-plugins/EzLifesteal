@@ -115,9 +115,25 @@ class BeaconSpawnServiceTest {
         Optional<SpawnedBeacon> result = service.spawnBeacon(loc, accessor);
 
         assertTrue(result.isPresent());
-        // With no countdown, markAvailable is called immediately but because status starts at COUNTDOWN,
-        // we need to check the repository
+        assertEquals(SpawnedBeaconStatus.AVAILABLE, result.get().getStatus());
         assertEquals(1, repository.size());
+    }
+
+    /**
+     * Regression test for bug: when countdown is disabled, markAvailable() had an early-return guard
+     * ({@code if (beacon.getStatus() != COUNTDOWN) return}) that caused the availability event and
+     * expiry timer to be silently skipped for immediately-available beacons.
+     */
+    @Test
+    void spawnBeacon_noCountdown_firesAvailabilityEvent() {
+        BeaconSpawnSettings settings = settingsEnabled(false, 0, 10);
+        when(accessor.getBeaconSpawnSettings()).thenReturn(settings);
+
+        Location loc = new Location(world, 10, 64, 10);
+        Optional<SpawnedBeacon> result = service.spawnBeacon(loc, accessor);
+
+        assertTrue(result.isPresent());
+        verify(availabilityService).fireAvailabilityEvent(any(), any(), any());
     }
 
     @Test
