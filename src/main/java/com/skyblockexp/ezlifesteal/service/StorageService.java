@@ -22,6 +22,8 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import com.destroystokyo.paper.profile.PlayerProfile;
+import org.bukkit.BanEntry;
 import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
@@ -204,15 +206,17 @@ public class StorageService {
         if (activeBans.isEmpty()) {
             return;
         }
-        final BanList nameBanList = Bukkit.getBanList(BanList.Type.NAME);
+        final BanList<PlayerProfile> profileBanList = Bukkit.getBanList(BanList.Type.PROFILE);
         for (BanRecord record : activeBans) {
             final String playerName = record.getPlayerName();
-            if (playerName == null || playerName.isBlank()) {
+            final UUID playerUuid = record.getUniqueId();
+            if (playerName == null || playerName.isBlank() || playerUuid == null) {
                 continue;
             }
             final Date expiresAt = record.getExpiresAt() == null ? null : Date.from(record.getExpiresAt());
-            if (!nameBanList.isBanned(playerName)) {
-                nameBanList.addBan(playerName, record.getReason(), expiresAt, record.getSource());
+            final PlayerProfile profile = Bukkit.createProfile(playerUuid, playerName);
+            if (!profileBanList.isBanned(profile)) {
+                profileBanList.addBan(profile, record.getReason(), expiresAt, record.getSource());
             }
         }
     }
@@ -222,22 +226,20 @@ public class StorageService {
         if (repository == null) {
             return;
         }
-        final BanList nameBanList = Bukkit.getBanList(BanList.Type.NAME);
-        for (Object entryRaw : nameBanList.getBanEntries()) {
-            if (!(entryRaw instanceof org.bukkit.BanEntry entry)) {
-                continue;
-            }
+        final BanList<PlayerProfile> profileBanList = Bukkit.getBanList(BanList.Type.PROFILE);
+        for (BanEntry<PlayerProfile> entry : profileBanList.getBanEntries()) {
             persistBanEntry(repository, entry);
         }
     }
 
-    private void persistBanEntry(BanRepository repository, org.bukkit.BanEntry entry) {
-        final String playerName = entry.getTarget();
-        if (playerName == null || playerName.isBlank()) {
+    private void persistBanEntry(BanRepository repository, BanEntry<PlayerProfile> entry) {
+        final PlayerProfile profile = entry.getBanTarget();
+        final UUID uniqueId = profile.getId();
+        if (uniqueId == null) {
             return;
         }
-        final UUID uniqueId = Bukkit.getOfflinePlayer(playerName).getUniqueId();
-        if (uniqueId == null) {
+        final String playerName = profile.getName();
+        if (playerName == null || playerName.isBlank()) {
             return;
         }
         try {

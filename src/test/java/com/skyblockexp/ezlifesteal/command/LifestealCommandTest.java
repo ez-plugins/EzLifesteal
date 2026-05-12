@@ -99,25 +99,31 @@ class LifestealCommandTest {
         when(plugin.getPluginName()).thenReturn("EzLifesteal");
 
         // Mock Ban entries
+        com.destroystokyo.paper.profile.PlayerProfile profile1 =
+                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
+        when(profile1.getName()).thenReturn("PlayerOne");
         BanEntry e1 = mock(BanEntry.class);
         when(e1.getSource()).thenReturn("EzLifesteal");
-        when(e1.getTarget()).thenReturn("PlayerOne");
+        when(e1.getBanTarget()).thenReturn(profile1);
         when(e1.getReason()).thenReturn("grief");
         when(e1.getCreated()).thenReturn(new Date());
         when(e1.getExpiration()).thenReturn(null);
 
+        com.destroystokyo.paper.profile.PlayerProfile profile2 =
+                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
+        when(profile2.getName()).thenReturn("PlayerTwo");
         BanEntry e2 = mock(BanEntry.class);
         when(e2.getSource()).thenReturn("EzLifesteal");
-        when(e2.getTarget()).thenReturn("PlayerTwo");
+        when(e2.getBanTarget()).thenReturn(profile2);
         when(e2.getReason()).thenReturn("abuse");
         when(e2.getCreated()).thenReturn(new Date());
         when(e2.getExpiration()).thenReturn(null);
 
         BanList banList = mock(BanList.class);
-        when(banList.getBanEntries()).thenReturn(Set.of(e1, e2));
+        when(banList.getEntries()).thenReturn(Set.of(e1, e2));
 
         try (MockedStatic<Bukkit> mocked = org.mockito.Mockito.mockStatic(Bukkit.class)) {
-            mocked.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(banList);
+            mocked.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
 
             MessageCapturingSender capturing = new MessageCapturingSender();
             CommandSender sender = capturing.getProxy();

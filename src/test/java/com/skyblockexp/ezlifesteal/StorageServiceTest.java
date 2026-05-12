@@ -139,11 +139,18 @@ class StorageServiceTest {
         setField(service, "banRepository", repository);
 
         BanList banList = mock(BanList.class);
-        when(banList.isBanned("MissingPlayer")).thenReturn(false);
-        when(banList.isBanned("ExistingPlayer")).thenReturn(true);
+        com.destroystokyo.paper.profile.PlayerProfile missingProfile =
+                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
+        com.destroystokyo.paper.profile.PlayerProfile existingProfile =
+                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
+        when(banList.isBanned(missingProfile)).thenReturn(false);
+        when(banList.isBanned(existingProfile)).thenReturn(true);
+        when(banList.getBanEntries()).thenReturn(java.util.Set.of());
 
         try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
-            bukkit.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(banList);
+            bukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
+            bukkit.when(() -> Bukkit.createProfile(newBan.getUniqueId(), "MissingPlayer")).thenReturn(missingProfile);
+            bukkit.when(() -> Bukkit.createProfile(existingBan.getUniqueId(), "ExistingPlayer")).thenReturn(existingProfile);
 
             service.reconcileRuntimeBans();
 
@@ -161,23 +168,30 @@ class StorageServiceTest {
         BanRepository repository = mock(BanRepository.class);
         setField(service, "banRepository", repository);
 
+        UUID validUuid = UUID.randomUUID();
+        com.destroystokyo.paper.profile.PlayerProfile validProfile =
+                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
+        when(validProfile.getId()).thenReturn(validUuid);
+        when(validProfile.getName()).thenReturn("KnownPlayer");
+
         BanEntry validEntry = mock(BanEntry.class);
-        when(validEntry.getTarget()).thenReturn("KnownPlayer");
+        when(validEntry.getBanTarget()).thenReturn(validProfile);
         when(validEntry.getReason()).thenReturn("r");
         when(validEntry.getSource()).thenReturn("console");
 
+        com.destroystokyo.paper.profile.PlayerProfile blankProfile =
+                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
+        when(blankProfile.getId()).thenReturn(UUID.randomUUID());
+        when(blankProfile.getName()).thenReturn("  ");
+
         BanEntry blankEntry = mock(BanEntry.class);
-        when(blankEntry.getTarget()).thenReturn("  ");
+        when(blankEntry.getBanTarget()).thenReturn(blankProfile);
 
         BanList banList = mock(BanList.class);
-        when(banList.getBanEntries()).thenReturn((Set) Set.of(validEntry, blankEntry));
-
-        OfflinePlayer offlinePlayer = mock(OfflinePlayer.class);
-        when(offlinePlayer.getUniqueId()).thenReturn(UUID.randomUUID());
+        when(banList.getBanEntries()).thenReturn(Set.of(validEntry, blankEntry));
 
         try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
-            bukkit.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(banList);
-            bukkit.when(() -> Bukkit.getOfflinePlayer("KnownPlayer")).thenReturn(offlinePlayer);
+            bukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
 
             service.importRuntimeBansIntoStorage();
 
@@ -194,8 +208,10 @@ class StorageServiceTest {
         when(repository.loadActiveBans()).thenThrow(new StorageException("load-failed"));
         setField(service, "banRepository", repository);
 
+        BanList emptyBanList = mock(BanList.class);
+        when(emptyBanList.getBanEntries()).thenReturn(java.util.Set.of());
         try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
-            bukkit.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(mock(BanList.class));
+            bukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(emptyBanList);
             service.reconcileRuntimeBans();
         }
 

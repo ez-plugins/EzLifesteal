@@ -22,8 +22,8 @@ import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockito.MockedStatic;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.spy;
@@ -74,24 +74,23 @@ class LifestealReviveBanPersistenceTest {
         LifestealCommand command = new LifestealCommand(plugin);
         MessageCapturingSender sender = new MessageCapturingSender(Set.of("lifesteal.manage.modify"));
 
-        BanList nameBanList = mock(BanList.class);
         BanList profileBanList = mock(BanList.class);
-        when(nameBanList.isBanned("TargetName")).thenReturn(true);
+        com.destroystokyo.paper.profile.PlayerProfile reviveProfile =
+                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
         OfflinePlayer offlinePlayer = mock(OfflinePlayer.class);
         when(offlinePlayer.getName()).thenReturn("TargetName");
         when(offlinePlayer.getUniqueId()).thenReturn(targetId);
 
         try (MockedStatic<Bukkit> mocked = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) {
             mocked.when(() -> Bukkit.getOfflinePlayer(targetId)).thenReturn(offlinePlayer);
-            mocked.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(nameBanList);
             mocked.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(profileBanList);
+            mocked.when(() -> Bukkit.createProfile(eq(targetId), any(String.class))).thenReturn(reviveProfile);
 
             command.onCommand(sender.getProxy(), bukkitCommand, "lifesteal", new String[]{"revive", "target"});
             server.getScheduler().performTicks(5);
         }
 
-        verify(nameBanList).pardon("TargetName");
-        verify(profileBanList).pardon(targetId.toString());
+        verify(profileBanList).pardon(reviveProfile);
         verify(banRepository).removeBan(targetId);
     }
 }

@@ -88,28 +88,38 @@ public class LifestealPlaceholderExpansion extends PlaceholderExpansion implemen
             if (player == null) {
                 return "";
             }
-            final String name = player.getName();
-            if (name == null) {
+            final UUID playerId = player.getUniqueId();
+            if (playerId == null) {
                 return "";
             }
-            final boolean banned = org.bukkit.Bukkit.getBanList(org.bukkit.BanList.Type.NAME).isBanned(name);
+            final com.destroystokyo.paper.profile.PlayerProfile banProfile =
+                    Bukkit.createProfile(playerId, player.getName());
+            final org.bukkit.BanList<com.destroystokyo.paper.profile.PlayerProfile> playerBanList =
+                    Bukkit.getBanList(org.bukkit.BanList.Type.PROFILE);
+            final boolean banned = playerBanList.isBanned(banProfile);
             return banned ? "true" : "false";
         }
         if (normalized.startsWith("is_banned_")) {
             final String targetRaw = raw.substring("is_banned_".length());
-            String targetName = targetRaw;
             try {
                 final UUID id = UUID.fromString(targetRaw);
-                final OfflinePlayer op = Bukkit.getOfflinePlayer(id);
-                if (op != null && op.getName() != null && !op.getName().isBlank()) {
-                    targetName = op.getName();
-                }
+                final com.destroystokyo.paper.profile.PlayerProfile profile = Bukkit.createProfile(id);
+                final org.bukkit.BanList<com.destroystokyo.paper.profile.PlayerProfile> idBanList =
+                        Bukkit.getBanList(org.bukkit.BanList.Type.PROFILE);
+                return idBanList.isBanned(profile) ? "true" : "false";
             }
             catch (IllegalArgumentException ignored) {
-                // not a UUID, treat as name
+                // target is a name, not a UUID — scan ban entries by name
             }
-            final boolean banned = org.bukkit.Bukkit.getBanList(org.bukkit.BanList.Type.NAME).isBanned(targetName);
-            return banned ? "true" : "false";
+            final org.bukkit.BanList<com.destroystokyo.paper.profile.PlayerProfile> profileBanList =
+                    Bukkit.getBanList(org.bukkit.BanList.Type.PROFILE);
+            final java.util.Set<org.bukkit.BanEntry<com.destroystokyo.paper.profile.PlayerProfile>> banEntries =
+                    profileBanList.getEntries();
+            final boolean nameBanned = banEntries.stream().anyMatch(entry -> {
+                final com.destroystokyo.paper.profile.PlayerProfile p = entry.getBanTarget();
+                return p != null && targetRaw.equalsIgnoreCase(p.getName());
+            });
+            return nameBanned ? "true" : "false";
         }
 
         return switch (normalized) {

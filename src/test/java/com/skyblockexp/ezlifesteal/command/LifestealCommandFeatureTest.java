@@ -176,17 +176,20 @@ class LifestealCommandFeatureTest {
                 .thenReturn(CompletableFuture.completedFuture(List.of(new LifestealProfile(topUuid, 20.0))));
 
         BanList banList = mock(BanList.class);
+        com.destroystokyo.paper.profile.PlayerProfile bannedProfile =
+                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
+        when(bannedProfile.getName()).thenReturn("BannedGuy");
         org.bukkit.BanEntry entry = mock(org.bukkit.BanEntry.class);
         when(entry.getSource()).thenReturn("EzLifesteal");
-        when(entry.getTarget()).thenReturn("BannedGuy");
+        when(entry.getBanTarget()).thenReturn(bannedProfile);
         when(entry.getReason()).thenReturn("reason");
         when(entry.getCreated()).thenReturn(new Date());
         when(entry.getExpiration()).thenReturn(null);
-        when(banList.getBanEntries()).thenReturn(Set.of(entry));
+        when(banList.getEntries()).thenReturn(Set.of(entry));
 
         try (MockedStatic<Bukkit> mocked
                 = org.mockito.Mockito.mockStatic(Bukkit.class, org.mockito.Mockito.CALLS_REAL_METHODS)) {
-            mocked.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(banList);
+            mocked.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
             MessageCapturingSender success = new MessageCapturingSender(
                     Set.of("lifesteal.manage.resetall", "lifesteal.top", "lifesteal.admin.banlist"));
             command.onCommand(success.getProxy(), bukkitCommand, "lifesteal", new String[]{"resetall"});

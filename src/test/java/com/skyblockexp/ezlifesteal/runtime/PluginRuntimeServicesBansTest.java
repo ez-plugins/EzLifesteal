@@ -50,10 +50,13 @@ class DefaultPluginRuntimeServicesBansTest {
         // Mock Bukkit bans API: no existing entries and an empty BanList for import step
         BanList nameBanList = mock(BanList.class);
         when(nameBanList.getBanEntries()).thenReturn(Set.of());
-        when(nameBanList.isBanned("targetPlayer")).thenReturn(false);
+        com.destroystokyo.paper.profile.PlayerProfile targetProfile =
+                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
+        when(nameBanList.isBanned(targetProfile)).thenReturn(false);
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) {
-            bukkit.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(nameBanList);
+            bukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(nameBanList);
+            bukkit.when(() -> Bukkit.createProfile(eq(record.getUniqueId()), eq("targetPlayer"))).thenReturn(targetProfile);
 
             // call private reconcileRuntimeBans
             Method reconc = DefaultPluginRuntimeServices.class.getDeclaredMethod("reconcileRuntimeBans");
@@ -61,7 +64,7 @@ class DefaultPluginRuntimeServicesBansTest {
             reconc.invoke(services);
         }
 
-        verify(nameBanList).addBan(eq("targetPlayer"), eq("the reason"), isNull(java.util.Date.class), eq("system"));
+        verify(nameBanList).addBan(eq(targetProfile), eq("the reason"), isNull(java.util.Date.class), eq("system"));
     }
 
     @Test
@@ -74,8 +77,14 @@ class DefaultPluginRuntimeServicesBansTest {
         DefaultPluginRuntimeServices services = new DefaultPluginRuntimeServices(plugin, new Registry());
 
         // Create a BanEntry mock that represents a Bukkit ban
+        UUID expectedUuid = UUID.randomUUID();
+        com.destroystokyo.paper.profile.PlayerProfile importedProfile =
+                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
+        when(importedProfile.getId()).thenReturn(expectedUuid);
+        when(importedProfile.getName()).thenReturn("importedPlayer");
+
         BanEntry entry = mock(BanEntry.class);
-        when(entry.getTarget()).thenReturn("importedPlayer");
+        when(entry.getBanTarget()).thenReturn(importedProfile);
         when(entry.getReason()).thenReturn("import-reason");
         when(entry.getSource()).thenReturn("console");
         when(entry.getCreated()).thenReturn(new Date());
@@ -86,17 +95,11 @@ class DefaultPluginRuntimeServicesBansTest {
 
         // Prepare repository to accept a save when load returns empty
         BanRepository banRepo = mock(BanRepository.class);
-        UUID expectedUuid = UUID.randomUUID();
-
-        OfflinePlayer offline = mock(OfflinePlayer.class);
-        when(offline.getUniqueId()).thenReturn(expectedUuid);
-
         when(banRepo.loadBan(expectedUuid)).thenReturn(Optional.empty());
         setField(services, "banRepository", banRepo);
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) {
-            bukkit.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(nameBanList);
-            bukkit.when(() -> Bukkit.getOfflinePlayer("importedPlayer")).thenReturn(offline);
+            bukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(nameBanList);
 
             Method importMethod = DefaultPluginRuntimeServices.class.getDeclaredMethod("importRuntimeBansIntoStorage");
             importMethod.setAccessible(true);

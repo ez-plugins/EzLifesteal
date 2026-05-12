@@ -73,8 +73,9 @@ class ReviveSubcommandTest {
         UUID targetId = UUID.randomUUID();
         LifestealProfile profile = new LifestealProfile(targetId, 1.0);
         OfflinePlayer offline = mock(OfflinePlayer.class);
-        BanList nameBanList = mock(BanList.class);
         BanList profileBanList = mock(BanList.class);
+        com.destroystokyo.paper.profile.PlayerProfile reviveProfile =
+                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
 
         when(context.requirePermissionPublic(any(), anyString(), any())).thenReturn(true);
         when(context.getPluginAccessorPublic()).thenReturn(plugin);
@@ -89,19 +90,17 @@ class ReviveSubcommandTest {
         when(manager.loadProfileAsync(targetId)).thenReturn(CompletableFuture.completedFuture(profile));
         when(offline.isOnline()).thenReturn(false);
         when(offline.getUniqueId()).thenReturn(targetId);
-        when(nameBanList.isBanned("target")).thenReturn(true);
 
         try (MockedStatic<Bukkit> mocked = mockStatic(Bukkit.class)) {
             mocked.when(() -> Bukkit.getOfflinePlayer(targetId)).thenReturn(offline);
-            mocked.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(nameBanList);
             mocked.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(profileBanList);
+            mocked.when(() -> Bukkit.createProfile(eq(targetId), eq("target"))).thenReturn(reviveProfile);
             new ReviveSubcommand().execute(sender, null, "lifesteal", new String[]{"revive", "target"}, context);
         }
 
         verify(manager).loadProfileAsync(targetId);
         verify(manager).saveProfileAsync(profile);
-        verify(nameBanList).pardon("target");
-        verify(profileBanList).pardon(targetId.toString());
+        verify(profileBanList).pardon(reviveProfile);
         verify(plugin).requestTopHologramUpdate();
         verify(messageService).sendMessage(eq(sender), eq("revive-success"), anyMap());
     }

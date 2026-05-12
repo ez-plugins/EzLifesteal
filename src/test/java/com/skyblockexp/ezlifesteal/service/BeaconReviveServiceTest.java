@@ -131,20 +131,24 @@ class BeaconReviveServiceTest {
         when(meta.getPersistentDataContainer()).thenReturn(container);
         when(heldItem.getAmount()).thenReturn(2);
 
-        when(nameBanList.isBanned("target")).thenReturn(true);
-        when(profileBanList.isBanned(target.getUniqueId().toString())).thenReturn(false);
+        com.destroystokyo.paper.profile.PlayerProfile targetProfile =
+                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
+        com.destroystokyo.paper.profile.PlayerProfile reviveProfile =
+                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
+        when(target.getPlayerProfile()).thenReturn(targetProfile);
+        when(profileBanList.isBanned(targetProfile)).thenReturn(true);
         when(offlineTarget.isOnline()).thenReturn(false);
 
         try (MockedStatic<Bukkit> bukkit = mockBukkit(nameBanList, profileBanList)) {
             bukkit.when(() -> Bukkit.getOfflinePlayer(target.getUniqueId())).thenReturn(offlineTarget);
+            bukkit.when(() -> Bukkit.createProfile(target.getUniqueId(), "target")).thenReturn(reviveProfile);
             service.selectReviveTarget(interactor, target.getName());
 
             assertTrue(service.tryHandleBeaconInteract(interactor, heldItem, beacon));
 
             verify(manager).saveProfileAsync(profile);
             verify(banRepository).removeBan(target.getUniqueId());
-            verify(profileBanList).pardon(target.getUniqueId().toString());
-            verify(nameBanList).pardon("target");
+            verify(profileBanList).pardon(reviveProfile);
             verify(heldItem).setAmount(1);
             verify(plugin).requestTopHologramUpdate();
             verify(reviveAnimationService).playReviveAnimation(eq(beaconLocation), eq(interactor),
@@ -249,8 +253,10 @@ class BeaconReviveServiceTest {
         when(heldItem.getItemMeta()).thenReturn(meta);
         when(meta.getPersistentDataContainer()).thenReturn(container);
 
-        when(nameBanList.isBanned("target")).thenReturn(true);
-        when(profileBanList.isBanned(target.getUniqueId().toString())).thenReturn(false);
+        com.destroystokyo.paper.profile.PlayerProfile targetProfile =
+                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
+        when(target.getPlayerProfile()).thenReturn(targetProfile);
+        when(profileBanList.isBanned(targetProfile)).thenReturn(true);
 
         try (MockedStatic<Bukkit> ignored = mockBukkit(nameBanList, profileBanList)) {
             service.selectReviveTarget(interactor, target.getName());
@@ -311,7 +317,6 @@ class BeaconReviveServiceTest {
             runnable.run();
             return task;
         });
-        bukkit.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(nameBanList);
         bukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(profileBanList);
         return bukkit;
     }

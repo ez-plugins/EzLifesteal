@@ -40,11 +40,14 @@ public class BanlistSubcommand implements Subcommand {
         // If there's no BanRepository configured, fall back to the server BanList (Bukkit).
         if (plugin.getBanRepository() == null) {
             try {
-                final org.bukkit.BanList nameBanList = org.bukkit.Bukkit.getBanList(org.bukkit.BanList.Type.NAME);
-                final java.util.Set<org.bukkit.BanEntry> entries = nameBanList.getBanEntries();
-                final java.util.List<org.bukkit.BanEntry> filtered = new java.util.ArrayList<>();
+                final org.bukkit.BanList<com.destroystokyo.paper.profile.PlayerProfile> profileBanList =
+                        org.bukkit.Bukkit.getBanList(org.bukkit.BanList.Type.PROFILE);
+                final java.util.Set<org.bukkit.BanEntry<com.destroystokyo.paper.profile.PlayerProfile>> entries =
+                        profileBanList.getEntries();
+                final java.util.List<org.bukkit.BanEntry<com.destroystokyo.paper.profile.PlayerProfile>> filtered =
+                        new java.util.ArrayList<>();
                 final String sourceName = plugin.getPluginName();
-                for (org.bukkit.BanEntry e : entries) {
+                for (org.bukkit.BanEntry<com.destroystokyo.paper.profile.PlayerProfile> e : entries) {
                     try {
                         final String src = e.getSource();
                         if (src != null && src.equals(sourceName)) {
@@ -84,8 +87,9 @@ public class BanlistSubcommand implements Subcommand {
 
                 final int end = Math.min(total, startCopy + pageSize);
                 for (int i = startCopy; i < end; i++) {
-                    final org.bukkit.BanEntry e = filtered.get(i);
-                    final String target = e.getTarget() == null ? "" : e.getTarget();
+                    final org.bukkit.BanEntry<com.destroystokyo.paper.profile.PlayerProfile> e = filtered.get(i);
+                    final com.destroystokyo.paper.profile.PlayerProfile banProfile = e.getBanTarget();
+                    final String target = banProfile == null ? "" : (banProfile.getName() == null ? "" : banProfile.getName());
                     final String reason = e.getReason() == null ? "" : e.getReason();
                     final String created = e.getCreated() == null ? "" : e.getCreated().toString();
                     final String expires = e.getExpiration() == null ? "never" : e.getExpiration().toString();

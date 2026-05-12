@@ -93,13 +93,13 @@ class BanlistSubcommandTest {
         when(sourceThrows.getSource()).thenThrow(new IllegalStateException("boom"));
 
         BanList banList = mock(BanList.class);
-        when(banList.getBanEntries()).thenReturn(Set.of(otherSource, sourceThrows));
+        when(banList.getEntries()).thenReturn(Set.of(otherSource, sourceThrows));
 
         LifestealCommand context = context(plugin, true, Runnable::run);
         CommandSender sender = mock(CommandSender.class);
 
         try (MockedStatic<Bukkit> mockedBukkit = org.mockito.Mockito.mockStatic(Bukkit.class)) {
-            mockedBukkit.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(banList);
+            mockedBukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
 
             boolean result = new BanlistSubcommand().execute(sender, null, "lifesteal", new String[]{"banlist"},
                     context);
@@ -118,9 +118,12 @@ class BanlistSubcommandTest {
 
         List<BanEntry> entries = new ArrayList<>();
         for (int i = 0; i < 11; i++) {
+            com.destroystokyo.paper.profile.PlayerProfile profile =
+                    mock(com.destroystokyo.paper.profile.PlayerProfile.class);
+            when(profile.getName()).thenReturn("player-" + i);
             BanEntry entry = mock(BanEntry.class);
             when(entry.getSource()).thenReturn("EzLifesteal");
-            when(entry.getTarget()).thenReturn("player-" + i);
+            when(entry.getBanTarget()).thenReturn(profile);
             when(entry.getReason()).thenReturn("reason-" + i);
             when(entry.getCreated()).thenReturn(new Date(1_000L + i));
             when(entry.getExpiration()).thenReturn(new Date(2_000L + i));
@@ -128,13 +131,13 @@ class BanlistSubcommandTest {
         }
 
         BanList banList = mock(BanList.class);
-        when(banList.getBanEntries()).thenReturn(Set.copyOf(entries));
+        when(banList.getEntries()).thenReturn(Set.copyOf(entries));
 
         LifestealCommand context = context(plugin, true, Runnable::run);
         CommandSender sender = mock(CommandSender.class);
 
         try (MockedStatic<Bukkit> mockedBukkit = org.mockito.Mockito.mockStatic(Bukkit.class)) {
-            mockedBukkit.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(banList);
+            mockedBukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
 
             boolean result = new BanlistSubcommand().execute(sender, null, "lifesteal", new String[]{"banlist", "1"},
                     context);
@@ -153,23 +156,32 @@ class BanlistSubcommandTest {
         when(plugin.getMessageService()).thenReturn(messageService);
         when(plugin.getPluginName()).thenReturn("EzLifesteal");
 
+        com.destroystokyo.paper.profile.PlayerProfile firstProfile =
+                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
+        when(firstProfile.getName()).thenReturn("first");
         BanEntry first = mock(BanEntry.class);
         when(first.getSource()).thenReturn("EzLifesteal");
-        when(first.getTarget()).thenReturn("first");
+        when(first.getBanTarget()).thenReturn(firstProfile);
         when(first.getReason()).thenReturn("r1");
         when(first.getCreated()).thenReturn(null);
         when(first.getExpiration()).thenReturn(null);
 
+        com.destroystokyo.paper.profile.PlayerProfile secondProfile =
+                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
+        when(secondProfile.getName()).thenReturn("second");
         BanEntry second = mock(BanEntry.class);
         when(second.getSource()).thenReturn("EzLifesteal");
-        when(second.getTarget()).thenReturn("second");
+        when(second.getBanTarget()).thenReturn(secondProfile);
         when(second.getReason()).thenReturn("r2");
         when(second.getCreated()).thenReturn(new Date(2_000L));
         when(second.getExpiration()).thenReturn(null);
 
+        com.destroystokyo.paper.profile.PlayerProfile thirdProfile =
+                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
+        when(thirdProfile.getName()).thenReturn("third");
         BanEntry third = mock(BanEntry.class);
         when(third.getSource()).thenReturn("EzLifesteal");
-        when(third.getTarget()).thenReturn("third");
+        when(third.getBanTarget()).thenReturn(thirdProfile);
         when(third.getReason()).thenReturn("r3");
         when(third.getCreated()).thenReturn(null);
         when(third.getExpiration()).thenReturn(null);
@@ -178,13 +190,13 @@ class BanlistSubcommandTest {
         when(nullSource.getSource()).thenReturn(null);
 
         BanList banList = mock(BanList.class);
-        when(banList.getBanEntries()).thenReturn(Set.of(first, second, third, nullSource));
+        when(banList.getEntries()).thenReturn(Set.of(first, second, third, nullSource));
 
         LifestealCommand context = context(plugin, true, Runnable::run);
         CommandSender sender = mock(CommandSender.class);
 
         try (MockedStatic<Bukkit> mockedBukkit = org.mockito.Mockito.mockStatic(Bukkit.class)) {
-            mockedBukkit.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(banList);
+            mockedBukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
 
             boolean result = new BanlistSubcommand().execute(sender, null, "lifesteal", new String[]{"banlist", "1"},
                     context);
@@ -203,19 +215,19 @@ class BanlistSubcommandTest {
 
         BanEntry entry = mock(BanEntry.class);
         when(entry.getSource()).thenReturn("EzLifesteal");
-        when(entry.getTarget()).thenReturn(null);
+        when(entry.getBanTarget()).thenReturn(null);
         when(entry.getReason()).thenReturn(null);
         when(entry.getCreated()).thenReturn(null);
         when(entry.getExpiration()).thenReturn(null);
 
         BanList banList = mock(BanList.class);
-        when(banList.getBanEntries()).thenReturn(Set.of(entry));
+        when(banList.getEntries()).thenReturn(Set.of(entry));
 
         LifestealCommand context = context(plugin, true, Runnable::run);
         CommandSender sender = mock(CommandSender.class);
 
         try (MockedStatic<Bukkit> mockedBukkit = org.mockito.Mockito.mockStatic(Bukkit.class)) {
-            mockedBukkit.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(banList);
+            mockedBukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
 
             boolean result = new BanlistSubcommand().execute(sender, null, "lifesteal", new String[]{"banlist", "1"},
                     context);
@@ -237,7 +249,7 @@ class BanlistSubcommandTest {
         CommandSender sender = mock(CommandSender.class);
 
         try (MockedStatic<Bukkit> mockedBukkit = org.mockito.Mockito.mockStatic(Bukkit.class)) {
-            mockedBukkit.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenThrow(new RuntimeException("fail"));
+            mockedBukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenThrow(new RuntimeException("fail"));
 
             boolean result = new BanlistSubcommand().execute(sender, null, "lifesteal", new String[]{"banlist", "1"},
                     context);

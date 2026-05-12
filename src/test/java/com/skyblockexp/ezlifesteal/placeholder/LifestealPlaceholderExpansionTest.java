@@ -47,8 +47,11 @@ class LifestealPlaceholderExpansionTest {
                 Duration.ofSeconds(5));
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class)) {
-            bukkit.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(banList);
-            when(banList.isBanned("Alpha")).thenReturn(true);
+            com.destroystokyo.paper.profile.PlayerProfile alphaProfile =
+                    mock(com.destroystokyo.paper.profile.PlayerProfile.class);
+            bukkit.when(() -> Bukkit.createProfile(playerId, "Alpha")).thenReturn(alphaProfile);
+            bukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
+            when(banList.isBanned(alphaProfile)).thenReturn(true);
 
             assertEquals("12.5", expansion.onRequest(player, "hearts"));
             assertEquals("10", expansion.onRequest(player, "default_hearts"));
@@ -86,7 +89,7 @@ class LifestealPlaceholderExpansionTest {
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class)) {
             BanList banList = mock(BanList.class);
-            bukkit.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(banList);
+            bukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
             bukkit.when(() -> Bukkit.getOfflinePlayer(topPlayerId)).thenReturn(unknownTopPlayer);
             when(unknownTopPlayer.getName()).thenReturn(null);
 

@@ -52,19 +52,11 @@ public class ReviveSubcommand implements Subcommand {
                                 }
                             }
                             final String resolvedName = context.resolvePlayerNamePublic(reviveTarget, lookupTarget);
-                            if (resolvedName != null) {
-                                final BanList nameBanList = Bukkit.getBanList(BanList.Type.NAME);
-                                if (nameBanList.isBanned(resolvedName)) {
-                                    nameBanList.pardon(resolvedName);
-                                }
-                            }
-                            try {
-                                final BanList profileBanList = Bukkit.getBanList(BanList.Type.PROFILE);
-                                profileBanList.pardon(reviveTarget.getUniqueId().toString());
-                            }
-                            catch (IllegalArgumentException | UnsupportedOperationException ignored) {
-                                // PROFILE ban list not available on this server version.
-                            }
+                            final com.destroystokyo.paper.profile.PlayerProfile banProfile =
+                                    Bukkit.createProfile(reviveTarget.getUniqueId(), resolvedName);
+                            final org.bukkit.BanList<com.destroystokyo.paper.profile.PlayerProfile> reviveBanList =
+                                    Bukkit.getBanList(BanList.Type.PROFILE);
+                            reviveBanList.pardon(banProfile);
                             if (plugin.getBanRepository() != null) {
                                 try {
                                     plugin.getBanRepository().removeBan(reviveTarget.getUniqueId());

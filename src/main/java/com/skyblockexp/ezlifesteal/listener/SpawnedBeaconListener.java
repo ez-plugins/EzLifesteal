@@ -108,13 +108,15 @@ public final class SpawnedBeaconListener implements Listener {
      * Collects the names of all currently banned (eliminated) players from Bukkit's in-memory
      * ban list. This is a synchronous, main-thread-safe operation.
      */
-    @SuppressWarnings("unchecked")
     private List<String> buildBannedPlayerList() {
         final List<String> names = new ArrayList<>();
-        for (Object raw : Bukkit.getBanList(org.bukkit.BanList.Type.NAME).getBanEntries()) {
-            if (raw instanceof org.bukkit.BanEntry<?> entry) {
-                final Object target = entry.getTarget();
-                if (target instanceof String name && !name.isBlank()) {
+        final org.bukkit.BanList<com.destroystokyo.paper.profile.PlayerProfile> profileBanList =
+                Bukkit.getBanList(org.bukkit.BanList.Type.PROFILE);
+        for (org.bukkit.BanEntry<com.destroystokyo.paper.profile.PlayerProfile> entry : profileBanList.getBanEntries()) {
+            final com.destroystokyo.paper.profile.PlayerProfile profile = entry.getBanTarget();
+            if (profile != null) {
+                final String name = profile.getName();
+                if (name != null && !name.isBlank()) {
                     names.add(name);
                 }
             }
