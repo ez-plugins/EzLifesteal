@@ -79,6 +79,43 @@ class TeamBankServiceTest {
         assertEquals(TeamBankService.Status.INSUFFICIENT_BANK_HEARTS, result.status());
     }
 
+    /**
+     * Regression test: deposit() used to check isAmountValid() before isTeamBankEnabled(), so
+     * calling deposit with an invalid amount when the feature is disabled returned INVALID_AMOUNT
+     * instead of DISABLED.
+     */
+    @Test
+    void deposit_featureDisabledWithInvalidAmount_returnsDisabled() {
+        InMemoryTeamBankRepository bankRepository = new InMemoryTeamBankRepository();
+        InMemoryProfileRepository profileRepository = new InMemoryProfileRepository();
+        UUID playerId = UUID.randomUUID();
+        UUID teamId = UUID.randomUUID();
+        profileRepository.save(new LifestealProfile(playerId, 20.0D));
+
+        TeamBankService service = createService(profileRepository, bankRepository, playerId, teamId, "Alpha", false, 100.0D);
+        TeamBankService.Result result = service.deposit(player(playerId), -5.0D).join();
+
+        assertEquals(TeamBankService.Status.DISABLED, result.status());
+    }
+
+    /**
+     * Regression test: withdraw() had the same check-order bug as deposit() — isAmountValid()
+     * was tested before isTeamBankEnabled(), masking the disabled state with INVALID_AMOUNT.
+     */
+    @Test
+    void withdraw_featureDisabledWithInvalidAmount_returnsDisabled() {
+        InMemoryTeamBankRepository bankRepository = new InMemoryTeamBankRepository();
+        InMemoryProfileRepository profileRepository = new InMemoryProfileRepository();
+        UUID playerId = UUID.randomUUID();
+        UUID teamId = UUID.randomUUID();
+        profileRepository.save(new LifestealProfile(playerId, 20.0D));
+
+        TeamBankService service = createService(profileRepository, bankRepository, playerId, teamId, "Alpha", false, 100.0D);
+        TeamBankService.Result result = service.withdraw(player(playerId), -5.0D).join();
+
+        assertEquals(TeamBankService.Status.DISABLED, result.status());
+    }
+
     @Test
     void returnsTeamUnavailableWhenNoTeam() {
         InMemoryTeamBankRepository bankRepository = new InMemoryTeamBankRepository();

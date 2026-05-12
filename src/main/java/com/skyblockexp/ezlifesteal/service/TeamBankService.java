@@ -77,11 +77,11 @@ public final class TeamBankService {
     }
 
     public CompletableFuture<Result> deposit(Player player, double amount) {
-        if (!isAmountValid(amount)) {
-            return CompletableFuture.completedFuture(new Result(Status.INVALID_AMOUNT, 0.0D, 0.0D, ""));
-        }
         if (!plugin.isTeamBankEnabled()) {
             return CompletableFuture.completedFuture(new Result(Status.DISABLED, 0.0D, 0.0D, ""));
+        }
+        if (!isAmountValid(amount)) {
+            return CompletableFuture.completedFuture(new Result(Status.INVALID_AMOUNT, 0.0D, 0.0D, ""));
         }
         return withTeamContext(player, team -> CompletableFuture.supplyAsync(
                 () -> applyTransfer(player, team, amount, true),
@@ -90,11 +90,11 @@ public final class TeamBankService {
     }
 
     public CompletableFuture<Result> withdraw(Player player, double amount) {
-        if (!isAmountValid(amount)) {
-            return CompletableFuture.completedFuture(new Result(Status.INVALID_AMOUNT, 0.0D, 0.0D, ""));
-        }
         if (!plugin.isTeamBankEnabled()) {
             return CompletableFuture.completedFuture(new Result(Status.DISABLED, 0.0D, 0.0D, ""));
+        }
+        if (!isAmountValid(amount)) {
+            return CompletableFuture.completedFuture(new Result(Status.INVALID_AMOUNT, 0.0D, 0.0D, ""));
         }
         return withTeamContext(player, team -> CompletableFuture.supplyAsync(
                 () -> applyTransfer(player, team, amount, false),
