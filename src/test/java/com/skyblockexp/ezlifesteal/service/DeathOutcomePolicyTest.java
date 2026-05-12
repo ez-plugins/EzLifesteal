@@ -52,6 +52,74 @@ class DeathOutcomePolicyTest {
     }
 
     @Test
+    void computeVictimOutcomeBansWhenHeartsReachZeroWithMinHeartsFloor() {
+        // Reproduces the bug: default config has min-hearts: 1.0, which previously caused
+        // resultingHearts to be clamped to 1.0, making shouldBan always false.
+        DeathOutcome outcome = policy.computeVictimOutcome(new DeathOutcomePolicy.VictimDeathInput(
+                false,
+                false,
+                true,
+                false,
+                false,
+                -1,
+                1.0,   // victim has exactly 1 heart (the minimum)
+                1.0,   // loses 1 heart on death -> raw result = 0
+                1.0,   // min-hearts = 1.0 (default config value)
+                true
+        ));
+
+        assertTrue(outcome.applyHeartLoss());
+        // hearts stay clamped at minHearts (1.0), but the ban must still fire
+        assertEquals(1.0, outcome.resultingHearts());
+        assertTrue(outcome.shouldBan(), "Ban must fire even when minHearts floor clamps resultingHearts above 0");
+        assertFalse(outcome.shouldExecuteZeroHeartCommands());
+    }
+
+    @Test
+    void computeVictimOutcomeZeroHeartCommandsFireWithMinHeartsFloor() {
+        // Same floor scenario, but banWhenZeroHearts = false → zero-heart commands should fire.
+        DeathOutcome outcome = policy.computeVictimOutcome(new DeathOutcomePolicy.VictimDeathInput(
+                false,
+                false,
+                true,
+                false,
+                false,
+                -1,
+                1.0,
+                1.0,
+                1.0,
+                false
+        ));
+
+        assertTrue(outcome.applyHeartLoss());
+        assertFalse(outcome.shouldBan());
+        assertTrue(outcome.shouldExecuteZeroHeartCommands(),
+                "Zero-heart commands must fire even when minHearts floor clamps resultingHearts above 0");
+    }
+
+    @Test
+    void computeVictimOutcomeNoBanWhenHeartsRemainingWithMinHeartsFloor() {
+        // Player has 2 hearts, loses 1 → rawResult = 1.0 > 0 → no ban.
+        DeathOutcome outcome = policy.computeVictimOutcome(new DeathOutcomePolicy.VictimDeathInput(
+                false,
+                false,
+                true,
+                false,
+                false,
+                -1,
+                2.0,
+                1.0,
+                1.0,
+                true
+        ));
+
+        assertTrue(outcome.applyHeartLoss());
+        assertEquals(1.0, outcome.resultingHearts());
+        assertFalse(outcome.shouldBan());
+        assertFalse(outcome.shouldExecuteZeroHeartCommands());
+    }
+
+    @Test
     void computeKillerOutcomeSelectsHeartItemMode() {
         KillerOutcome outcome = policy.computeKillerOutcome(new DeathOutcomePolicy.KillerInput(
                 false,
