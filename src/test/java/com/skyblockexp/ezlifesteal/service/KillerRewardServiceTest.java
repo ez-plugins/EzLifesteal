@@ -100,5 +100,159 @@ class KillerRewardServiceTest {
         assertEquals(killerLocation, dropLocation,
                 "Heart item must drop at killer's location, not victim's respawn location");
     }
+
+    @Test
+    void applyKillerReward_numericMode_incrementsProfileAndSaves() {
+        ServerMock server = MockBukkit.mock();
+        JavaPlugin javaPlugin = MockBukkit.createMockPlugin();
+
+        Player killer = mock(Player.class);
+        when(killer.getUniqueId()).thenReturn(UUID.randomUUID());
+
+        LifestealProfile killerProfile = new LifestealProfile(killer.getUniqueId(), 10.0);
+        KillerOutcome killerOutcome = new KillerOutcome(true, KillerRewardMode.NUMERIC, 2.0);
+
+        PluginAccessor pluginAccessor = mock(PluginAccessor.class);
+        when(pluginAccessor.getPlugin()).thenReturn(javaPlugin);
+
+        LifestealManager manager = mock(LifestealManager.class);
+        when(manager.getMaxHearts()).thenReturn(40.0);
+        when(manager.saveProfileAsync(killerProfile)).thenReturn(java.util.concurrent.CompletableFuture.completedFuture(null));
+
+        KillerRewardService service = new KillerRewardService(pluginAccessor);
+        service.applyKillerReward(mock(Player.class), killer, killerProfile, manager, killerOutcome);
+
+        assertEquals(12.0, killerProfile.getHearts(), "Profile must be incremented by the heart gain amount");
+        verify(manager).saveProfileAsync(killerProfile);
+
+        server.getScheduler().performTicks(1);
+        verify(manager).applyHearts(killer, killerProfile);
+    }
+
+    @Test
+    void applyKillerReward_numericMode_clampsGainAtMaxHearts() {
+        ServerMock server = MockBukkit.mock();
+        JavaPlugin javaPlugin = MockBukkit.createMockPlugin();
+
+        Player killer = mock(Player.class);
+        when(killer.getUniqueId()).thenReturn(UUID.randomUUID());
+
+        LifestealProfile killerProfile = new LifestealProfile(killer.getUniqueId(), 38.0);
+        KillerOutcome killerOutcome = new KillerOutcome(true, KillerRewardMode.NUMERIC, 5.0);
+
+        PluginAccessor pluginAccessor = mock(PluginAccessor.class);
+        when(pluginAccessor.getPlugin()).thenReturn(javaPlugin);
+
+        LifestealManager manager = mock(LifestealManager.class);
+        when(manager.getMaxHearts()).thenReturn(40.0);
+        when(manager.saveProfileAsync(killerProfile)).thenReturn(java.util.concurrent.CompletableFuture.completedFuture(null));
+
+        KillerRewardService service = new KillerRewardService(pluginAccessor);
+        service.applyKillerReward(mock(Player.class), killer, killerProfile, manager, killerOutcome);
+
+        assertEquals(40.0, killerProfile.getHearts(), "Hearts must not exceed the configured maximum");
+
+        server.getScheduler().performTicks(1);
+    }
+
+    @Test
+    void applyKillerReward_heartItemMode_noRegistry_fallsBackToNumericGain() {
+        ServerMock server = MockBukkit.mock();
+        JavaPlugin javaPlugin = MockBukkit.createMockPlugin();
+
+        Player killer = mock(Player.class);
+        when(killer.getUniqueId()).thenReturn(UUID.randomUUID());
+
+        LifestealProfile killerProfile = new LifestealProfile(killer.getUniqueId(), 8.0);
+        KillerOutcome killerOutcome = new KillerOutcome(true, KillerRewardMode.HEART_ITEM, 2.0);
+
+        PluginAccessor pluginAccessor = mock(PluginAccessor.class);
+        when(pluginAccessor.getPlugin()).thenReturn(javaPlugin);
+        when(pluginAccessor.getHeartRegistry()).thenReturn(null);
+
+        LifestealManager manager = mock(LifestealManager.class);
+        when(manager.getMaxHearts()).thenReturn(40.0);
+        when(manager.saveProfileAsync(killerProfile)).thenReturn(java.util.concurrent.CompletableFuture.completedFuture(null));
+
+        KillerRewardService service = new KillerRewardService(pluginAccessor);
+        service.applyKillerReward(mock(Player.class), killer, killerProfile, manager, killerOutcome);
+
+        assertEquals(10.0, killerProfile.getHearts(), "Must fall back to numeric gain when heart registry is absent");
+        verify(manager).saveProfileAsync(killerProfile);
+
+        server.getScheduler().performTicks(1);
+    }
+
+    @Test
+    void applyKillerReward_heartItemMode_noHeartFound_fallsBackToNumericGain() {
+        ServerMock server = MockBukkit.mock();
+        JavaPlugin javaPlugin = MockBukkit.createMockPlugin();
+
+        Player killer = mock(Player.class);
+        when(killer.getUniqueId()).thenReturn(UUID.randomUUID());
+
+        HeartRegistry registry = mock(HeartRegistry.class);
+        when(registry.getById(any())).thenReturn(null);
+        when(registry.getByTier(org.mockito.ArgumentMatchers.anyInt())).thenReturn(null);
+
+        LifestealProfile killerProfile = new LifestealProfile(killer.getUniqueId(), 8.0);
+        KillerOutcome killerOutcome = new KillerOutcome(true, KillerRewardMode.HEART_ITEM, 2.0);
+
+        PluginAccessor pluginAccessor = mock(PluginAccessor.class);
+        when(pluginAccessor.getPlugin()).thenReturn(javaPlugin);
+        when(pluginAccessor.getHeartRegistry()).thenReturn(registry);
+        when(pluginAccessor.getDropHeartId()).thenReturn("basic");
+
+        LifestealManager manager = mock(LifestealManager.class);
+        when(manager.getMaxHearts()).thenReturn(40.0);
+        when(manager.saveProfileAsync(killerProfile)).thenReturn(java.util.concurrent.CompletableFuture.completedFuture(null));
+
+        KillerRewardService service = new KillerRewardService(pluginAccessor);
+        service.applyKillerReward(mock(Player.class), killer, killerProfile, manager, killerOutcome);
+
+        assertEquals(10.0, killerProfile.getHearts(), "Must fall back to numeric gain when no matching heart definition is found");
+        verify(manager).saveProfileAsync(killerProfile);
+
+        server.getScheduler().performTicks(1);
+    }
+
+    @Test
+    void applyKillerReward_heartItemMode_multipleDropAmount_givesMultipleItems() {
+        ServerMock server = MockBukkit.mock();
+        JavaPlugin javaPlugin = MockBukkit.createMockPlugin();
+
+        PlayerInventory inventory = mock(PlayerInventory.class);
+        when(inventory.addItem(any())).thenReturn(new HashMap<>());
+
+        Player killer = mock(Player.class);
+        when(killer.getUniqueId()).thenReturn(UUID.randomUUID());
+        when(killer.getInventory()).thenReturn(inventory);
+
+        Heart heart = mock(Heart.class);
+        when(heart.getHearts()).thenReturn(1.0);
+        when(heart.createItemStack()).thenReturn(new ItemStack(Material.NETHER_STAR));
+
+        HeartRegistry registry = mock(HeartRegistry.class);
+        when(registry.getById("basic")).thenReturn(heart);
+
+        LifestealProfile killerProfile = new LifestealProfile(killer.getUniqueId(), 10.0);
+        KillerOutcome killerOutcome = new KillerOutcome(true, KillerRewardMode.HEART_ITEM, 1.0);
+
+        PluginAccessor pluginAccessor = mock(PluginAccessor.class);
+        when(pluginAccessor.getPlugin()).thenReturn(javaPlugin);
+        when(pluginAccessor.getDropHeartId()).thenReturn("basic");
+        when(pluginAccessor.getDropHeartAmount()).thenReturn(3);
+        when(pluginAccessor.getHeartRegistry()).thenReturn(registry);
+
+        LifestealManager manager = mock(LifestealManager.class);
+        when(manager.getMaxHearts()).thenReturn(40.0);
+
+        KillerRewardService service = new KillerRewardService(pluginAccessor);
+        service.applyKillerReward(mock(Player.class), killer, killerProfile, manager, killerOutcome);
+
+        server.getScheduler().performTicks(1);
+
+        verify(inventory, org.mockito.Mockito.times(3)).addItem(any());
+    }
 }
 

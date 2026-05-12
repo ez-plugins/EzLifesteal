@@ -100,4 +100,56 @@ class HeartRegistryTest {
         assertNotNull(tierHeart);
         assertEquals("alpha", tierHeart.getId());
     }
+
+    @Test
+    void nullConfigProducesEmptyRegistry() {
+        HeartRegistry registry = new HeartRegistry(null);
+
+        assertNull(registry.getById("basic"));
+        assertNull(registry.getByTier(1));
+        assertTrue(registry.getAll().isEmpty());
+    }
+
+    @Test
+    void getByTierReturnsNullForUnregisteredTier() {
+        YamlConfiguration config = new YamlConfiguration();
+        config.set("hearts.basic.tier", 1);
+        config.set("hearts.basic.hearts", 1.0);
+
+        HeartRegistry registry = new HeartRegistry(config);
+
+        assertNull(registry.getByTier(99));
+    }
+
+    @Test
+    void missingMaterialKeyDefaultsToNetherStar() {
+        YamlConfiguration config = new YamlConfiguration();
+        config.set("hearts.basic.display", "&cHeart");
+        config.set("hearts.basic.tier", 1);
+        config.set("hearts.basic.hearts", 1.0);
+        // no "material" key set
+
+        HeartRegistry registry = new HeartRegistry(config);
+
+        Heart heart = registry.getById("basic");
+        assertNotNull(heart);
+        assertEquals(Material.NETHER_STAR, heart.getMaterial(),
+                "A heart with no material configured must default to NETHER_STAR");
+    }
+
+    @Test
+    void invalidMaterialNameDefaultsToNetherStar() {
+        YamlConfiguration config = new YamlConfiguration();
+        config.set("hearts.basic.display", "&cHeart");
+        config.set("hearts.basic.tier", 1);
+        config.set("hearts.basic.hearts", 1.0);
+        config.set("hearts.basic.material", "NOT_A_REAL_MATERIAL");
+
+        HeartRegistry registry = new HeartRegistry(config);
+
+        Heart heart = registry.getById("basic");
+        assertNotNull(heart);
+        assertEquals(Material.NETHER_STAR, heart.getMaterial(),
+                "An unrecognized material name must fall back to NETHER_STAR");
+    }
 }
