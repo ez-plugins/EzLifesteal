@@ -3,9 +3,12 @@ package com.skyblockexp.ezlifesteal.listener;
 import com.skyblockexp.ezcountdown.api.event.CountdownEndEvent;
 import com.skyblockexp.ezlifesteal.gui.BeaconInfoMenu;
 import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
+import com.skyblockexp.ezlifesteal.service.BeaconReviveService;
 import com.skyblockexp.ezlifesteal.service.BeaconSpawnService;
-import java.util.UUID;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -74,11 +77,13 @@ public final class SpawnedBeaconListener implements Listener {
      * Opens the beacon info GUI when a player right-clicks a plugin-spawned beacon block.
      *
      * <p>The event is cancelled so the vanilla beacon GUI (potion effects UI) is never shown.
-     * This handler runs at LOW priority so higher-priority listeners (e.g. the revive handler)
-     * can cancel the event first — when that happens, {@code ignoreCancelled = true} ensures
-     * we skip opening the info menu and let the revive proceed.</p>
+     * This handler runs at {@link EventPriority#HIGH} so that the revive listener at
+     * {@link EventPriority#NORMAL} gets to run first. When the player holds a valid revive
+     * voucher, the revive listener cancels the event and {@code ignoreCancelled = true}
+     * prevents this handler from opening the GUI — letting the voucher interaction proceed
+     * directly. Without a voucher the event is not cancelled and the info GUI opens.</p>
      */
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBeaconRightClick(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;
@@ -92,8 +97,30 @@ public final class SpawnedBeaconListener implements Listener {
         }
         event.setCancelled(true);
         final Player player = event.getPlayer();
-        beaconSpawnService.findByLocation(block.getLocation())
-                .ifPresent(beacon -> new BeaconInfoMenu(player, beacon).open());
+        beaconSpawnService.findByLocation(block.getLocation()).ifPresent(beacon -> {
+            final List<String> bannedNames = buildBannedPlayerList();
+            final BeaconReviveService reviveService = new BeaconReviveService(accessor);
+            new BeaconInfoMenu(player, beacon, reviveService, bannedNames).open();
+        });
+    }
+
+    /**
+     * Collects the names of all currently banned (eliminated) players from Bukkit's in-memory
+     * ban list. This is a synchronous, main-thread-safe operation.
+     */
+    @SuppressWarnings("unchecked")
+    private List<String> buildBannedPlayerList() {
+        final List<String> names = new ArrayList<>();
+        for (Object raw : Bukkit.getBanList(org.bukkit.BanList.Type.NAME).getBanEntries()) {
+            if (raw instanceof org.bukkit.BanEntry<?> entry) {
+                final Object target = entry.getTarget();
+                if (target instanceof String name && !name.isBlank()) {
+                    names.add(name);
+                }
+            }
+        }
+        names.sort(String::compareTo);
+        return names;
     }
 
     // -------------------------------------------------------------------------
