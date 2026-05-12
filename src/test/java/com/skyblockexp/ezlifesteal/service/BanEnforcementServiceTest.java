@@ -1,5 +1,6 @@
 package com.skyblockexp.ezlifesteal.service;
 
+import com.destroystokyo.paper.profile.PlayerProfile;
 import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
 import com.skyblockexp.ezlifesteal.storage.StorageException;
 import com.skyblockexp.ezlifesteal.storage.repository.BanRepository;
@@ -24,20 +25,23 @@ import static org.mockito.Mockito.when;
 class BanEnforcementServiceTest {
 
     @Test
+    @SuppressWarnings("unchecked")
     void applyBanWithStoragePersistsThenAddsBanAndKicksPlayer() throws Exception {
         PluginAccessor pluginAccessor = mock(PluginAccessor.class);
         JavaPlugin plugin = mock(JavaPlugin.class);
         BanRepository banRepository = mock(BanRepository.class);
         Player player = mock(Player.class);
-        BanList banList = mock(BanList.class);
+        PlayerProfile profile = mock(PlayerProfile.class);
+        BanList<PlayerProfile> banList = mock(BanList.class);
 
         when(pluginAccessor.getPlugin()).thenReturn(plugin);
         when(pluginAccessor.getPluginName()).thenReturn("EzLifesteal");
         when(pluginAccessor.getBanRepository()).thenReturn(banRepository);
         when(player.getUniqueId()).thenReturn(UUID.randomUUID());
         when(player.getName()).thenReturn("Target");
+        when(player.getPlayerProfile()).thenReturn(profile);
         when(player.isOnline()).thenReturn(true);
-        when(banList.isBanned("Target")).thenReturn(false);
+        when(banList.isBanned(profile)).thenReturn(false);
 
         BanEnforcementService service = new BanEnforcementService(pluginAccessor);
         try (MockedStatic<SchedulerAdapter> schedulerAdapter = org.mockito.Mockito.mockStatic(SchedulerAdapter.class);
@@ -47,23 +51,25 @@ class BanEnforcementServiceTest {
                         invocation.<Runnable>getArgument(1).run();
                         return null;
                     });
-            bukkit.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(banList);
+            bukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
 
             service.applyBanWithStorage(player, "reason", "kick");
 
             verify(banRepository).saveBan(any());
-            verify(banList).addBan("Target", "reason", (Instant) null, "EzLifesteal");
+            verify(banList).addBan(profile, "reason", (Instant) null, "EzLifesteal");
             verify(player).kickPlayer("kick");
         }
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void applyBanWithStorageLogsAndContinuesWhenRepositoryThrows() throws Exception {
         PluginAccessor pluginAccessor = mock(PluginAccessor.class);
         JavaPlugin plugin = mock(JavaPlugin.class);
         BanRepository banRepository = mock(BanRepository.class);
         Player player = mock(Player.class);
-        BanList banList = mock(BanList.class);
+        PlayerProfile profile = mock(PlayerProfile.class);
+        BanList<PlayerProfile> banList = mock(BanList.class);
         Logger logger = mock(Logger.class);
 
         when(pluginAccessor.getPlugin()).thenReturn(plugin);
@@ -72,8 +78,9 @@ class BanEnforcementServiceTest {
         when(pluginAccessor.getLogger()).thenReturn(logger);
         when(player.getUniqueId()).thenReturn(UUID.randomUUID());
         when(player.getName()).thenReturn("Target");
+        when(player.getPlayerProfile()).thenReturn(profile);
         when(player.isOnline()).thenReturn(false);
-        when(banList.isBanned("Target")).thenReturn(false);
+        when(banList.isBanned(profile)).thenReturn(false);
         org.mockito.Mockito.doThrow(new StorageException("boom")).when(banRepository).saveBan(any());
 
         BanEnforcementService service = new BanEnforcementService(pluginAccessor);
@@ -84,28 +91,31 @@ class BanEnforcementServiceTest {
                         invocation.<Runnable>getArgument(1).run();
                         return null;
                     });
-            bukkit.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(banList);
+            bukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
 
             service.applyBanWithStorage(player, "reason", "kick");
 
             verify(logger).warning(org.mockito.ArgumentMatchers.contains("Failed to persist ban record"));
-            verify(banList).addBan("Target", "reason", (Instant) null, "EzLifesteal");
+            verify(banList).addBan(profile, "reason", (Instant) null, "EzLifesteal");
             verify(player, never()).kickPlayer(anyString());
         }
     }
 
     @Test
-    void applyBanWithStorageSkipsAddBanWhenNameIsNullOrAlreadyBanned() {
+    @SuppressWarnings("unchecked")
+    void applyBanWithStorageSkipsAddBanWhenPlayerIsAlreadyBanned() {
         PluginAccessor pluginAccessor = mock(PluginAccessor.class);
         JavaPlugin plugin = mock(JavaPlugin.class);
         Player player = mock(Player.class);
-        BanList banList = mock(BanList.class);
+        PlayerProfile profile = mock(PlayerProfile.class);
+        BanList<PlayerProfile> banList = mock(BanList.class);
 
         when(pluginAccessor.getPlugin()).thenReturn(plugin);
         when(pluginAccessor.getPluginName()).thenReturn("EzLifesteal");
         when(pluginAccessor.getBanRepository()).thenReturn(null);
-        when(player.getName()).thenReturn(null);
+        when(player.getPlayerProfile()).thenReturn(profile);
         when(player.isOnline()).thenReturn(true);
+        when(banList.isBanned(profile)).thenReturn(true);
 
         BanEnforcementService service = new BanEnforcementService(pluginAccessor);
         try (MockedStatic<SchedulerAdapter> schedulerAdapter = org.mockito.Mockito.mockStatic(SchedulerAdapter.class);
@@ -115,12 +125,11 @@ class BanEnforcementServiceTest {
                         invocation.<Runnable>getArgument(1).run();
                         return null;
                     });
-            bukkit.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(banList);
+            bukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
 
             service.applyBanWithStorage(player, "reason", "kick");
 
-            verify(banList, never()).addBan(anyString(), anyString(), org.mockito.ArgumentMatchers.<Instant>any(),
-                    anyString());
+            verify(banList, never()).addBan(any(), anyString(), any(Instant.class), anyString());
             verify(player).kickPlayer("kick");
         }
     }

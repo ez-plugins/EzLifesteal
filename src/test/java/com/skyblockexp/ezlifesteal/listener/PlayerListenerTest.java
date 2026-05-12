@@ -1,5 +1,6 @@
 package com.skyblockexp.ezlifesteal.listener;
 
+import com.destroystokyo.paper.profile.PlayerProfile;
 import com.skyblockexp.ezlifesteal.config.LifestealConfigAdapter;
 import com.skyblockexp.ezlifesteal.config.MessageService;
 import com.skyblockexp.ezlifesteal.detector.AdminDetector;
@@ -395,14 +396,17 @@ class PlayerListenerTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void handlePlayerDeathUsesDefaultBanMessageWhenTemplatesAreEmpty() {
         PluginAccessor plugin = basePlugin();
         LifestealManager manager = mock(LifestealManager.class);
         UUID victimId = UUID.randomUUID();
         LifestealProfile victimProfile = new LifestealProfile(victimId, 1.0);
         Player victim = mockPlayer("victim", "world");
+        PlayerProfile profile = mock(PlayerProfile.class);
         when(victim.getUniqueId()).thenReturn(victimId);
         when(victim.getName()).thenReturn("victim");
+        when(victim.getPlayerProfile()).thenReturn(profile);
 
         when(plugin.isGlobalLifestealEnabled()).thenReturn(true);
         when(plugin.isLifestealEnabledInWorld("world")).thenReturn(true);
@@ -413,8 +417,8 @@ class PlayerListenerTest {
         when(plugin.isBanWhenZeroHearts("world")).thenReturn(true);
         when(manager.saveProfileAsync(any())).thenReturn(CompletableFuture.completedFuture(null));
 
-        BanList banList = mock(BanList.class);
-        when(banList.isBanned("victim")).thenReturn(false);
+        BanList<PlayerProfile> banList = mock(BanList.class);
+        when(banList.isBanned(profile)).thenReturn(false);
 
         try (MockedStatic<Bukkit> bukkit = mockPaperSchedulerWithBanList(banList)) {
             PlayerListener listener = new PlayerListener(plugin, "", "", false, 0L);
@@ -425,14 +429,17 @@ class PlayerListenerTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void handlePlayerDeathUsesKickTemplateAsBanFallback() {
         PluginAccessor plugin = basePlugin();
         LifestealManager manager = mock(LifestealManager.class);
         UUID victimId = UUID.randomUUID();
         LifestealProfile victimProfile = new LifestealProfile(victimId, 1.0);
         Player victim = mockPlayer("victim", "world");
+        PlayerProfile profile = mock(PlayerProfile.class);
         when(victim.getUniqueId()).thenReturn(victimId);
         when(victim.getName()).thenReturn("victim");
+        when(victim.getPlayerProfile()).thenReturn(profile);
 
         when(plugin.isGlobalLifestealEnabled()).thenReturn(true);
         when(plugin.isLifestealEnabledInWorld("world")).thenReturn(true);
@@ -443,8 +450,8 @@ class PlayerListenerTest {
         when(plugin.isBanWhenZeroHearts("world")).thenReturn(true);
         when(manager.saveProfileAsync(any())).thenReturn(CompletableFuture.completedFuture(null));
 
-        BanList banList = mock(BanList.class);
-        when(banList.isBanned("victim")).thenReturn(false);
+        BanList<PlayerProfile> banList = mock(BanList.class);
+        when(banList.isBanned(profile)).thenReturn(false);
 
         try (MockedStatic<Bukkit> bukkit = mockPaperSchedulerWithBanList(banList)) {
             PlayerListener listener = new PlayerListener(plugin, "", "&cKick only", false, 0L);
@@ -779,9 +786,10 @@ class PlayerListenerTest {
         return bukkit;
     }
 
-    private static MockedStatic<Bukkit> mockPaperSchedulerWithBanList(BanList banList) {
+    @SuppressWarnings("unchecked")
+    private static MockedStatic<Bukkit> mockPaperSchedulerWithBanList(BanList<PlayerProfile> banList) {
         MockedStatic<Bukkit> bukkit = mockPaperScheduler();
-        bukkit.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(banList);
+        bukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
         return bukkit;
     }
 

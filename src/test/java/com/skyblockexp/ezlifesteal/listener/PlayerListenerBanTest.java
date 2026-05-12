@@ -8,6 +8,7 @@ import com.skyblockexp.ezlifesteal.storage.repository.BanRepository;
 import java.lang.reflect.Method;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import com.destroystokyo.paper.profile.PlayerProfile;
 import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.when;
 class PlayerListenerBanTest {
 
     @Test
+    @SuppressWarnings("unchecked")
     void handlePlayerDeath_appliesBanAndPersistsRecord_whenHeartsReachZero() throws Exception {
         PluginAccessor plugin = mock(PluginAccessor.class);
         LifestealManager manager = mock(LifestealManager.class);
@@ -43,8 +45,10 @@ class PlayerListenerBanTest {
 
         Player victim = mock(Player.class);
         UUID id = UUID.randomUUID();
+        PlayerProfile playerProfile = mock(PlayerProfile.class);
         when(victim.getUniqueId()).thenReturn(id);
         when(victim.getName()).thenReturn("targetPlayer");
+        when(victim.getPlayerProfile()).thenReturn(playerProfile);
         World world = mock(World.class);
         when(victim.getWorld()).thenReturn(world);
         when(world.getName()).thenReturn("world");
@@ -65,7 +69,7 @@ class PlayerListenerBanTest {
             return mock(BukkitTask.class);
         });
 
-        BanList banList = mock(BanList.class);
+        BanList<PlayerProfile> banList = mock(BanList.class);
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) {
             Server server = mock(Server.class);
@@ -73,7 +77,7 @@ class PlayerListenerBanTest {
 
             bukkit.when(Bukkit::getServer).thenReturn(server);
             bukkit.when(Bukkit::getScheduler).thenReturn(scheduler);
-            bukkit.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(banList);
+            bukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
 
             when(plugin.getPlugin()).thenReturn(mock(JavaPlugin.class));
 
@@ -86,7 +90,7 @@ class PlayerListenerBanTest {
             // BanRecord persisted
             verify(banRepo).saveBan(any(BanRecord.class));
             // Bukkit ban added
-            bukkit.verify(() -> Bukkit.getBanList(BanList.Type.NAME), atLeastOnce());
+            bukkit.verify(() -> Bukkit.getBanList(BanList.Type.PROFILE), atLeastOnce());
         }
     }
 }

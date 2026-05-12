@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
+import com.destroystokyo.paper.profile.PlayerProfile;
 import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
@@ -108,9 +109,11 @@ class PlayerListenerMoreBranchesTest {
 
         Player player = mock(Player.class);
         UUID id = UUID.randomUUID();
+        PlayerProfile playerProfile = mock(PlayerProfile.class);
         when(player.getUniqueId()).thenReturn(id);
         when(player.getName()).thenReturn("p");
         when(player.getWorld()).thenReturn(mock(org.bukkit.World.class));
+        when(player.getPlayerProfile()).thenReturn(playerProfile);
 
         LifestealProfile profile = new LifestealProfile(id, 1.0);
         // set profile to lose hearts to 0
@@ -130,14 +133,15 @@ class PlayerListenerMoreBranchesTest {
             return mock(BukkitTask.class);
         });
 
-        BanList banList = mock(BanList.class);
+        @SuppressWarnings("unchecked")
+        BanList<PlayerProfile> banList = mock(BanList.class);
 
         try (MockedStatic<Bukkit> b = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) {
             Server server = mock(Server.class);
             when(server.getName()).thenReturn("Paper");
             b.when(Bukkit::getServer).thenReturn(server);
             b.when(Bukkit::getScheduler).thenReturn(scheduler);
-            b.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(banList);
+            b.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
 
             when(plugin.getPlugin()).thenReturn(mock(JavaPlugin.class));
 
