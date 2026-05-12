@@ -82,7 +82,8 @@ jobs:
         if: steps.changes.outputs.has_changes == 'true'
         run: |
           git clone --depth=1 --branch minecraft/v26 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
-          cd /tmp/MockBukkit && ./gradlew publishToMavenLocal -xtest -xjavadoc
+          sed -i 's/^mockbukkit\.version=$/mockbukkit.version=local/' /tmp/MockBukkit/gradle.properties
+          cd /tmp/MockBukkit && GITHUB_REPOSITORY=MockBukkit/MockBukkit ./gradlew publishToMavenLocal -xtest -xjavadoc
 
       - name: Build
         if: steps.changes.outputs.has_changes == 'true'
