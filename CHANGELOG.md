@@ -71,6 +71,24 @@ Release tags use the `v` prefix (e.g. `v1.1.0`).
   `beacon-spawn-available-subtitle`, `beacon-spawn-not-available`, `beacon-spawn-protected`.
 - `WorldGuard`, `EzCountdown`, and `TeamsAPI` added to `softdepend` in `plugin.yml`.
 
+### Fixed
+
+- **`TeamBankService`**: `deposit()` and `withdraw()` evaluated `isAmountValid()` before
+  `isTeamBankEnabled()`, causing `INVALID_AMOUNT` to be returned instead of `DISABLED` when
+  the feature was off and an invalid amount was supplied. Check order corrected so
+  `isTeamBankEnabled()` is tested first.
+- **`KillerRewardService`**: when a killer's inventory is full the overflow heart item was
+  dropped at `victim.getLocation()` inside a deferred scheduler task. Because the task runs
+  on the next tick the victim may have already respawned, placing the item at the respawn
+  point rather than the kill site. Fixed to use `killer.getLocation()` instead.
+- **`BeaconSpawnService`**: beacons configured with no countdown (instant availability) never
+  fired the availability event because `SpawnedBeacon` was initialised in the `AVAILABLE`
+  state, preventing the `COUNTDOWN → AVAILABLE` transition. Fixed by always starting beacons
+  in `COUNTDOWN` state and calling `markAvailable()` immediately when no countdown is needed.
+- **Locale files**: team-bank language keys were missing from all non-English locale files
+  (`de`, `es`, `fr`, `nl`, `pt`, `ru`, `zh`). All locale files now include the complete set
+  of team-bank message keys.
+
 ### Changed
 
 - Documentation expanded for team bank support:
