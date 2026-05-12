@@ -244,6 +244,97 @@ class PlayerDeathServiceTest {
     }
 
     @Test
+    void handlePlayerDeathBansVictimWithDefaultMinHeartsConfig() {
+        // Regression: default config has min-hearts: 1.0, which previously caused resultingHearts
+        // to be clamped to 1.0 so the ban condition (≤ 0) was never true.
+        PluginAccessor plugin = basePlugin();
+        BanEnforcementService banService = mock(BanEnforcementService.class);
+        LifestealManager manager = mock(LifestealManager.class);
+        Player victim = player("victim", "world");
+        UUID victimId = victim.getUniqueId();
+
+        LifestealProfile victimProfile = new LifestealProfile(victimId, 1.0);
+
+        when(plugin.getLifestealManager()).thenReturn(manager);
+        when(plugin.getHeartsLostOnDeath("world")).thenReturn(1.0);
+        when(plugin.isBanWhenZeroHearts("world")).thenReturn(true);
+        when(plugin.getAdminDetector()).thenReturn(null);
+        when(manager.getOrCreateProfile(victimId)).thenReturn(victimProfile);
+        when(manager.getMinHearts()).thenReturn(1.0);
+        when(manager.saveProfileAsync(victimProfile)).thenReturn(CompletableFuture.completedFuture(null));
+
+        PlayerDeathService service = new PlayerDeathService(plugin, banService);
+        service.handlePlayerDeath(victim, null, false, "", "");
+
+        verify(banService).applyBanWithStorage(eq(victim), anyString(), anyString());
+        verify(plugin, never()).executeZeroHeartCommands(any(), any(), anyDouble());
+    }
+
+    @Test
+    void handlePlayerDeathExecutesZeroHeartCommandsWithDefaultMinHeartsConfig() {
+        // Regression: zero-heart commands must fire even when min-hearts: 1.0 floors resultingHearts
+        PluginAccessor plugin = basePlugin();
+        LifestealManager manager = mock(LifestealManager.class);
+        Player victim = player("victim", "world");
+        UUID victimId = victim.getUniqueId();
+
+        LifestealProfile victimProfile = new LifestealProfile(victimId, 1.0);
+
+        when(plugin.getLifestealManager()).thenReturn(manager);
+        when(plugin.getHeartsLostOnDeath("world")).thenReturn(1.0);
+        when(plugin.isBanWhenZeroHearts("world")).thenReturn(false);
+        when(plugin.getAdminDetector()).thenReturn(null);
+        when(manager.getOrCreateProfile(victimId)).thenReturn(victimProfile);
+        when(manager.getMinHearts()).thenReturn(1.0);
+        when(manager.saveProfileAsync(victimProfile)).thenReturn(CompletableFuture.completedFuture(null));
+
+        try (MockedStatic<SchedulerAdapter> scheduler = org.mockito.Mockito.mockStatic(SchedulerAdapter.class)) {
+            scheduler.when(() -> SchedulerAdapter.run(any(), any())).then(invocation -> {
+                invocation.<Runnable>getArgument(1).run();
+                return null;
+            });
+
+            PlayerDeathService service = new PlayerDeathService(plugin, mock(BanEnforcementService.class));
+            service.handlePlayerDeath(victim, null, false, "", "");
+
+            verify(plugin).executeZeroHeartCommands(eq(victim), eq(null), anyDouble());
+        }
+    }
+
+    @Test
+    void handlePlayerDeathDoesNotBanWhenHeartsRemainAboveZeroWithMinHeartsFloor() {
+        // A player with 2 hearts who loses 1 has a raw result of 1.0 (> 0) — no ban should fire.
+        PluginAccessor plugin = basePlugin();
+        BanEnforcementService banService = mock(BanEnforcementService.class);
+        LifestealManager manager = mock(LifestealManager.class);
+        Player victim = player("victim", "world");
+        UUID victimId = victim.getUniqueId();
+
+        LifestealProfile victimProfile = new LifestealProfile(victimId, 2.0);
+
+        when(plugin.getLifestealManager()).thenReturn(manager);
+        when(plugin.getHeartsLostOnDeath("world")).thenReturn(1.0);
+        when(plugin.isBanWhenZeroHearts("world")).thenReturn(true);
+        when(plugin.getAdminDetector()).thenReturn(null);
+        when(manager.getOrCreateProfile(victimId)).thenReturn(victimProfile);
+        when(manager.getMinHearts()).thenReturn(1.0);
+        when(manager.saveProfileAsync(victimProfile)).thenReturn(CompletableFuture.completedFuture(null));
+
+        try (MockedStatic<SchedulerAdapter> scheduler = org.mockito.Mockito.mockStatic(SchedulerAdapter.class)) {
+            scheduler.when(() -> SchedulerAdapter.run(any(), any())).then(invocation -> {
+                invocation.<Runnable>getArgument(1).run();
+                return null;
+            });
+
+            PlayerDeathService service = new PlayerDeathService(plugin, banService);
+            service.handlePlayerDeath(victim, null, false, "", "");
+
+            verify(banService, never()).applyBanWithStorage(any(), anyString(), anyString());
+            assertEquals(1.0, victimProfile.getHearts());
+        }
+    }
+
+    @Test
     void handlePlayerDeathUsesBanMessageFallbackWhenTemplatesBlank() {
         PluginAccessor plugin = basePlugin();
         BanEnforcementService banService = mock(BanEnforcementService.class);
