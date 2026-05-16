@@ -75,8 +75,12 @@ class BeaconSpawnServiceTest {
                         java.util.List.of(),
                         null,
                         null,
-                        null),
+                        null,
+                        "ezls-beacon-",
+                        java.util.Map.of()),
                 BeaconSpawnSettings.RandomSpawnSettings.defaults(),
+                java.util.List.of(),
+                0,
                 BeaconSpawnSettings.ScheduleSettings.defaults(),
                 new BeaconSpawnSettings.ExpirySettings(0),
                 new BeaconSpawnSettings.AvailabilityEventSettings(
@@ -274,7 +278,7 @@ class BeaconSpawnServiceTest {
     @Test
     void findRandomSpawnLocation_disabled_returnsEmpty() {
         BeaconSpawnSettings.RandomSpawnSettings disabled =
-                new BeaconSpawnSettings.RandomSpawnSettings(false, "world", -100, 100, -100, 100);
+                new BeaconSpawnSettings.RandomSpawnSettings(false, "world", -100, 100, 0, 0, -100, 100);
 
         Optional<Location> result = service.findRandomSpawnLocation(disabled);
         assertTrue(result.isEmpty());

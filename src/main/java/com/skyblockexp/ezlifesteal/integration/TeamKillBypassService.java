@@ -2,6 +2,7 @@ package com.skyblockexp.ezlifesteal.integration;
 
 import com.skyblockexp.ezlifesteal.runtime.DefaultPluginRuntimeServices;
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.bukkit.entity.Player;
@@ -22,6 +23,11 @@ public final class TeamKillBypassService {
             return false;
         }
         if (!runtime.isTeamKillBypassEnabled()) {
+            return false;
+        }
+        // World exempt check
+        final List<String> exemptWorlds = runtime.getTeamKillBypassExemptWorlds();
+        if (!exemptWorlds.isEmpty() && exemptWorlds.contains(killer.getWorld().getName())) {
             return false;
         }
         try {
@@ -48,14 +54,44 @@ public final class TeamKillBypassService {
 
             final Object killerTeamValue = killerTeam.get();
             final Object victimTeamValue = victimTeam.get();
+
+            // Confirm same team
+            final boolean sameTeam;
             if (killerTeamValue.equals(victimTeamValue)) {
-                return true;
+                sameTeam = true;
+            } else {
+                final Method getId = killerTeamValue.getClass().getMethod("getId");
+                final Object killerId = getId.invoke(killerTeamValue);
+                final Object victimId = getId.invoke(victimTeamValue);
+                sameTeam = killerId != null && killerId.equals(victimId);
             }
 
-            final Method getId = killerTeamValue.getClass().getMethod("getId");
-            final Object killerId = getId.invoke(killerTeamValue);
-            final Object victimId = getId.invoke(victimTeamValue);
-            return killerId != null && killerId.equals(victimId);
+            if (!sameTeam) {
+                return false;
+            }
+
+            // Min team size check
+            final int minTeamSize = runtime.getTeamKillBypassMinTeamSize();
+            if (minTeamSize > 1) {
+                try {
+                    final Method getId = killerTeamValue.getClass().getMethod("getId");
+                    final Object teamIdObj = getId.invoke(killerTeamValue);
+                    if (teamIdObj instanceof UUID teamId) {
+                        final TeamsApiTeamResolver resolver = runtime.getTeamsApiTeamResolver();
+                        if (resolver != null) {
+                            final int teamSize = resolver.getTeamSize(teamId);
+                            if (teamSize < minTeamSize) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+                catch (ReflectiveOperationException ignored) {
+                    // If we can't determine size, allow bypass
+                }
+            }
+
+            return true;
         }
         catch (Throwable throwable) {
             runtime.getLogger().fine("TeamsAPI bypass check unavailable: " + throwable.getMessage());

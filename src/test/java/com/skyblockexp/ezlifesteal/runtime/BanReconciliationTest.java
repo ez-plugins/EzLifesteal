@@ -163,6 +163,44 @@ class BanReconciliationTest {
         verify(repository).saveBan(any(BanRecord.class));
     }
 
+    @Test
+    void reconcileRuntimeBansSyncsPardonsFromBukkit() throws Exception {
+        EzLifestealPlugin plugin = mock(EzLifestealPlugin.class);
+        when(plugin.getLogger()).thenReturn(Logger.getLogger("test"));
+        DefaultPluginRuntimeServices services = new DefaultPluginRuntimeServices(plugin, new Registry());
+
+        BanRepository repository = mock(BanRepository.class);
+        UUID pardoned = UUID.randomUUID();
+        UUID stillBanned = UUID.randomUUID();
+        BanRecord pardonedRecord = new BanRecord(pardoned, "PardonedPlayer", "reason", "EzLifesteal",
+                Instant.parse("2026-01-01T00:00:00Z"), null, true);
+        BanRecord stillBannedRecord = new BanRecord(stillBanned, "StillBanned", "reason", "EzLifesteal",
+                Instant.parse("2026-01-01T00:00:00Z"), null, true);
+        when(repository.loadActiveBans()).thenReturn(List.of(pardonedRecord, stillBannedRecord));
+        setField(services, "banRepository", repository);
+
+        com.destroystokyo.paper.profile.PlayerProfile pardonedProfile =
+                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
+        com.destroystokyo.paper.profile.PlayerProfile stillBannedProfile =
+                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
+        BanList profileBanList = mock(BanList.class);
+        when(profileBanList.getBanEntries()).thenReturn(Set.of());
+        when(profileBanList.isBanned(pardonedProfile)).thenReturn(false);
+        when(profileBanList.isBanned(stillBannedProfile)).thenReturn(true);
+
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) {
+            bukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(profileBanList);
+            bukkit.when(() -> Bukkit.createProfile(pardoned, "PardonedPlayer")).thenReturn(pardonedProfile);
+            bukkit.when(() -> Bukkit.createProfile(stillBanned, "StillBanned")).thenReturn(stillBannedProfile);
+
+            invokeReconcileRuntimeBans(services);
+        }
+
+        verify(repository).removeBan(pardoned);
+        verify(repository, never()).removeBan(stillBanned);
+        verify(profileBanList, never()).addBan(any(com.destroystokyo.paper.profile.PlayerProfile.class), any(), any(java.time.Instant.class), any());
+    }
+
     private static void invokeReconcileRuntimeBans(DefaultPluginRuntimeServices services) throws Exception {
         Method reconcile = DefaultPluginRuntimeServices.class.getDeclaredMethod("reconcileRuntimeBans");
         reconcile.setAccessible(true);

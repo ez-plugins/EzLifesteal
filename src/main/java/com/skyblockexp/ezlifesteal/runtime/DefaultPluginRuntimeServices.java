@@ -342,6 +342,8 @@ public final class DefaultPluginRuntimeServices {
 
     private TeamBankService teamBankService;
 
+    private com.skyblockexp.ezlifesteal.service.TeamBankAdminService teamBankAdminService;
+
 
     public void initializeCoreState() {
 
@@ -387,6 +389,8 @@ public final class DefaultPluginRuntimeServices {
         teamKillBypassService = new TeamKillBypassService(this);
         teamsApiTeamResolver = new TeamsApiTeamResolver(this);
         teamBankService = new TeamBankService(new RuntimePluginFacade(plugin, this), teamsApiTeamResolver);
+        teamBankAdminService = new com.skyblockexp.ezlifesteal.service.TeamBankAdminService(
+                new RuntimePluginFacade(plugin, this), teamsApiTeamResolver, getStorageExecutor());
         managerState.setPlayerLookupService(playerLookupService);
         registry.setPlayerLookupService(playerLookupService);
     }
@@ -501,6 +505,10 @@ public final class DefaultPluginRuntimeServices {
 
     public TeamBankService getTeamBankService() {
         return teamBankService;
+    }
+
+    public TeamsApiTeamResolver getTeamsApiTeamResolver() {
+        return teamsApiTeamResolver;
     }
 
     public PluginContext getPluginContext() {
@@ -870,10 +878,18 @@ public final class DefaultPluginRuntimeServices {
             if (playerName == null || playerName.isBlank() || playerUuid == null) {
                 continue;
             }
-            final Date expiresAt = record.getExpiresAt() == null ? null : Date.from(record.getExpiresAt());
             final com.destroystokyo.paper.profile.PlayerProfile banProfile = Bukkit.createProfile(playerUuid, playerName);
             if (!profileBanList.isBanned(banProfile)) {
-                profileBanList.addBan(banProfile, record.getReason(), expiresAt, record.getSource());
+                // The ban is active in storage but absent from Bukkit's ban list.
+                // This indicates the player was manually pardoned (e.g. /pardon). Sync the
+                // removal to storage so the player is not re-banned on the next restart.
+                try {
+                    getBanRepository().removeBan(playerUuid);
+                }
+                catch (StorageException exception) {
+                    getLogger().warning("Failed to sync pardon for " + playerName
+                            + " into storage: " + exception.getMessage());
+                }
             }
         }
     }
@@ -1594,12 +1610,46 @@ public final class DefaultPluginRuntimeServices {
         return gameplayState.getHeartRulesState().isTeamKillBypassWithTeamsApi();
     }
 
+    public List<String> getTeamKillBypassExemptWorlds() {
+        return gameplayState.getHeartRulesState().getTeamKillBypassExemptWorlds();
+    }
+
+    public int getTeamKillBypassMinTeamSize() {
+        return gameplayState.getHeartRulesState().getTeamKillBypassMinTeamSize();
+    }
+
     public boolean isTeamBankEnabled() {
         return gameplayState.getHeartRulesState().isTeamBankEnabled();
     }
 
     public double getTeamBankMaxHearts() {
         return gameplayState.getHeartRulesState().getTeamBankMaxHearts();
+    }
+
+    public double getTeamBankMaxHeartsForTeam(UUID teamId) {
+        if (teamId == null) {
+            return getTeamBankMaxHearts();
+        }
+        final Map<String, Double> perTeamOverrides = gameplayState.getHeartRulesState().getTeamBankPerTeamMaxHearts();
+        final Double override = perTeamOverrides.get(teamId.toString());
+        if (override != null && override > 0) {
+            return override;
+        }
+        // Also try team name via resolver if available
+        if (teamsApiTeamResolver != null) {
+            final Optional<String> teamName = teamsApiTeamResolver.resolveTeamName(teamId);
+            if (teamName.isPresent()) {
+                final Double nameOverride = perTeamOverrides.get(teamName.get());
+                if (nameOverride != null && nameOverride > 0) {
+                    return nameOverride;
+                }
+            }
+        }
+        return getTeamBankMaxHearts();
+    }
+
+    public com.skyblockexp.ezlifesteal.service.TeamBankAdminService getTeamBankAdminService() {
+        return teamBankAdminService;
     }
 
     public boolean shouldBypassForTeamKill(Player killer, Player victim) {

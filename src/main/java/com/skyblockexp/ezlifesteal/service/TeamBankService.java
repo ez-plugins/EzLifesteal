@@ -135,7 +135,7 @@ public final class TeamBankService {
                     if (playerBefore < amount) {
                         return new Result(Status.INSUFFICIENT_PLAYER_HEARTS, playerBefore, bankBefore, team.teamName());
                     }
-                    final double max = plugin.getTeamBankMaxHearts();
+                    final double max = plugin.getTeamBankMaxHeartsForTeam(team.teamId());
                     final double afterBank = bankBefore + amount;
                     if (afterBank > max) {
                         return new Result(Status.BANK_CAP_EXCEEDED, playerBefore, bankBefore, team.teamName());

@@ -20,6 +20,7 @@ import com.skyblockexp.ezlifesteal.command.subcommand.Subcommand;
 import com.skyblockexp.ezlifesteal.command.subcommand.TestSubcommand;
 import com.skyblockexp.ezlifesteal.command.subcommand.TopSubcommand;
 import com.skyblockexp.ezlifesteal.command.subcommand.TransferSubcommand;
+import com.skyblockexp.ezlifesteal.command.subcommand.TeamBankAdminSubcommand;
 import com.skyblockexp.ezlifesteal.command.subcommand.TeamBankSubcommand;
 import com.skyblockexp.ezlifesteal.command.subcommand.WithdrawSubcommand;
 import com.skyblockexp.ezlifesteal.model.LifestealProfile;
@@ -205,6 +206,8 @@ public class LifestealCommand implements org.bukkit.command.CommandExecutor {
         registry.register("teambank", new TeamBankSubcommand(),
                 requirement(true, "lifesteal.teambank.balance", "lifesteal.teambank.deposit",
                         "lifesteal.teambank.withdraw", "lifesteal.admin"), "tb");
+        registry.register("teambank-admin", new TeamBankAdminSubcommand(),
+                requirement(false, "lifesteal.teambank.admin", "lifesteal.admin"), "tba");
         registry.register("top", new TopSubcommand(), requirement(false, "lifesteal.top", "lifesteal.admin"));
         registry.register("shop", new ShopSubcommand(), requirement(true));
         registry.register("help", new HelpSubcommand(), requirement(false, "lifesteal.command.base"));
@@ -259,6 +262,8 @@ public class LifestealCommand implements org.bukkit.command.CommandExecutor {
                             "lifesteal.teambank.withdraw",
                             "lifesteal.admin"
                     ), null)),
+            Map.entry("teambank-admin",
+                    new SubcommandRequirement(false, List.of("lifesteal.teambank.admin", "lifesteal.admin"), null)),
             Map.entry("smurf",
                     new SubcommandRequirement(true, List.of("lifesteal.smurf.manage", "lifesteal.admin"), null)),
             Map.entry("top", new SubcommandRequirement(false, List.of("lifesteal.top", "lifesteal.admin"), null)),

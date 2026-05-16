@@ -287,6 +287,8 @@ class BeaconSubcommandTest {
                 BeaconSpawnSettings.WorldGuardSettings.defaults(),
                 BeaconSpawnSettings.CountdownSettings.defaults(),
                 BeaconSpawnSettings.RandomSpawnSettings.defaults(),
+                java.util.List.of(),
+                0,
                 BeaconSpawnSettings.ScheduleSettings.defaults(),
                 BeaconSpawnSettings.ExpirySettings.defaults(),
                 BeaconSpawnSettings.AvailabilityEventSettings.defaults()
@@ -312,6 +314,8 @@ class BeaconSubcommandTest {
                 BeaconSpawnSettings.WorldGuardSettings.defaults(),
                 BeaconSpawnSettings.CountdownSettings.defaults(),
                 BeaconSpawnSettings.RandomSpawnSettings.defaults(),
+                java.util.List.of(),
+                0,
                 BeaconSpawnSettings.ScheduleSettings.defaults(),
                 BeaconSpawnSettings.ExpirySettings.defaults(),
                 BeaconSpawnSettings.AvailabilityEventSettings.defaults()

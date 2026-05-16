@@ -1,5 +1,9 @@
 package com.skyblockexp.ezlifesteal.service;
 
+import com.skyblockexp.ezlifesteal.api.event.BeaconAvailableEvent;
+import com.skyblockexp.ezlifesteal.api.event.BeaconExpiredEvent;
+import com.skyblockexp.ezlifesteal.api.event.BeaconSpawnEvent;
+import com.skyblockexp.ezlifesteal.api.event.BeaconUsedEvent;
 import com.skyblockexp.ezlifesteal.config.BeaconSpawnSettings;
 import com.skyblockexp.ezlifesteal.integration.BeaconAreaProtection;
 import com.skyblockexp.ezlifesteal.integration.BeaconCountdownProvider;
@@ -8,7 +12,9 @@ import com.skyblockexp.ezlifesteal.model.SpawnedBeaconStatus;
 import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
 import com.skyblockexp.ezlifesteal.storage.SpawnedBeaconRepository;
 import com.skyblockexp.ezlifesteal.util.SchedulerAdapter;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
@@ -39,6 +45,9 @@ public final class BeaconSpawnService {
 
     /** Optional — may be null when EzCountdown is absent. */
     private BeaconCountdownProvider countdownProvider;
+
+    /** Timestamp of the last beacon completion (used, expired, or despawned). */
+    private volatile long lastBeaconEndedAtMillis = 0;
 
     public BeaconSpawnService(
             SpawnedBeaconRepository repository,
@@ -79,6 +88,18 @@ public final class BeaconSpawnService {
                 + repository.getAllWithStatus(SpawnedBeaconStatus.AVAILABLE).size();
         if (activeCount >= settings.maxConcurrent()) {
             return Optional.empty();
+        }
+
+        // Cooldown check
+        final int cooldownMinutes = settings.cooldownMinutes();
+        if (cooldownMinutes > 0 && lastBeaconEndedAtMillis > 0) {
+            final long cooldownMillis = (long) cooldownMinutes * 60_000L;
+            final long elapsed = System.currentTimeMillis() - lastBeaconEndedAtMillis;
+            if (elapsed < cooldownMillis) {
+                final long remainingSeconds = (cooldownMillis - elapsed) / 1000L;
+                logger.info("Beacon spawn rejected: cooldown active (" + remainingSeconds + "s remaining).");
+                return Optional.empty();
+            }
         }
 
         // Place the beacon block
@@ -128,6 +149,17 @@ public final class BeaconSpawnService {
         if (glowEntityId != null) {
             beacon.setGlowEntityId(glowEntityId);
         }
+        // Fire BeaconSpawnEvent — listeners may cancel the spawn
+        final BeaconSpawnEvent spawnEvent = new BeaconSpawnEvent(beacon);
+        Bukkit.getPluginManager().callEvent(spawnEvent);
+        if (spawnEvent.isCancelled()) {
+            cleanupBeacon(beacon);
+            logger.info("Beacon spawn at " + world.getName() + " "
+                    + location.getBlockX() + " " + location.getBlockY() + " "
+                    + location.getBlockZ() + " was cancelled by a plugin event listener.");
+            return Optional.empty();
+        }
+
         repository.add(beacon);
 
         if (countdownEnabled) {
@@ -164,6 +196,7 @@ public final class BeaconSpawnService {
         }
         final SpawnedBeacon beacon = optBeacon.get();
         cleanupBeacon(beacon);
+        lastBeaconEndedAtMillis = System.currentTimeMillis();
         logger.info("Despawned beacon " + beacon.shortId()
                 + " (status=" + beacon.getStatus() + ").");
     }
@@ -218,6 +251,7 @@ public final class BeaconSpawnService {
 
         // Fire the cool availability event
         availabilityService.fireAvailabilityEvent(beacon, accessor, settings.availabilityEvent());
+        Bukkit.getPluginManager().callEvent(new BeaconAvailableEvent(beacon));
         logger.info("Beacon " + beacon.shortId() + " is now AVAILABLE.");
     }
 
@@ -233,6 +267,8 @@ public final class BeaconSpawnService {
                 beacon.setStatus(SpawnedBeaconStatus.USED);
                 cleanupBeacon(beacon);
                 repository.remove(beacon.getId());
+                lastBeaconEndedAtMillis = System.currentTimeMillis();
+                Bukkit.getPluginManager().callEvent(new BeaconUsedEvent(beacon));
                 logger.info("Beacon " + beacon.shortId() + " was used and removed.");
             }
         });
@@ -271,18 +307,94 @@ public final class BeaconSpawnService {
         }
         final int rangeX = Math.max(1, settings.maxX() - settings.minX());
         final int rangeZ = Math.max(1, settings.maxZ() - settings.minZ());
+        final boolean useYBounds = settings.minY() != 0 || settings.maxY() != 0;
 
         for (int attempt = 0; attempt < 15; attempt++) {
             final int x = settings.minX() + RANDOM.nextInt(rangeX);
             final int z = settings.minZ() + RANDOM.nextInt(rangeZ);
-            final int y = world.getHighestBlockYAt(x, z);
-            final Location candidate = new Location(world, x, y + 1, z);
+            final int y;
+            if (useYBounds) {
+                final int rangeY = Math.max(1, settings.maxY() - settings.minY());
+                y = settings.minY() + RANDOM.nextInt(rangeY);
+            } else {
+                y = world.getHighestBlockYAt(x, z) + 1;
+            }
+            final Location candidate = new Location(world, x, y, z);
             if (isValidSpawnLocation(candidate)) {
                 return Optional.of(candidate);
             }
         }
         logger.warning("Could not find a valid random spawn location after 15 attempts.");
         return Optional.empty();
+    }
+
+    /**
+     * Selects a spawn location from a list of weighted regions using weighted random selection.
+     *
+     * @param regions the list of candidate regions (only enabled regions are considered)
+     * @return a valid location, or empty if no suitable position was found
+     */
+    public Optional<Location> findRandomSpawnLocationFromRegions(List<BeaconSpawnSettings.RandomSpawnRegion> regions) {
+        if (regions == null || regions.isEmpty()) {
+            return Optional.empty();
+        }
+        final List<BeaconSpawnSettings.RandomSpawnRegion> enabled = regions.stream()
+                .filter(BeaconSpawnSettings.RandomSpawnRegion::enabled)
+                .toList();
+        if (enabled.isEmpty()) {
+            return Optional.empty();
+        }
+        // Weighted selection
+        final int totalWeight = enabled.stream().mapToInt(BeaconSpawnSettings.RandomSpawnRegion::weight).sum();
+        int roll = RANDOM.nextInt(Math.max(1, totalWeight));
+        BeaconSpawnSettings.RandomSpawnRegion selected = enabled.get(enabled.size() - 1);
+        for (BeaconSpawnSettings.RandomSpawnRegion region : enabled) {
+            roll -= region.weight();
+            if (roll < 0) {
+                selected = region;
+                break;
+            }
+        }
+        final World world = Bukkit.getWorld(selected.worldName());
+        if (world == null) {
+            logger.warning("Random spawn region world '" + selected.worldName() + "' not found.");
+            return Optional.empty();
+        }
+        final int rangeX = Math.max(1, selected.maxX() - selected.minX());
+        final int rangeZ = Math.max(1, selected.maxZ() - selected.minZ());
+        final boolean useYBounds = selected.minY() != 0 || selected.maxY() != 0;
+
+        for (int attempt = 0; attempt < 15; attempt++) {
+            final int x = selected.minX() + RANDOM.nextInt(rangeX);
+            final int z = selected.minZ() + RANDOM.nextInt(rangeZ);
+            final int y;
+            if (useYBounds) {
+                final int rangeY = Math.max(1, selected.maxY() - selected.minY());
+                y = selected.minY() + RANDOM.nextInt(rangeY);
+            } else {
+                y = world.getHighestBlockYAt(x, z) + 1;
+            }
+            final Location candidate = new Location(world, x, y, z);
+            if (isValidSpawnLocation(candidate)) {
+                return Optional.of(candidate);
+            }
+        }
+        logger.warning("Could not find a valid random spawn location from regions after 15 attempts.");
+        return Optional.empty();
+    }
+
+    /**
+     * Finds a random spawn location using regions if configured, or the legacy single-region settings.
+     *
+     * @param settings the full beacon spawn settings
+     * @return a valid location, or empty if no suitable position was found
+     */
+    public Optional<Location> findRandomSpawnLocation(BeaconSpawnSettings settings) {
+        final List<BeaconSpawnSettings.RandomSpawnRegion> regions = settings.randomSpawnRegions();
+        if (regions != null && !regions.isEmpty()) {
+            return findRandomSpawnLocationFromRegions(regions);
+        }
+        return findRandomSpawnLocation(settings.randomSpawn());
     }
 
     // -------------------------------------------------------------------------
@@ -297,6 +409,8 @@ public final class BeaconSpawnService {
         final SpawnedBeacon beacon = optBeacon.get();
         beacon.setStatus(SpawnedBeaconStatus.EXPIRED);
         cleanupBeacon(beacon);
+        lastBeaconEndedAtMillis = System.currentTimeMillis();
+        Bukkit.getPluginManager().callEvent(new BeaconExpiredEvent(beacon));
         logger.info("Beacon " + beacon.shortId() + " expired and was removed.");
     }
 

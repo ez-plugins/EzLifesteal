@@ -1,5 +1,9 @@
 package com.skyblockexp.ezlifesteal.runtime.state;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
 public final class HeartRulesState {
 
     private double heartsPerKill;
@@ -16,9 +20,15 @@ public final class HeartRulesState {
 
     private boolean teamKillBypassWithTeamsApi;
 
+    private List<String> teamKillBypassExemptWorlds = Collections.emptyList();
+
+    private int teamKillBypassMinTeamSize = 1;
+
     private boolean teamBankEnabled;
 
     private double teamBankMaxHearts;
+
+    private Map<String, Double> teamBankPerTeamMaxHearts = Map.of();
 
     HeartRulesState() {
     }
@@ -83,6 +93,22 @@ public final class HeartRulesState {
         this.teamKillBypassWithTeamsApi = teamKillBypassWithTeamsApi;
     }
 
+    public List<String> getTeamKillBypassExemptWorlds() {
+        return teamKillBypassExemptWorlds;
+    }
+
+    public void setTeamKillBypassExemptWorlds(List<String> teamKillBypassExemptWorlds) {
+        this.teamKillBypassExemptWorlds = teamKillBypassExemptWorlds == null ? Collections.emptyList() : teamKillBypassExemptWorlds;
+    }
+
+    public int getTeamKillBypassMinTeamSize() {
+        return teamKillBypassMinTeamSize;
+    }
+
+    public void setTeamKillBypassMinTeamSize(int teamKillBypassMinTeamSize) {
+        this.teamKillBypassMinTeamSize = Math.max(1, teamKillBypassMinTeamSize);
+    }
+
     public boolean isTeamBankEnabled() {
         return teamBankEnabled;
     }
@@ -97,5 +123,13 @@ public final class HeartRulesState {
 
     public void setTeamBankMaxHearts(double teamBankMaxHearts) {
         this.teamBankMaxHearts = teamBankMaxHearts;
+    }
+
+    public Map<String, Double> getTeamBankPerTeamMaxHearts() {
+        return teamBankPerTeamMaxHearts;
+    }
+
+    public void setTeamBankPerTeamMaxHearts(Map<String, Double> teamBankPerTeamMaxHearts) {
+        this.teamBankPerTeamMaxHearts = teamBankPerTeamMaxHearts == null ? Map.of() : teamBankPerTeamMaxHearts;
     }
 }

@@ -141,7 +141,7 @@ public class BeaconSubcommand implements Subcommand {
         } else {
             // Random spawn
             final Optional<Location> randomLoc =
-                    spawnService.findRandomSpawnLocation(plugin.getBeaconSpawnSettings().randomSpawn());
+                    spawnService.findRandomSpawnLocation(plugin.getBeaconSpawnSettings());
             if (randomLoc.isEmpty()) {
                 sender.sendMessage(ChatColor.RED + "Could not find a valid random spawn location. Configure random-spawn bounds in revive-beacon.yml.");
                 return true;

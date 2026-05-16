@@ -2,6 +2,7 @@ package com.skyblockexp.ezlifesteal.integration;
 
 import com.skyblockexp.ezlifesteal.config.BeaconSpawnSettings;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
@@ -46,7 +47,9 @@ class EzCountdownBeaconHookTest {
                 List.of("ACTION_BAR"),
                 "&d{formatted} until active",
                 "PURPLE",
-                "SEGMENTED_20"
+                "SEGMENTED_20",
+                "ezls-beacon-",
+                Map.of()
         );
     }
 
@@ -75,6 +78,8 @@ class EzCountdownBeaconHookTest {
                 true,
                 60,
                 List.of("INVALID_TYPE"),
+                null,
+                null,
                 null,
                 null,
                 null

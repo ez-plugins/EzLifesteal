@@ -138,6 +138,22 @@ public final class RuntimePluginFacade implements PluginAccessor {
         return runtime.shouldBypassForTeamKill(killer, victim);
     }
 
+    @Override public java.util.List<String> getTeamKillBypassExemptWorlds() {
+        return runtime.getTeamKillBypassExemptWorlds();
+    }
+
+    @Override public int getTeamKillBypassMinTeamSize() {
+        return runtime.getTeamKillBypassMinTeamSize();
+    }
+
+    @Override public double getTeamBankMaxHeartsForTeam(UUID teamId) {
+        return runtime.getTeamBankMaxHeartsForTeam(teamId);
+    }
+
+    @Override public com.skyblockexp.ezlifesteal.service.TeamBankAdminService getTeamBankAdminService() {
+        return runtime.getTeamBankAdminService();
+    }
+
     @Override public boolean isAdminBypassHeartLoss() {
         return registry.getGameplayState().getHeartRulesState().isAdminBypassHeartLoss();
     }

@@ -31,8 +31,11 @@ public class GameplayStateApplier {
         heartRulesState.setHeartsPerKill(lifestealSettings.heartsPerKill());
         heartRulesState.setHeartsLostOnDeath(lifestealSettings.heartsLostOnDeath());
         heartRulesState.setTeamKillBypassWithTeamsApi(lifestealSettings.teamKillBypassWithTeamsApi());
+        heartRulesState.setTeamKillBypassExemptWorlds(lifestealSettings.teamKillBypassExemptWorlds());
+        heartRulesState.setTeamKillBypassMinTeamSize(lifestealSettings.teamKillBypassMinTeamSize());
         heartRulesState.setTeamBankEnabled(lifestealSettings.teamBankEnabled());
         heartRulesState.setTeamBankMaxHearts(lifestealSettings.teamBankMaxHearts());
+        heartRulesState.setTeamBankPerTeamMaxHearts(lifestealSettings.teamBankPerTeamMaxHearts());
         heartRulesState.setBanWhenZeroHearts(lifestealSettings.banWhenZeroHearts());
         heartRulesState.setGlobalLifestealEnabled(lifestealSettings.globalLifestealEnabled());
         heartRulesState.setAdminBypassHeartLoss(adminSettings.adminBypassHeartLoss());

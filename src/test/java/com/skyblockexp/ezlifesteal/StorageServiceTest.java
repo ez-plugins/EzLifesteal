@@ -122,42 +122,46 @@ class StorageServiceTest {
     }
 
     @Test
-    void reconcileRuntimeBansAddsOnlyMissingNamedBans() throws Exception {
+    void reconcileRuntimeBansSyncsPardonsFromBukkit() throws Exception {
         StorageService service = new StorageService(mock(EzLifestealPlugin.class), mock(Registry.class),
                 mock(ConfigLoader.class));
         BanRepository repository = mock(BanRepository.class);
 
-        BanRecord newBan = new BanRecord(UUID.randomUUID(), "MissingPlayer", "reason", "console",
+        UUID pardoned = UUID.randomUUID();
+        UUID stillBanned = UUID.randomUUID();
+        BanRecord pardonedRecord = new BanRecord(pardoned, "PardonedPlayer", "reason", "console",
                 Instant.now(), null, true);
-        BanRecord existingBan = new BanRecord(UUID.randomUUID(), "ExistingPlayer", "reason", "console",
+        BanRecord stillBannedRecord = new BanRecord(stillBanned, "StillBanned", "reason", "console",
                 Instant.now(), null, true);
         BanRecord blankPlayer = new BanRecord(UUID.randomUUID(), " ", "reason", "console",
                 Instant.now(), null, true);
 
-        when(repository.loadActiveBans()).thenReturn(List.of(newBan, existingBan, blankPlayer));
+        when(repository.loadActiveBans()).thenReturn(List.of(pardonedRecord, stillBannedRecord, blankPlayer));
 
         setField(service, "banRepository", repository);
 
         BanList banList = mock(BanList.class);
-        com.destroystokyo.paper.profile.PlayerProfile missingProfile =
+        com.destroystokyo.paper.profile.PlayerProfile pardonedProfile =
                 mock(com.destroystokyo.paper.profile.PlayerProfile.class);
-        com.destroystokyo.paper.profile.PlayerProfile existingProfile =
+        com.destroystokyo.paper.profile.PlayerProfile stillBannedProfile =
                 mock(com.destroystokyo.paper.profile.PlayerProfile.class);
-        when(banList.isBanned(missingProfile)).thenReturn(false);
-        when(banList.isBanned(existingProfile)).thenReturn(true);
+        when(banList.isBanned(pardonedProfile)).thenReturn(false);
+        when(banList.isBanned(stillBannedProfile)).thenReturn(true);
         when(banList.getBanEntries()).thenReturn(java.util.Set.of());
 
         try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
             bukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
-            bukkit.when(() -> Bukkit.createProfile(newBan.getUniqueId(), "MissingPlayer")).thenReturn(missingProfile);
-            bukkit.when(() -> Bukkit.createProfile(existingBan.getUniqueId(), "ExistingPlayer")).thenReturn(existingProfile);
+            bukkit.when(() -> Bukkit.createProfile(pardoned, "PardonedPlayer")).thenReturn(pardonedProfile);
+            bukkit.when(() -> Bukkit.createProfile(stillBanned, "StillBanned")).thenReturn(stillBannedProfile);
 
             service.reconcileRuntimeBans();
 
+            verify(repository).removeBan(pardoned);
+            verify(repository, Mockito.never()).removeBan(stillBanned);
             long addBanCalls = Mockito.mockingDetails(banList).getInvocations().stream()
                     .filter(invocation -> invocation.getMethod().getName().equals("addBan"))
                     .count();
-            assertEquals(1, addBanCalls);
+            assertEquals(0, addBanCalls);
         }
     }
 

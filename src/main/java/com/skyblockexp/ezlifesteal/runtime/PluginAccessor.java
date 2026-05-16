@@ -13,12 +13,15 @@ import com.skyblockexp.ezlifesteal.hologram.TopHologramManager;
 import com.skyblockexp.ezlifesteal.killstreak.KillStreakManager;
 import com.skyblockexp.ezlifesteal.model.MobReward;
 import com.skyblockexp.ezlifesteal.service.LifestealManager;
+import com.skyblockexp.ezlifesteal.service.TeamBankAdminService;
 import com.skyblockexp.ezlifesteal.service.TeamBankService;
 import com.skyblockexp.ezlifesteal.storage.Storage;
 import com.skyblockexp.ezlifesteal.storage.repository.BanRepository;
 import com.skyblockexp.ezlifesteal.storage.repository.ProfileRepository;
 import com.skyblockexp.ezlifesteal.storage.repository.TeamBankRepository;
 import com.skyblockexp.ezlifesteal.util.PlayerLookupService;
+import java.util.List;
+import java.util.UUID;
 import java.util.logging.Logger;
 import org.bukkit.entity.EntityType;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -92,6 +95,22 @@ public interface PluginAccessor {
 
     default boolean shouldBypassForTeamKill(org.bukkit.entity.Player killer, org.bukkit.entity.Player victim) {
         return false;
+    }
+
+    default List<String> getTeamKillBypassExemptWorlds() {
+        return List.of();
+    }
+
+    default int getTeamKillBypassMinTeamSize() {
+        return 1;
+    }
+
+    default double getTeamBankMaxHeartsForTeam(UUID teamId) {
+        return getTeamBankMaxHearts();
+    }
+
+    default TeamBankAdminService getTeamBankAdminService() {
+        return null;
     }
 
     boolean isAdminBypassHeartLoss();

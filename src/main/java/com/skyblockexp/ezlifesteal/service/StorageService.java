@@ -213,10 +213,18 @@ public class StorageService {
             if (playerName == null || playerName.isBlank() || playerUuid == null) {
                 continue;
             }
-            final Date expiresAt = record.getExpiresAt() == null ? null : Date.from(record.getExpiresAt());
             final PlayerProfile profile = Bukkit.createProfile(playerUuid, playerName);
             if (!profileBanList.isBanned(profile)) {
-                profileBanList.addBan(profile, record.getReason(), expiresAt, record.getSource());
+                // The ban is active in storage but absent from Bukkit's ban list.
+                // This indicates the player was manually pardoned (e.g. /pardon). Sync the
+                // removal to storage so the player is not re-banned on the next restart.
+                try {
+                    getBanRepository().removeBan(playerUuid);
+                }
+                catch (StorageException exception) {
+                    plugin.getLogger().warning("Failed to sync pardon for " + playerName
+                            + " into storage: " + exception.getMessage());
+                }
             }
         }
     }
