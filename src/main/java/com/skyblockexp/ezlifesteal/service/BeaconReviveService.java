@@ -19,7 +19,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
-import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -212,11 +211,7 @@ public class BeaconReviveService {
             }
         }
 
-        final com.destroystokyo.paper.profile.PlayerProfile banProfile =
-                Bukkit.createProfile(result.uniqueId(), result.playerName());
-        final BanList<com.destroystokyo.paper.profile.PlayerProfile> profileBanList =
-                Bukkit.getBanList(BanList.Type.PROFILE);
-        profileBanList.pardon(banProfile);
+        plugin.getBanAdapter().removeBan(result.uniqueId(), result.playerName());
     }
 
     private CompletableFuture<Void> clearPersistedBanAsync(UUID uniqueId) {
@@ -280,9 +275,8 @@ public class BeaconReviveService {
                 continue;
             }
             final String playerName = onlinePlayer.getName();
-            final BanList<com.destroystokyo.paper.profile.PlayerProfile> profileBanList =
-                    Bukkit.getBanList(BanList.Type.PROFILE);
-            final boolean bannedByProfile = profileBanList.isBanned(onlinePlayer.getPlayerProfile());
+            final boolean bannedByProfile = plugin.getBanAdapter()
+                    .isBanned(onlinePlayer.getUniqueId(), playerName);
 
             candidates.add(new ReviveCandidate(
                     onlinePlayer.getUniqueId(),

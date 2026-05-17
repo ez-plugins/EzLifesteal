@@ -12,3 +12,7 @@
 # OS files
 .DS_Store
 Thumbs.db
+
+# Temporary test output
+test_output.txt
+test_result.log

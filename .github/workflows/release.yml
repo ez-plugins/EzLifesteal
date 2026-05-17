@@ -151,6 +151,7 @@ jobs:
             worldguard(optional)
             ezseasons(optional)
             ezcountdown(optional)
+            teams-api(optional)
 
       # ──────────────────────────────────────────────────────────────────────
       #  8. DISCORD NOTIFICATION

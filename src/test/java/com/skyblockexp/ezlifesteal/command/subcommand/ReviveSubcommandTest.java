@@ -6,10 +6,10 @@ import com.skyblockexp.ezlifesteal.model.LifestealProfile;
 import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
 import com.skyblockexp.ezlifesteal.service.LifestealManager;
 import com.skyblockexp.ezlifesteal.util.PlayerLookupService;
+import com.skyblockexp.ezlifesteal.util.ban.PlatformBanAdapter;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
@@ -73,9 +73,7 @@ class ReviveSubcommandTest {
         UUID targetId = UUID.randomUUID();
         LifestealProfile profile = new LifestealProfile(targetId, 1.0);
         OfflinePlayer offline = mock(OfflinePlayer.class);
-        BanList profileBanList = mock(BanList.class);
-        com.destroystokyo.paper.profile.PlayerProfile reviveProfile =
-                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
+        PlatformBanAdapter banAdapter = mock(PlatformBanAdapter.class);
 
         when(context.requirePermissionPublic(any(), anyString(), any())).thenReturn(true);
         when(context.getPluginAccessorPublic()).thenReturn(plugin);
@@ -85,6 +83,7 @@ class ReviveSubcommandTest {
         when(context.formatPublic(anyDouble())).thenReturn("6");
         when(plugin.getLifestealManager()).thenReturn(manager);
         when(plugin.getMessageService()).thenReturn(messageService);
+        when(plugin.getBanAdapter()).thenReturn(banAdapter);
         when(manager.getDefaultHearts()).thenReturn(6.0);
         when(lookup.lookupUniqueId("target")).thenReturn(CompletableFuture.completedFuture(Optional.of(targetId)));
         when(manager.loadProfileAsync(targetId)).thenReturn(CompletableFuture.completedFuture(profile));
@@ -93,14 +92,12 @@ class ReviveSubcommandTest {
 
         try (MockedStatic<Bukkit> mocked = mockStatic(Bukkit.class)) {
             mocked.when(() -> Bukkit.getOfflinePlayer(targetId)).thenReturn(offline);
-            mocked.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(profileBanList);
-            mocked.when(() -> Bukkit.createProfile(eq(targetId), eq("target"))).thenReturn(reviveProfile);
             new ReviveSubcommand().execute(sender, null, "lifesteal", new String[]{"revive", "target"}, context);
         }
 
         verify(manager).loadProfileAsync(targetId);
         verify(manager).saveProfileAsync(profile);
-        verify(profileBanList).pardon(reviveProfile);
+        verify(banAdapter).removeBan(targetId, "target");
         verify(plugin).requestTopHologramUpdate();
         verify(messageService).sendMessage(eq(sender), eq("revive-success"), anyMap());
     }

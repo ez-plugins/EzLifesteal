@@ -1,6 +1,6 @@
 package com.skyblockexp.ezlifesteal.listener;
 
-import com.destroystokyo.paper.profile.PlayerProfile;
+import com.skyblockexp.ezlifesteal.util.ban.PlatformBanAdapter;
 import com.skyblockexp.ezlifesteal.config.LifestealConfigAdapter;
 import com.skyblockexp.ezlifesteal.config.MessageService;
 import com.skyblockexp.ezlifesteal.detector.AdminDetector;
@@ -17,7 +17,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
-import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -403,10 +402,8 @@ class PlayerListenerTest {
         UUID victimId = UUID.randomUUID();
         LifestealProfile victimProfile = new LifestealProfile(victimId, 1.0);
         Player victim = mockPlayer("victim", "world");
-        PlayerProfile profile = mock(PlayerProfile.class);
         when(victim.getUniqueId()).thenReturn(victimId);
         when(victim.getName()).thenReturn("victim");
-        when(victim.getPlayerProfile()).thenReturn(profile);
 
         when(plugin.isGlobalLifestealEnabled()).thenReturn(true);
         when(plugin.isLifestealEnabledInWorld("world")).thenReturn(true);
@@ -417,10 +414,7 @@ class PlayerListenerTest {
         when(plugin.isBanWhenZeroHearts("world")).thenReturn(true);
         when(manager.saveProfileAsync(any())).thenReturn(CompletableFuture.completedFuture(null));
 
-        BanList<PlayerProfile> banList = mock(BanList.class);
-        when(banList.isBanned(profile)).thenReturn(false);
-
-        try (MockedStatic<Bukkit> bukkit = mockPaperSchedulerWithBanList(banList)) {
+        try (MockedStatic<Bukkit> bukkit = mockPaperScheduler()) {
             PlayerListener listener = new PlayerListener(plugin, "", "", false, 0L);
             listener.handlePlayerDeath(victim, null);
 
@@ -436,10 +430,8 @@ class PlayerListenerTest {
         UUID victimId = UUID.randomUUID();
         LifestealProfile victimProfile = new LifestealProfile(victimId, 1.0);
         Player victim = mockPlayer("victim", "world");
-        PlayerProfile profile = mock(PlayerProfile.class);
         when(victim.getUniqueId()).thenReturn(victimId);
         when(victim.getName()).thenReturn("victim");
-        when(victim.getPlayerProfile()).thenReturn(profile);
 
         when(plugin.isGlobalLifestealEnabled()).thenReturn(true);
         when(plugin.isLifestealEnabledInWorld("world")).thenReturn(true);
@@ -450,10 +442,7 @@ class PlayerListenerTest {
         when(plugin.isBanWhenZeroHearts("world")).thenReturn(true);
         when(manager.saveProfileAsync(any())).thenReturn(CompletableFuture.completedFuture(null));
 
-        BanList<PlayerProfile> banList = mock(BanList.class);
-        when(banList.isBanned(profile)).thenReturn(false);
-
-        try (MockedStatic<Bukkit> bukkit = mockPaperSchedulerWithBanList(banList)) {
+        try (MockedStatic<Bukkit> bukkit = mockPaperScheduler()) {
             PlayerListener listener = new PlayerListener(plugin, "", "&cKick only", false, 0L);
             listener.handlePlayerDeath(victim, null);
 
@@ -732,9 +721,11 @@ class PlayerListenerTest {
         PluginAccessor plugin = mock(PluginAccessor.class);
         JavaPlugin javaPlugin = mock(JavaPlugin.class);
         Logger logger = mock(Logger.class);
+        PlatformBanAdapter banAdapter = mock(PlatformBanAdapter.class);
         when(plugin.getPlugin()).thenReturn(javaPlugin);
         when(plugin.getLogger()).thenReturn(logger);
         when(plugin.getPluginName()).thenReturn("EzLifesteal");
+        when(plugin.getBanAdapter()).thenReturn(banAdapter);
         return plugin;
     }
 
@@ -783,13 +774,6 @@ class PlayerListenerTest {
             runnable.run();
             return task;
         });
-        return bukkit;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static MockedStatic<Bukkit> mockPaperSchedulerWithBanList(BanList<PlayerProfile> banList) {
-        MockedStatic<Bukkit> bukkit = mockPaperScheduler();
-        bukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
         return bukkit;
     }
 

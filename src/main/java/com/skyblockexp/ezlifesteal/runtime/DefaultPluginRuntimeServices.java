@@ -62,6 +62,8 @@ import com.skyblockexp.ezlifesteal.storage.yaml.YamlStorageProvider;
 import com.skyblockexp.ezlifesteal.util.PlayerLookupService;
 import com.skyblockexp.ezlifesteal.util.PluginLifecycleSupport;
 import com.skyblockexp.ezlifesteal.util.SchedulerAdapter;
+import com.skyblockexp.ezlifesteal.util.ban.BanEntryView;
+import com.skyblockexp.ezlifesteal.util.ban.PlatformBanAdapter;
 import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
@@ -110,6 +112,8 @@ public final class DefaultPluginRuntimeServices {
 
     private final RuntimeCompatibilityAdapter compatibilityAdapter;
 
+    private final PlatformBanAdapter banAdapter;
+
     public DefaultPluginRuntimeServices(EzLifestealPlugin plugin, Registry registry) {
         this.plugin = plugin;
         this.registry = registry;
@@ -118,6 +122,7 @@ public final class DefaultPluginRuntimeServices {
         this.managerState = registry.getManagerState();
         this.gameplayState = registry.getGameplayState();
         this.compatibilityAdapter = new RuntimeCompatibilityAdapter(this, registry);
+        this.banAdapter = PlatformBanAdapter.create();
     }
 
     // Seasons integration candidate names (compatibility constants)
@@ -136,6 +141,10 @@ public final class DefaultPluginRuntimeServices {
 
     public java.util.logging.Logger getLogger() {
         return plugin.getLogger();
+    }
+
+    public PlatformBanAdapter getBanAdapter() {
+        return banAdapter;
     }
 
     public java.io.File getDataFolder() {
@@ -871,15 +880,13 @@ public final class DefaultPluginRuntimeServices {
         if (activeBans.isEmpty()) {
             return;
         }
-        final BanList<com.destroystokyo.paper.profile.PlayerProfile> profileBanList = Bukkit.getBanList(BanList.Type.PROFILE);
         for (BanRecord record : activeBans) {
             final String playerName = record.getPlayerName();
             final UUID playerUuid = record.getUniqueId();
             if (playerName == null || playerName.isBlank() || playerUuid == null) {
                 continue;
             }
-            final com.destroystokyo.paper.profile.PlayerProfile banProfile = Bukkit.createProfile(playerUuid, playerName);
-            if (!profileBanList.isBanned(banProfile)) {
+            if (!banAdapter.isBanned(playerUuid, playerName)) {
                 // The ban is active in storage but absent from Bukkit's ban list.
                 // This indicates the player was manually pardoned (e.g. /pardon). Sync the
                 // removal to storage so the player is not re-banned on the next restart.
@@ -903,14 +910,12 @@ public final class DefaultPluginRuntimeServices {
         if (repository == null) {
             return;
         }
-        final BanList<com.destroystokyo.paper.profile.PlayerProfile> profileBanList = Bukkit.getBanList(BanList.Type.PROFILE);
-        for (org.bukkit.BanEntry<com.destroystokyo.paper.profile.PlayerProfile> entry : profileBanList.getBanEntries()) {
-            final com.destroystokyo.paper.profile.PlayerProfile profile = entry.getBanTarget();
-            final UUID uniqueId = profile.getId();
+        for (BanEntryView entry : banAdapter.getBanEntries()) {
+            final UUID uniqueId = entry.getPlayerId();
             if (uniqueId == null) {
                 continue;
             }
-            final String playerName = profile.getName();
+            final String playerName = entry.getPlayerName();
             if (playerName == null || playerName.isBlank()) {
                 continue;
             }

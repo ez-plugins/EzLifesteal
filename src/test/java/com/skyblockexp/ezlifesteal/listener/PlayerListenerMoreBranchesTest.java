@@ -6,6 +6,7 @@ import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
 import com.skyblockexp.ezlifesteal.service.LifestealManager;
 import com.skyblockexp.ezlifesteal.storage.BanRecord;
 import com.skyblockexp.ezlifesteal.storage.repository.BanRepository;
+import com.skyblockexp.ezlifesteal.util.ban.PlatformBanAdapter;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Map;
@@ -13,8 +14,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
-import com.destroystokyo.paper.profile.PlayerProfile;
-import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
 import org.bukkit.entity.Entity;
@@ -100,20 +99,20 @@ class PlayerListenerMoreBranchesTest {
         PluginAccessor plugin = mock(PluginAccessor.class);
         LifestealManager manager = mock(LifestealManager.class);
         BanRepository banRepo = mock(BanRepository.class);
+        PlatformBanAdapter banAdapter = mock(PlatformBanAdapter.class);
 
         when(plugin.getLifestealManager()).thenReturn(manager);
         when(plugin.getBanRepository()).thenReturn(banRepo);
         when(plugin.getPluginName()).thenReturn("EzLifesteal");
         when(plugin.getLogger()).thenReturn(mock(Logger.class));
         when(plugin.getMessageService()).thenReturn(mock(MessageService.class));
+        when(plugin.getBanAdapter()).thenReturn(banAdapter);
 
         Player player = mock(Player.class);
         UUID id = UUID.randomUUID();
-        PlayerProfile playerProfile = mock(PlayerProfile.class);
         when(player.getUniqueId()).thenReturn(id);
         when(player.getName()).thenReturn("p");
         when(player.getWorld()).thenReturn(mock(org.bukkit.World.class));
-        when(player.getPlayerProfile()).thenReturn(playerProfile);
 
         LifestealProfile profile = new LifestealProfile(id, 1.0);
         // set profile to lose hearts to 0
@@ -125,7 +124,7 @@ class PlayerListenerMoreBranchesTest {
 
         when(plugin.isBanWhenZeroHearts(any())).thenReturn(true);
 
-        // Mock scheduler and ban list via Bukkit static
+        // Mock scheduler via Bukkit static
         BukkitScheduler scheduler = mock(BukkitScheduler.class);
         when(scheduler.runTask(any(JavaPlugin.class), any(Runnable.class))).thenAnswer(invocation -> {
             Runnable r = invocation.getArgument(1);
@@ -133,15 +132,11 @@ class PlayerListenerMoreBranchesTest {
             return mock(BukkitTask.class);
         });
 
-        @SuppressWarnings("unchecked")
-        BanList<PlayerProfile> banList = mock(BanList.class);
-
         try (MockedStatic<Bukkit> b = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) {
             Server server = mock(Server.class);
             when(server.getName()).thenReturn("Paper");
             b.when(Bukkit::getServer).thenReturn(server);
             b.when(Bukkit::getScheduler).thenReturn(scheduler);
-            b.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
 
             when(plugin.getPlugin()).thenReturn(mock(JavaPlugin.class));
 

@@ -110,15 +110,10 @@ public final class SpawnedBeaconListener implements Listener {
      */
     private List<String> buildBannedPlayerList() {
         final List<String> names = new ArrayList<>();
-        final org.bukkit.BanList<com.destroystokyo.paper.profile.PlayerProfile> profileBanList =
-                Bukkit.getBanList(org.bukkit.BanList.Type.PROFILE);
-        for (org.bukkit.BanEntry<com.destroystokyo.paper.profile.PlayerProfile> entry : profileBanList.getBanEntries()) {
-            final com.destroystokyo.paper.profile.PlayerProfile profile = entry.getBanTarget();
-            if (profile != null) {
-                final String name = profile.getName();
-                if (name != null && !name.isBlank()) {
-                    names.add(name);
-                }
+        for (com.skyblockexp.ezlifesteal.util.ban.BanEntryView entry : accessor.getBanAdapter().getBanEntries()) {
+            final String name = entry.getPlayerName();
+            if (name != null && !name.isBlank()) {
+                names.add(name);
             }
         }
         names.sort(String::compareTo);

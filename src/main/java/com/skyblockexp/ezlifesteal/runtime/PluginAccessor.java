@@ -19,6 +19,7 @@ import com.skyblockexp.ezlifesteal.storage.Storage;
 import com.skyblockexp.ezlifesteal.storage.repository.BanRepository;
 import com.skyblockexp.ezlifesteal.storage.repository.ProfileRepository;
 import com.skyblockexp.ezlifesteal.storage.repository.TeamBankRepository;
+import com.skyblockexp.ezlifesteal.util.ban.PlatformBanAdapter;
 import com.skyblockexp.ezlifesteal.util.PlayerLookupService;
 import java.util.List;
 import java.util.UUID;
@@ -65,6 +66,10 @@ public interface PluginAccessor {
     default BanRepository getBanRepository() {
 
         return getStorage();
+    }
+
+    default PlatformBanAdapter getBanAdapter() {
+        return null;
     }
 
     default TeamBankRepository getTeamBankRepository() {

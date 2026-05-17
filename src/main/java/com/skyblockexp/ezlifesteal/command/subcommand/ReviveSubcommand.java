@@ -5,7 +5,6 @@ import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
 import com.skyblockexp.ezlifesteal.service.LifestealManager;
 import com.skyblockexp.ezlifesteal.storage.StorageException;
 import java.util.UUID;
-import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
@@ -52,11 +51,7 @@ public class ReviveSubcommand implements Subcommand {
                                 }
                             }
                             final String resolvedName = context.resolvePlayerNamePublic(reviveTarget, lookupTarget);
-                            final com.destroystokyo.paper.profile.PlayerProfile banProfile =
-                                    Bukkit.createProfile(reviveTarget.getUniqueId(), resolvedName);
-                            final org.bukkit.BanList<com.destroystokyo.paper.profile.PlayerProfile> reviveBanList =
-                                    Bukkit.getBanList(BanList.Type.PROFILE);
-                            reviveBanList.pardon(banProfile);
+                            plugin.getBanAdapter().removeBan(reviveTarget.getUniqueId(), resolvedName);
                             if (plugin.getBanRepository() != null) {
                                 try {
                                     plugin.getBanRepository().removeBan(reviveTarget.getUniqueId());

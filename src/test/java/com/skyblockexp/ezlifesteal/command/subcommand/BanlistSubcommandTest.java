@@ -6,20 +6,19 @@ import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
 import com.skyblockexp.ezlifesteal.storage.BanRecord;
 import com.skyblockexp.ezlifesteal.storage.StorageException;
 import com.skyblockexp.ezlifesteal.storage.repository.BanRepository;
+import com.skyblockexp.ezlifesteal.util.ban.BanEntryView;
+import com.skyblockexp.ezlifesteal.util.ban.PlatformBanAdapter;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.logging.Logger;
-import org.bukkit.BanEntry;
-import org.bukkit.BanList;
-import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -86,27 +85,20 @@ class BanlistSubcommandTest {
         when(plugin.getMessageService()).thenReturn(messageService);
         when(plugin.getPluginName()).thenReturn("EzLifesteal");
 
-        BanEntry otherSource = mock(BanEntry.class);
-        when(otherSource.getSource()).thenReturn("Console");
-
-        BanEntry sourceThrows = mock(BanEntry.class);
-        when(sourceThrows.getSource()).thenThrow(new IllegalStateException("boom"));
-
-        BanList banList = mock(BanList.class);
-        when(banList.getEntries()).thenReturn(Set.of(otherSource, sourceThrows));
+        PlatformBanAdapter banAdapter = mock(PlatformBanAdapter.class);
+        when(plugin.getBanAdapter()).thenReturn(banAdapter);
+        when(banAdapter.getBanEntries()).thenReturn(Set.of(
+                new BanEntryView(null, "player", "reason", "Console", null, null)
+        ));
 
         LifestealCommand context = context(plugin, true, Runnable::run);
         CommandSender sender = mock(CommandSender.class);
 
-        try (MockedStatic<Bukkit> mockedBukkit = org.mockito.Mockito.mockStatic(Bukkit.class)) {
-            mockedBukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
+        boolean result = new BanlistSubcommand().execute(sender, null, "lifesteal", new String[]{"banlist"},
+                context);
 
-            boolean result = new BanlistSubcommand().execute(sender, null, "lifesteal", new String[]{"banlist"},
-                    context);
-
-            assertTrue(result);
-            verify(messageService).sendMessage(sender, "banlist-empty");
-        }
+        assertTrue(result);
+        verify(messageService).sendMessage(sender, "banlist-empty");
     }
 
     @Test
@@ -116,37 +108,26 @@ class BanlistSubcommandTest {
         when(plugin.getMessageService()).thenReturn(messageService);
         when(plugin.getPluginName()).thenReturn("EzLifesteal");
 
-        List<BanEntry> entries = new ArrayList<>();
+        Set<BanEntryView> entries = new LinkedHashSet<>();
         for (int i = 0; i < 11; i++) {
-            com.destroystokyo.paper.profile.PlayerProfile profile =
-                    mock(com.destroystokyo.paper.profile.PlayerProfile.class);
-            when(profile.getName()).thenReturn("player-" + i);
-            BanEntry entry = mock(BanEntry.class);
-            when(entry.getSource()).thenReturn("EzLifesteal");
-            when(entry.getBanTarget()).thenReturn(profile);
-            when(entry.getReason()).thenReturn("reason-" + i);
-            when(entry.getCreated()).thenReturn(new Date(1_000L + i));
-            when(entry.getExpiration()).thenReturn(new Date(2_000L + i));
-            entries.add(entry);
+            entries.add(new BanEntryView(UUID.randomUUID(), "player-" + i, "reason-" + i, "EzLifesteal",
+                    new Date(1_000L + i), new Date(2_000L + i)));
         }
 
-        BanList banList = mock(BanList.class);
-        when(banList.getEntries()).thenReturn(Set.copyOf(entries));
+        PlatformBanAdapter banAdapter = mock(PlatformBanAdapter.class);
+        when(plugin.getBanAdapter()).thenReturn(banAdapter);
+        when(banAdapter.getBanEntries()).thenReturn(entries);
 
         LifestealCommand context = context(plugin, true, Runnable::run);
         CommandSender sender = mock(CommandSender.class);
 
-        try (MockedStatic<Bukkit> mockedBukkit = org.mockito.Mockito.mockStatic(Bukkit.class)) {
-            mockedBukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
+        boolean result = new BanlistSubcommand().execute(sender, null, "lifesteal", new String[]{"banlist", "1"},
+                context);
 
-            boolean result = new BanlistSubcommand().execute(sender, null, "lifesteal", new String[]{"banlist", "1"},
-                    context);
-
-            assertTrue(result);
-            verify(messageService).sendMessage(eq(sender), eq("banlist-header"), anyMap());
-            verify(messageService, atLeastOnce()).sendMessage(eq(sender), eq("banlist-entry"), anyMap());
-            verify(messageService).sendMessage(eq(sender), eq("banlist-footer"), anyMap());
-        }
+        assertTrue(result);
+        verify(messageService).sendMessage(eq(sender), eq("banlist-header"), anyMap());
+        verify(messageService, atLeastOnce()).sendMessage(eq(sender), eq("banlist-entry"), anyMap());
+        verify(messageService).sendMessage(eq(sender), eq("banlist-footer"), anyMap());
     }
 
     @Test
@@ -156,54 +137,24 @@ class BanlistSubcommandTest {
         when(plugin.getMessageService()).thenReturn(messageService);
         when(plugin.getPluginName()).thenReturn("EzLifesteal");
 
-        com.destroystokyo.paper.profile.PlayerProfile firstProfile =
-                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
-        when(firstProfile.getName()).thenReturn("first");
-        BanEntry first = mock(BanEntry.class);
-        when(first.getSource()).thenReturn("EzLifesteal");
-        when(first.getBanTarget()).thenReturn(firstProfile);
-        when(first.getReason()).thenReturn("r1");
-        when(first.getCreated()).thenReturn(null);
-        when(first.getExpiration()).thenReturn(null);
+        BanEntryView first = new BanEntryView(UUID.randomUUID(), "first", "r1", "EzLifesteal", null, null);
+        BanEntryView second = new BanEntryView(UUID.randomUUID(), "second", "r2", "EzLifesteal",
+                new Date(2_000L), null);
+        BanEntryView third = new BanEntryView(UUID.randomUUID(), "third", "r3", "EzLifesteal", null, null);
+        BanEntryView nullSource = new BanEntryView(UUID.randomUUID(), "other", null, null, null, null);
 
-        com.destroystokyo.paper.profile.PlayerProfile secondProfile =
-                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
-        when(secondProfile.getName()).thenReturn("second");
-        BanEntry second = mock(BanEntry.class);
-        when(second.getSource()).thenReturn("EzLifesteal");
-        when(second.getBanTarget()).thenReturn(secondProfile);
-        when(second.getReason()).thenReturn("r2");
-        when(second.getCreated()).thenReturn(new Date(2_000L));
-        when(second.getExpiration()).thenReturn(null);
-
-        com.destroystokyo.paper.profile.PlayerProfile thirdProfile =
-                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
-        when(thirdProfile.getName()).thenReturn("third");
-        BanEntry third = mock(BanEntry.class);
-        when(third.getSource()).thenReturn("EzLifesteal");
-        when(third.getBanTarget()).thenReturn(thirdProfile);
-        when(third.getReason()).thenReturn("r3");
-        when(third.getCreated()).thenReturn(null);
-        when(third.getExpiration()).thenReturn(null);
-
-        BanEntry nullSource = mock(BanEntry.class);
-        when(nullSource.getSource()).thenReturn(null);
-
-        BanList banList = mock(BanList.class);
-        when(banList.getEntries()).thenReturn(Set.of(first, second, third, nullSource));
+        PlatformBanAdapter banAdapter = mock(PlatformBanAdapter.class);
+        when(plugin.getBanAdapter()).thenReturn(banAdapter);
+        when(banAdapter.getBanEntries()).thenReturn(new LinkedHashSet<>(List.of(first, second, third, nullSource)));
 
         LifestealCommand context = context(plugin, true, Runnable::run);
         CommandSender sender = mock(CommandSender.class);
 
-        try (MockedStatic<Bukkit> mockedBukkit = org.mockito.Mockito.mockStatic(Bukkit.class)) {
-            mockedBukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
+        boolean result = new BanlistSubcommand().execute(sender, null, "lifesteal", new String[]{"banlist", "1"},
+                context);
 
-            boolean result = new BanlistSubcommand().execute(sender, null, "lifesteal", new String[]{"banlist", "1"},
-                    context);
-
-            assertTrue(result);
-            verify(messageService).sendMessage(eq(sender), eq("banlist-footer-end"));
-        }
+        assertTrue(result);
+        verify(messageService).sendMessage(eq(sender), eq("banlist-footer-end"));
     }
 
     @Test
@@ -213,28 +164,20 @@ class BanlistSubcommandTest {
         when(plugin.getMessageService()).thenReturn(messageService);
         when(plugin.getPluginName()).thenReturn("EzLifesteal");
 
-        BanEntry entry = mock(BanEntry.class);
-        when(entry.getSource()).thenReturn("EzLifesteal");
-        when(entry.getBanTarget()).thenReturn(null);
-        when(entry.getReason()).thenReturn(null);
-        when(entry.getCreated()).thenReturn(null);
-        when(entry.getExpiration()).thenReturn(null);
-
-        BanList banList = mock(BanList.class);
-        when(banList.getEntries()).thenReturn(Set.of(entry));
+        PlatformBanAdapter banAdapter = mock(PlatformBanAdapter.class);
+        when(plugin.getBanAdapter()).thenReturn(banAdapter);
+        when(banAdapter.getBanEntries()).thenReturn(Set.of(
+                new BanEntryView(null, null, null, "EzLifesteal", null, null)
+        ));
 
         LifestealCommand context = context(plugin, true, Runnable::run);
         CommandSender sender = mock(CommandSender.class);
 
-        try (MockedStatic<Bukkit> mockedBukkit = org.mockito.Mockito.mockStatic(Bukkit.class)) {
-            mockedBukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
+        boolean result = new BanlistSubcommand().execute(sender, null, "lifesteal", new String[]{"banlist", "1"},
+                context);
 
-            boolean result = new BanlistSubcommand().execute(sender, null, "lifesteal", new String[]{"banlist", "1"},
-                    context);
-
-            assertTrue(result);
-            verify(messageService).sendMessage(eq(sender), eq("banlist-footer-end"));
-        }
+        assertTrue(result);
+        verify(messageService).sendMessage(eq(sender), eq("banlist-footer-end"));
     }
 
     @Test
@@ -245,19 +188,19 @@ class BanlistSubcommandTest {
         when(plugin.getMessageService()).thenReturn(messageService);
         when(plugin.getLogger()).thenReturn(logger);
 
+        PlatformBanAdapter banAdapter = mock(PlatformBanAdapter.class);
+        when(plugin.getBanAdapter()).thenReturn(banAdapter);
+        when(banAdapter.getBanEntries()).thenThrow(new RuntimeException("fail"));
+
         LifestealCommand context = context(plugin, true, Runnable::run);
         CommandSender sender = mock(CommandSender.class);
 
-        try (MockedStatic<Bukkit> mockedBukkit = org.mockito.Mockito.mockStatic(Bukkit.class)) {
-            mockedBukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenThrow(new RuntimeException("fail"));
+        boolean result = new BanlistSubcommand().execute(sender, null, "lifesteal", new String[]{"banlist", "1"},
+                context);
 
-            boolean result = new BanlistSubcommand().execute(sender, null, "lifesteal", new String[]{"banlist", "1"},
-                    context);
-
-            assertTrue(result);
-            verify(logger).severe(anyString());
-            verify(messageService).sendMessage(sender, "storage-error");
-        }
+        assertTrue(result);
+        verify(logger).severe(anyString());
+        verify(messageService).sendMessage(sender, "storage-error");
     }
 
     @Test

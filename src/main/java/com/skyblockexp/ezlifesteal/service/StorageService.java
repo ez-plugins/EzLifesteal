@@ -22,9 +22,8 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import com.destroystokyo.paper.profile.PlayerProfile;
-import org.bukkit.BanEntry;
-import org.bukkit.BanList;
+import com.skyblockexp.ezlifesteal.util.ban.BanEntryView;
+import com.skyblockexp.ezlifesteal.util.ban.PlatformBanAdapter;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -206,15 +205,14 @@ public class StorageService {
         if (activeBans.isEmpty()) {
             return;
         }
-        final BanList<PlayerProfile> profileBanList = Bukkit.getBanList(BanList.Type.PROFILE);
+        final PlatformBanAdapter banAdapter = PlatformBanAdapter.create();
         for (BanRecord record : activeBans) {
             final String playerName = record.getPlayerName();
             final UUID playerUuid = record.getUniqueId();
             if (playerName == null || playerName.isBlank() || playerUuid == null) {
                 continue;
             }
-            final PlayerProfile profile = Bukkit.createProfile(playerUuid, playerName);
-            if (!profileBanList.isBanned(profile)) {
+            if (!banAdapter.isBanned(playerUuid, playerName)) {
                 // The ban is active in storage but absent from Bukkit's ban list.
                 // This indicates the player was manually pardoned (e.g. /pardon). Sync the
                 // removal to storage so the player is not re-banned on the next restart.
@@ -234,19 +232,17 @@ public class StorageService {
         if (repository == null) {
             return;
         }
-        final BanList<PlayerProfile> profileBanList = Bukkit.getBanList(BanList.Type.PROFILE);
-        for (BanEntry<PlayerProfile> entry : profileBanList.getBanEntries()) {
+        for (BanEntryView entry : PlatformBanAdapter.create().getBanEntries()) {
             persistBanEntry(repository, entry);
         }
     }
 
-    private void persistBanEntry(BanRepository repository, BanEntry<PlayerProfile> entry) {
-        final PlayerProfile profile = entry.getBanTarget();
-        final UUID uniqueId = profile.getId();
+    private void persistBanEntry(BanRepository repository, BanEntryView entry) {
+        final UUID uniqueId = entry.getPlayerId();
         if (uniqueId == null) {
             return;
         }
-        final String playerName = profile.getName();
+        final String playerName = entry.getPlayerName();
         if (playerName == null || playerName.isBlank()) {
             return;
         }

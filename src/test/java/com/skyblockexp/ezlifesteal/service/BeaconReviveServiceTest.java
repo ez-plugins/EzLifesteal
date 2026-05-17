@@ -8,12 +8,12 @@ import com.skyblockexp.ezlifesteal.heart.HeartRegistry;
 import com.skyblockexp.ezlifesteal.model.LifestealProfile;
 import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
 import com.skyblockexp.ezlifesteal.storage.repository.BanRepository;
+import com.skyblockexp.ezlifesteal.util.ban.PlatformBanAdapter;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
-import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -89,9 +89,8 @@ class BeaconReviveServiceTest {
         LifestealProfile profile = new LifestealProfile(target.getUniqueId(), 2.0D);
         HeartRegistry registry = mock(HeartRegistry.class);
         Heart heart = mock(Heart.class);
-        BanList nameBanList = mock(BanList.class);
-        BanList profileBanList = mock(BanList.class);
         OfflinePlayer offlineTarget = mock(OfflinePlayer.class);
+        PlatformBanAdapter banAdapter = mock(PlatformBanAdapter.class);
 
         when(plugin.isReviveBeaconEnabled()).thenReturn(true);
         when(plugin.isReviveBeaconRequireSneak()).thenReturn(false);
@@ -119,6 +118,7 @@ class BeaconReviveServiceTest {
         }).when(storageExecutor).execute(any(Runnable.class));
         when(javaPlugin.getStorageExecutor()).thenReturn(storageExecutor);
         when(plugin.getBanRepository()).thenReturn(banRepository);
+        when(plugin.getBanAdapter()).thenReturn(banAdapter);
 
         when(beacon.getType()).thenReturn(Material.BEACON);
         when(beacon.getLocation()).thenReturn(beaconLocation);
@@ -131,24 +131,18 @@ class BeaconReviveServiceTest {
         when(meta.getPersistentDataContainer()).thenReturn(container);
         when(heldItem.getAmount()).thenReturn(2);
 
-        com.destroystokyo.paper.profile.PlayerProfile targetProfile =
-                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
-        com.destroystokyo.paper.profile.PlayerProfile reviveProfile =
-                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
-        when(target.getPlayerProfile()).thenReturn(targetProfile);
-        when(profileBanList.isBanned(targetProfile)).thenReturn(true);
+        when(banAdapter.isBanned(target.getUniqueId(), "target")).thenReturn(true);
         when(offlineTarget.isOnline()).thenReturn(false);
 
-        try (MockedStatic<Bukkit> bukkit = mockBukkit(nameBanList, profileBanList)) {
+        try (MockedStatic<Bukkit> bukkit = mockBukkit()) {
             bukkit.when(() -> Bukkit.getOfflinePlayer(target.getUniqueId())).thenReturn(offlineTarget);
-            bukkit.when(() -> Bukkit.createProfile(target.getUniqueId(), "target")).thenReturn(reviveProfile);
             service.selectReviveTarget(interactor, target.getName());
 
             assertTrue(service.tryHandleBeaconInteract(interactor, heldItem, beacon));
 
             verify(manager).saveProfileAsync(profile);
             verify(banRepository).removeBan(target.getUniqueId());
-            verify(profileBanList).pardon(reviveProfile);
+            verify(banAdapter).removeBan(target.getUniqueId(), "target");
             verify(heldItem).setAmount(1);
             verify(plugin).requestTopHologramUpdate();
             verify(reviveAnimationService).playReviveAnimation(eq(beaconLocation), eq(interactor),
@@ -214,8 +208,7 @@ class BeaconReviveServiceTest {
         EzLifestealPlugin javaPlugin = mock(EzLifestealPlugin.class);
         HeartRegistry registry = mock(HeartRegistry.class);
         MessageService messageService = mock(MessageService.class);
-        BanList nameBanList = mock(BanList.class);
-        BanList profileBanList = mock(BanList.class);
+        PlatformBanAdapter banAdapter = mock(PlatformBanAdapter.class);
 
         when(plugin.isReviveBeaconEnabled()).thenReturn(true);
         when(plugin.isReviveBeaconRequireSneak()).thenReturn(false);
@@ -241,6 +234,7 @@ class BeaconReviveServiceTest {
         when(manager.loadProfileAsync(target.getUniqueId()))
                 .thenReturn(CompletableFuture.failedFuture(new RuntimeException("load failure")));
         when(plugin.getMessageService()).thenReturn(messageService);
+        when(plugin.getBanAdapter()).thenReturn(banAdapter);
         when(messageService.getMessage("beacon-revive-failure")).thenReturn("storage");
 
         when(beacon.getType()).thenReturn(Material.BEACON);
@@ -253,12 +247,9 @@ class BeaconReviveServiceTest {
         when(heldItem.getItemMeta()).thenReturn(meta);
         when(meta.getPersistentDataContainer()).thenReturn(container);
 
-        com.destroystokyo.paper.profile.PlayerProfile targetProfile =
-                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
-        when(target.getPlayerProfile()).thenReturn(targetProfile);
-        when(profileBanList.isBanned(targetProfile)).thenReturn(true);
+        when(banAdapter.isBanned(target.getUniqueId(), "target")).thenReturn(true);
 
-        try (MockedStatic<Bukkit> ignored = mockBukkit(nameBanList, profileBanList)) {
+        try (MockedStatic<Bukkit> ignored = mockBukkit()) {
             service.selectReviveTarget(interactor, target.getName());
             assertTrue(service.tryHandleBeaconInteract(interactor, heldItem, beacon));
             verify(messageService).sendMessage(interactor, "beacon-revive-failure");
@@ -304,7 +295,7 @@ class BeaconReviveServiceTest {
         return player;
     }
 
-    private static MockedStatic<Bukkit> mockBukkit(BanList nameBanList, BanList profileBanList) {
+    private static MockedStatic<Bukkit> mockBukkit() {
         MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class);
         Server server = mock(Server.class);
         BukkitScheduler scheduler = mock(BukkitScheduler.class);
@@ -317,7 +308,6 @@ class BeaconReviveServiceTest {
             runnable.run();
             return task;
         });
-        bukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(profileBanList);
         return bukkit;
     }
 }

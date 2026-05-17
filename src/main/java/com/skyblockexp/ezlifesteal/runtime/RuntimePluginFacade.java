@@ -16,6 +16,7 @@ import com.skyblockexp.ezlifesteal.service.TeamBankService;
 import com.skyblockexp.ezlifesteal.storage.Storage;
 import com.skyblockexp.ezlifesteal.storage.repository.TeamBankRepository;
 import com.skyblockexp.ezlifesteal.util.PlayerLookupService;
+import com.skyblockexp.ezlifesteal.util.ban.PlatformBanAdapter;
 import java.util.UUID;
 import java.util.logging.Logger;
 import org.bukkit.command.CommandSender;
@@ -48,6 +49,10 @@ public final class RuntimePluginFacade implements PluginAccessor {
 
     @Override public String getPluginName() {
         return plugin.getName();
+    }
+
+    @Override public PlatformBanAdapter getBanAdapter() {
+        return runtime.getBanAdapter();
     }
 
     @Override public String getPluginVersion() {

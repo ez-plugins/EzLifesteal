@@ -1,12 +1,13 @@
 package com.skyblockexp.ezlifesteal.command;
 
+import com.skyblockexp.ezlifesteal.util.ban.BanEntryView;
+import com.skyblockexp.ezlifesteal.util.ban.PlatformBanAdapter;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
-import org.bukkit.BanEntry;
-import org.bukkit.BanList;
+import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -98,33 +99,15 @@ class LifestealCommandTest {
         when(plugin.getMessageService()).thenReturn(messages);
         when(plugin.getPluginName()).thenReturn("EzLifesteal");
 
-        // Mock Ban entries
-        com.destroystokyo.paper.profile.PlayerProfile profile1 =
-                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
-        when(profile1.getName()).thenReturn("PlayerOne");
-        BanEntry e1 = mock(BanEntry.class);
-        when(e1.getSource()).thenReturn("EzLifesteal");
-        when(e1.getBanTarget()).thenReturn(profile1);
-        when(e1.getReason()).thenReturn("grief");
-        when(e1.getCreated()).thenReturn(new Date());
-        when(e1.getExpiration()).thenReturn(null);
-
-        com.destroystokyo.paper.profile.PlayerProfile profile2 =
-                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
-        when(profile2.getName()).thenReturn("PlayerTwo");
-        BanEntry e2 = mock(BanEntry.class);
-        when(e2.getSource()).thenReturn("EzLifesteal");
-        when(e2.getBanTarget()).thenReturn(profile2);
-        when(e2.getReason()).thenReturn("abuse");
-        when(e2.getCreated()).thenReturn(new Date());
-        when(e2.getExpiration()).thenReturn(null);
-
-        BanList banList = mock(BanList.class);
-        when(banList.getEntries()).thenReturn(Set.of(e1, e2));
+        // Mock Ban entries via PlatformBanAdapter
+        PlatformBanAdapter banAdapter = mock(PlatformBanAdapter.class);
+        when(plugin.getBanAdapter()).thenReturn(banAdapter);
+        when(banAdapter.getBanEntries()).thenReturn(Set.of(
+                new BanEntryView(UUID.randomUUID(), "PlayerOne", "grief", "EzLifesteal", new Date(), null),
+                new BanEntryView(UUID.randomUUID(), "PlayerTwo", "abuse", "EzLifesteal", new Date(), null)
+        ));
 
         try (MockedStatic<Bukkit> mocked = org.mockito.Mockito.mockStatic(Bukkit.class)) {
-            mocked.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
-
             MessageCapturingSender capturing = new MessageCapturingSender();
             CommandSender sender = capturing.getProxy();
 

@@ -7,7 +7,9 @@ import com.skyblockexp.ezlifesteal.model.SpawnedBeacon;
 import com.skyblockexp.ezlifesteal.model.SpawnedBeaconStatus;
 import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
 import com.skyblockexp.ezlifesteal.storage.SpawnedBeaconRepository;
+import java.lang.reflect.Field;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -330,5 +332,150 @@ class BeaconSpawnServiceTest {
 
         assertTrue(result.isPresent());
         verify(countdownProvider).startCountdown(anyString(), any());
+    }
+
+    @Test
+    void spawnBeacon_locationWithNullWorld_returnsEmpty() {
+        BeaconSpawnSettings settings = settingsEnabled(false, 0, 10);
+        when(accessor.getBeaconSpawnSettings()).thenReturn(settings);
+
+        Location locNullWorld = new Location(null, 0, 64, 0);
+        Optional<SpawnedBeacon> result = service.spawnBeacon(locNullWorld, accessor);
+
+        assertTrue(result.isEmpty());
+        assertEquals(0, repository.size());
+    }
+
+    @Test
+    void spawnBeacon_cooldownActive_returnsEmpty() throws Exception {
+        // Trigger a previous beacon end so lastBeaconEndedAtMillis is set
+        Field field = BeaconSpawnService.class.getDeclaredField("lastBeaconEndedAtMillis");
+        field.setAccessible(true);
+        field.set(service, System.currentTimeMillis()); // set to now
+
+        // cooldownMinutes = 60 → 1h cooldown; since we just set lastBeaconEndedAtMillis to now, elapsed << 3600s
+        BeaconSpawnSettings settings = new BeaconSpawnSettings(
+                true, 10,
+                BeaconSpawnSettings.WorldGuardSettings.defaults(),
+                new BeaconSpawnSettings.CountdownSettings(false, 0, List.of(), null, null, null, "ezls-beacon-", java.util.Map.of()),
+                BeaconSpawnSettings.RandomSpawnSettings.defaults(),
+                List.of(),
+                60, // cooldownMinutes
+                BeaconSpawnSettings.ScheduleSettings.defaults(),
+                new BeaconSpawnSettings.ExpirySettings(0),
+                new BeaconSpawnSettings.AvailabilityEventSettings(false, "key", false, "key", "key", false, false)
+        );
+        when(accessor.getBeaconSpawnSettings()).thenReturn(settings);
+
+        Location loc = new Location(world, 5, 64, 5);
+        Optional<SpawnedBeacon> result = service.spawnBeacon(loc, accessor);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void spawnBeacon_eventCancelled_returnsEmpty() {
+        BeaconSpawnSettings settings = settingsEnabled(false, 0, 10);
+        when(accessor.getBeaconSpawnSettings()).thenReturn(settings);
+
+        // Register a listener that cancels BeaconSpawnEvent
+        server.getPluginManager().registerEvents(
+                new org.bukkit.event.Listener() {
+                    @org.bukkit.event.EventHandler
+                    public void onBeaconSpawn(com.skyblockexp.ezlifesteal.api.event.BeaconSpawnEvent event) {
+                        event.setCancelled(true);
+                    }
+                },
+                javaPlugin
+        );
+
+        Location loc = new Location(world, 5, 64, 5);
+        Optional<SpawnedBeacon> result = service.spawnBeacon(loc, accessor);
+
+        assertTrue(result.isEmpty());
+        assertEquals(0, repository.size());
+    }
+
+    @Test
+    void markUsedByLocation_nonAvailableBeacon_doesNotRemove() {
+        BeaconSpawnSettings settings = settingsEnabled(true, 300, 10);
+        when(accessor.getBeaconSpawnSettings()).thenReturn(settings);
+
+        Location loc = new Location(world, 100, 64, 100);
+        Optional<SpawnedBeacon> spawned = service.spawnBeacon(loc, accessor);
+        assertTrue(spawned.isPresent());
+        // Beacon is in COUNTDOWN status (not AVAILABLE), so markUsedByLocation must not remove it
+        assertEquals(SpawnedBeaconStatus.COUNTDOWN, spawned.get().getStatus());
+
+        service.markUsedByLocation(loc, accessor);
+
+        assertEquals(1, repository.size()); // still present
+    }
+
+    @Test
+    void findRandomSpawnLocationFromRegions_nullList_returnsEmpty() {
+        Optional<Location> result = service.findRandomSpawnLocationFromRegions(null);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void findRandomSpawnLocationFromRegions_emptyList_returnsEmpty() {
+        Optional<Location> result = service.findRandomSpawnLocationFromRegions(List.of());
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void findRandomSpawnLocationFromRegions_allDisabled_returnsEmpty() {
+        BeaconSpawnSettings.RandomSpawnRegion disabled =
+                new BeaconSpawnSettings.RandomSpawnRegion(false, "world", -100, 100, 0, 0, -100, 100, 1);
+        Optional<Location> result = service.findRandomSpawnLocationFromRegions(List.of(disabled));
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void findRandomSpawnLocationFromRegions_worldNotFound_returnsEmpty() {
+        BeaconSpawnSettings.RandomSpawnRegion badWorld =
+                new BeaconSpawnSettings.RandomSpawnRegion(true, "nonexistent_world", -100, 100, 0, 0, -100, 100, 1);
+        Optional<Location> result = service.findRandomSpawnLocationFromRegions(List.of(badWorld));
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void findRandomSpawnLocationFromRegions_validRegion_returnsLocation() {
+        // Use a 1x1 range so x=0, z=0, y=64 is deterministic; set solid block below
+        world.getBlockAt(0, 63, 0).setType(Material.STONE);
+        BeaconSpawnSettings.RandomSpawnRegion region =
+                new BeaconSpawnSettings.RandomSpawnRegion(true, "world", 0, 1, 64, 65, 0, 1, 1);
+        Optional<Location> result = service.findRandomSpawnLocationFromRegions(List.of(region));
+        assertTrue(result.isPresent());
+    }
+
+    @Test
+    void findRandomSpawnLocation_withRegions_usesRegions() {
+        world.getBlockAt(0, 63, 0).setType(Material.STONE);
+        BeaconSpawnSettings.RandomSpawnRegion region =
+                new BeaconSpawnSettings.RandomSpawnRegion(true, "world", 0, 1, 64, 65, 0, 1, 1);
+        BeaconSpawnSettings settings = new BeaconSpawnSettings(
+                true, 10,
+                BeaconSpawnSettings.WorldGuardSettings.defaults(),
+                BeaconSpawnSettings.CountdownSettings.defaults(),
+                BeaconSpawnSettings.RandomSpawnSettings.defaults(),
+                List.of(region),
+                0,
+                BeaconSpawnSettings.ScheduleSettings.defaults(),
+                new BeaconSpawnSettings.ExpirySettings(0),
+                new BeaconSpawnSettings.AvailabilityEventSettings(false, "key", false, "key", "key", false, false)
+        );
+
+        Optional<Location> result = service.findRandomSpawnLocation(settings);
+        assertTrue(result.isPresent());
+    }
+
+    @Test
+    void findRandomSpawnLocation_worldNotFound_returnsEmpty() {
+        BeaconSpawnSettings.RandomSpawnSettings randomSettings =
+                new BeaconSpawnSettings.RandomSpawnSettings(true, "nonexistent_world", -100, 100, 64, 65, -100, 100);
+        Optional<Location> result = service.findRandomSpawnLocation(randomSettings);
+        assertTrue(result.isEmpty());
     }
 }

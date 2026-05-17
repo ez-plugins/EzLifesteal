@@ -92,33 +92,19 @@ public class LifestealPlaceholderExpansion extends PlaceholderExpansion implemen
             if (playerId == null) {
                 return "";
             }
-            final com.destroystokyo.paper.profile.PlayerProfile banProfile =
-                    Bukkit.createProfile(playerId, player.getName());
-            final org.bukkit.BanList<com.destroystokyo.paper.profile.PlayerProfile> playerBanList =
-                    Bukkit.getBanList(org.bukkit.BanList.Type.PROFILE);
-            final boolean banned = playerBanList.isBanned(banProfile);
-            return banned ? "true" : "false";
+            return plugin.getBanAdapter().isBanned(playerId, player.getName()) ? "true" : "false";
         }
         if (normalized.startsWith("is_banned_")) {
             final String targetRaw = raw.substring("is_banned_".length());
             try {
                 final UUID id = UUID.fromString(targetRaw);
-                final com.destroystokyo.paper.profile.PlayerProfile profile = Bukkit.createProfile(id);
-                final org.bukkit.BanList<com.destroystokyo.paper.profile.PlayerProfile> idBanList =
-                        Bukkit.getBanList(org.bukkit.BanList.Type.PROFILE);
-                return idBanList.isBanned(profile) ? "true" : "false";
+                return plugin.getBanAdapter().isBanned(id, null) ? "true" : "false";
             }
             catch (IllegalArgumentException ignored) {
                 // target is a name, not a UUID — scan ban entries by name
             }
-            final org.bukkit.BanList<com.destroystokyo.paper.profile.PlayerProfile> profileBanList =
-                    Bukkit.getBanList(org.bukkit.BanList.Type.PROFILE);
-            final java.util.Set<org.bukkit.BanEntry<com.destroystokyo.paper.profile.PlayerProfile>> banEntries =
-                    profileBanList.getEntries();
-            final boolean nameBanned = banEntries.stream().anyMatch(entry -> {
-                final com.destroystokyo.paper.profile.PlayerProfile p = entry.getBanTarget();
-                return p != null && targetRaw.equalsIgnoreCase(p.getName());
-            });
+            final boolean nameBanned = plugin.getBanAdapter().getBanEntries().stream()
+                    .anyMatch(entry -> targetRaw.equalsIgnoreCase(entry.getPlayerName()));
             return nameBanned ? "true" : "false";
         }
 

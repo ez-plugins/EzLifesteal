@@ -9,6 +9,8 @@ import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
 import com.skyblockexp.ezlifesteal.service.LifestealManager;
 import com.skyblockexp.ezlifesteal.test.MockBukkitTestHelper;
 import com.skyblockexp.ezlifesteal.util.PlayerLookupService;
+import com.skyblockexp.ezlifesteal.util.ban.BanEntryView;
+import com.skyblockexp.ezlifesteal.util.ban.PlatformBanAdapter;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -16,7 +18,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
-import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -94,6 +95,7 @@ class LifestealCommandFeatureTest {
         when(plugin.getLogger()).thenReturn(Logger.getLogger("test"));
         when(plugin.getPluginName()).thenReturn("EzLifesteal");
         when(plugin.getPlugin()).thenReturn(mock(org.bukkit.plugin.java.JavaPlugin.class));
+        when(plugin.getBanAdapter()).thenReturn(mock(PlatformBanAdapter.class));
         when(plugin.isGlobalLifestealEnabled()).thenReturn(true);
         when(plugin.isLifestealEnabledInWorld(any())).thenReturn(true);
         doNothing().when(plugin).requestTopHologramUpdate();
@@ -175,21 +177,14 @@ class LifestealCommandFeatureTest {
         when(manager.loadTopProfilesAsync(eq(10)))
                 .thenReturn(CompletableFuture.completedFuture(List.of(new LifestealProfile(topUuid, 20.0))));
 
-        BanList banList = mock(BanList.class);
-        com.destroystokyo.paper.profile.PlayerProfile bannedProfile =
-                mock(com.destroystokyo.paper.profile.PlayerProfile.class);
-        when(bannedProfile.getName()).thenReturn("BannedGuy");
-        org.bukkit.BanEntry entry = mock(org.bukkit.BanEntry.class);
-        when(entry.getSource()).thenReturn("EzLifesteal");
-        when(entry.getBanTarget()).thenReturn(bannedProfile);
-        when(entry.getReason()).thenReturn("reason");
-        when(entry.getCreated()).thenReturn(new Date());
-        when(entry.getExpiration()).thenReturn(null);
-        when(banList.getEntries()).thenReturn(Set.of(entry));
+        PlatformBanAdapter banAdapter = mock(PlatformBanAdapter.class);
+        when(plugin.getBanAdapter()).thenReturn(banAdapter);
+        when(banAdapter.getBanEntries()).thenReturn(Set.of(
+                new BanEntryView(UUID.randomUUID(), "BannedGuy", "reason", "EzLifesteal", new Date(), null)
+        ));
 
         try (MockedStatic<Bukkit> mocked
                 = org.mockito.Mockito.mockStatic(Bukkit.class, org.mockito.Mockito.CALLS_REAL_METHODS)) {
-            mocked.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
             MessageCapturingSender success = new MessageCapturingSender(
                     Set.of("lifesteal.manage.resetall", "lifesteal.top", "lifesteal.admin.banlist"));
             command.onCommand(success.getProxy(), bukkitCommand, "lifesteal", new String[]{"resetall"});
