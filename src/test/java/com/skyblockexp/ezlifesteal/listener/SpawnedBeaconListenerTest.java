@@ -7,6 +7,7 @@ import com.skyblockexp.ezlifesteal.model.SpawnedBeacon;
 import com.skyblockexp.ezlifesteal.model.SpawnedBeaconStatus;
 import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
 import com.skyblockexp.ezlifesteal.service.BeaconSpawnService;
+import com.skyblockexp.ezlifesteal.util.ban.PlatformBanAdapter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -56,6 +57,7 @@ class SpawnedBeaconListenerTest {
         logger = mock(Logger.class);
 
         when(accessor.getMessageService()).thenReturn(messageService);
+        when(accessor.getBanAdapter()).thenReturn(mock(PlatformBanAdapter.class));
         when(messageService.getMessage(anyString())).thenReturn("protected");
 
         listener = new SpawnedBeaconListener(beaconSpawnService, accessor, logger);

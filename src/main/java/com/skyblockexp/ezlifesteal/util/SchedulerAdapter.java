@@ -15,7 +15,34 @@ public final class SchedulerAdapter {
 
     private static volatile Boolean FOLIA = null;
 
+    private static final boolean HAS_ASYNC_SCHEDULER;
+
+    static {
+        boolean hasAsync;
+        try {
+            Class.forName("io.papermc.paper.threadedregions.scheduler.AsyncScheduler");
+            hasAsync = true;
+        } catch (ClassNotFoundException ignored) {
+            hasAsync = false;
+        }
+        HAS_ASYNC_SCHEDULER = hasAsync;
+    }
+
     private SchedulerAdapter() {
+    }
+
+    /**
+     * Schedules a task to run asynchronously, off the main thread.
+     * Uses Paper/Folia's async scheduler when available; falls back to the Bukkit scheduler.
+     */
+    public static void runAsync(Plugin plugin, Runnable runnable) {
+        Objects.requireNonNull(plugin, "plugin");
+        Objects.requireNonNull(runnable, "runnable");
+        if (HAS_ASYNC_SCHEDULER) {
+            Bukkit.getAsyncScheduler().runNow(plugin, task -> runnable.run());
+        } else {
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, runnable);
+        }
     }
 
     public static void run(Plugin plugin, Runnable runnable) {

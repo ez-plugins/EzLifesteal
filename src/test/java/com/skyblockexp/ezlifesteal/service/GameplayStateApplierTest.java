@@ -5,6 +5,7 @@ import com.skyblockexp.ezlifesteal.config.ReviveAnimationSettings;
 import com.skyblockexp.ezlifesteal.killstreak.KillStreakSettings;
 import com.skyblockexp.ezlifesteal.runtime.state.GameplayState;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,8 +28,11 @@ class GameplayStateApplierTest {
                 2.5,
                 1.5,
                 true,
+                List.of(),
+                1,
                 true,
                 100.0,
+                Map.of(),
                 true,
                 7.0,
                 true,

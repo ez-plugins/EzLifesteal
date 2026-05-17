@@ -68,7 +68,7 @@ class StorageModeSelectionFeatureTest {
         BanList banList = mock(BanList.class);
         when(banList.getBanEntries()).thenReturn(java.util.Set.of());
         MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class, CALLS_REAL_METHODS);
-        bukkit.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(banList);
+        bukkit.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(banList);
         return bukkit;
     }
 }

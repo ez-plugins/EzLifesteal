@@ -1,6 +1,7 @@
 package com.skyblockexp.ezlifesteal.config;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Configuration for the plugin-spawned revive beacon feature.
@@ -14,6 +15,8 @@ public record BeaconSpawnSettings(
         WorldGuardSettings worldGuard,
         CountdownSettings countdown,
         RandomSpawnSettings randomSpawn,
+        List<RandomSpawnRegion> randomSpawnRegions,
+        int cooldownMinutes,
         ScheduleSettings schedule,
         ExpirySettings expiry,
         AvailabilityEventSettings availabilityEvent
@@ -27,6 +30,8 @@ public record BeaconSpawnSettings(
                 WorldGuardSettings.defaults(),
                 CountdownSettings.defaults(),
                 RandomSpawnSettings.defaults(),
+                List.of(),
+                0,
                 ScheduleSettings.defaults(),
                 ExpirySettings.defaults(),
                 AvailabilityEventSettings.defaults()
@@ -58,7 +63,9 @@ public record BeaconSpawnSettings(
             List<String> displayTypes,
             String formatMessage,
             String bossBarColor,
-            String bossBarStyle
+            String bossBarStyle,
+            String namePrefix,
+            Map<String, String> perTypeMessages
     ) {
         public static CountdownSettings defaults() {
             return new CountdownSettings(
@@ -67,24 +74,48 @@ public record BeaconSpawnSettings(
                     List.of("ACTION_BAR", "BOSS_BAR"),
                     "&5\u2620 &d&lRevive Beacon &5\u2620 &r&7 {formatted} until active",
                     "PURPLE",
-                    "NOTCHED_20"
+                    "NOTCHED_20",
+                    "ezls-beacon-",
+                    Map.of()
             );
         }
     }
 
     /**
      * Random world-spawn bounds used when no explicit location is provided.
+     * Y bounds are optional; if {@code minY == maxY == 0} the world surface is used.
      */
     public record RandomSpawnSettings(
             boolean enabled,
             String worldName,
             int minX,
             int maxX,
+            int minY,
+            int maxY,
             int minZ,
             int maxZ
     ) {
         public static RandomSpawnSettings defaults() {
-            return new RandomSpawnSettings(false, "world", -1000, 1000, -1000, 1000);
+            return new RandomSpawnSettings(false, "world", -1000, 1000, 0, 0, -1000, 1000);
+        }
+    }
+
+    /**
+     * A named spawn region for weighted random beacon placement.
+     */
+    public record RandomSpawnRegion(
+            boolean enabled,
+            String worldName,
+            int minX,
+            int maxX,
+            int minY,
+            int maxY,
+            int minZ,
+            int maxZ,
+            int weight
+    ) {
+        public static RandomSpawnRegion defaults() {
+            return new RandomSpawnRegion(true, "world", -1000, 1000, 0, 0, -1000, 1000, 1);
         }
     }
 
@@ -135,3 +166,4 @@ public record BeaconSpawnSettings(
         }
     }
 }
+

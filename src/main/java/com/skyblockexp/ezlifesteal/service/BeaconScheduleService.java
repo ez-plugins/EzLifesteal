@@ -67,8 +67,7 @@ public final class BeaconScheduleService {
         if (activeCount >= settings.maxConcurrent()) {
             return;
         }
-        final BeaconSpawnSettings.RandomSpawnSettings randomSettings = settings.randomSpawn();
-        beaconSpawnService.findRandomSpawnLocation(randomSettings).ifPresentOrElse(
+        beaconSpawnService.findRandomSpawnLocation(settings).ifPresentOrElse(
                 location -> beaconSpawnService.spawnBeacon(location, accessor).ifPresentOrElse(
                         beacon -> {},
                         () -> logger.warning("Scheduled spawn rejected despite location being valid.")

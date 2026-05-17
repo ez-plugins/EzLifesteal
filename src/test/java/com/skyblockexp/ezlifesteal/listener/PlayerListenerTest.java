@@ -1,5 +1,6 @@
 package com.skyblockexp.ezlifesteal.listener;
 
+import com.skyblockexp.ezlifesteal.util.ban.PlatformBanAdapter;
 import com.skyblockexp.ezlifesteal.config.LifestealConfigAdapter;
 import com.skyblockexp.ezlifesteal.config.MessageService;
 import com.skyblockexp.ezlifesteal.detector.AdminDetector;
@@ -16,7 +17,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
-import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -395,6 +395,7 @@ class PlayerListenerTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void handlePlayerDeathUsesDefaultBanMessageWhenTemplatesAreEmpty() {
         PluginAccessor plugin = basePlugin();
         LifestealManager manager = mock(LifestealManager.class);
@@ -413,10 +414,7 @@ class PlayerListenerTest {
         when(plugin.isBanWhenZeroHearts("world")).thenReturn(true);
         when(manager.saveProfileAsync(any())).thenReturn(CompletableFuture.completedFuture(null));
 
-        BanList banList = mock(BanList.class);
-        when(banList.isBanned("victim")).thenReturn(false);
-
-        try (MockedStatic<Bukkit> bukkit = mockPaperSchedulerWithBanList(banList)) {
+        try (MockedStatic<Bukkit> bukkit = mockPaperScheduler()) {
             PlayerListener listener = new PlayerListener(plugin, "", "", false, 0L);
             listener.handlePlayerDeath(victim, null);
 
@@ -425,6 +423,7 @@ class PlayerListenerTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void handlePlayerDeathUsesKickTemplateAsBanFallback() {
         PluginAccessor plugin = basePlugin();
         LifestealManager manager = mock(LifestealManager.class);
@@ -443,10 +442,7 @@ class PlayerListenerTest {
         when(plugin.isBanWhenZeroHearts("world")).thenReturn(true);
         when(manager.saveProfileAsync(any())).thenReturn(CompletableFuture.completedFuture(null));
 
-        BanList banList = mock(BanList.class);
-        when(banList.isBanned("victim")).thenReturn(false);
-
-        try (MockedStatic<Bukkit> bukkit = mockPaperSchedulerWithBanList(banList)) {
+        try (MockedStatic<Bukkit> bukkit = mockPaperScheduler()) {
             PlayerListener listener = new PlayerListener(plugin, "", "&cKick only", false, 0L);
             listener.handlePlayerDeath(victim, null);
 
@@ -725,9 +721,11 @@ class PlayerListenerTest {
         PluginAccessor plugin = mock(PluginAccessor.class);
         JavaPlugin javaPlugin = mock(JavaPlugin.class);
         Logger logger = mock(Logger.class);
+        PlatformBanAdapter banAdapter = mock(PlatformBanAdapter.class);
         when(plugin.getPlugin()).thenReturn(javaPlugin);
         when(plugin.getLogger()).thenReturn(logger);
         when(plugin.getPluginName()).thenReturn("EzLifesteal");
+        when(plugin.getBanAdapter()).thenReturn(banAdapter);
         return plugin;
     }
 
@@ -776,12 +774,6 @@ class PlayerListenerTest {
             runnable.run();
             return task;
         });
-        return bukkit;
-    }
-
-    private static MockedStatic<Bukkit> mockPaperSchedulerWithBanList(BanList banList) {
-        MockedStatic<Bukkit> bukkit = mockPaperScheduler();
-        bukkit.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(banList);
         return bukkit;
     }
 

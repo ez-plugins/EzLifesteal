@@ -100,6 +100,11 @@ revive-beacon:
       boss-bar-color: PURPLE
       # Boss bar style. Valid values: SOLID, SEGMENTED_6, SEGMENTED_10, SEGMENTED_12, SEGMENTED_20
       boss-bar-style: SEGMENTED_20
+      # Prefix used for the EzCountdown countdown name (countdown ID = <name-prefix><beacon-short-id>).
+      name-prefix: "ezls-beacon-"
+      # Per-display-type message overrides. Keys match display-types values (e.g. ACTION_BAR, BOSS_BAR).
+      # Leave empty ({}) to use format-message for all types.
+      per-type-messages: {}
 
     # Random world-spawn bounds used by the schedule and '/lifesteal beacon spawn'
     # without explicit coordinates.
@@ -108,8 +113,40 @@ revive-beacon:
       world: world
       min-x: -1000
       max-x: 1000
+      # Y bounds for spawn height. Set both to 0 to use the world surface (getHighestBlockY).
+      min-y: 0
+      max-y: 0
       min-z: -1000
       max-z: 1000
+
+    # Cooldown between beacon spawns (applies to both manual and scheduled spawns).
+    # Set to 0 to disable the cooldown.
+    cooldown-minutes: 0
+
+    # Multi-region spawn configuration (optional). When configured, the beacon is
+    # spawned inside one of the regions using weighted random selection.
+    # If empty, random-spawn above is used as fallback.
+    # random-spawn-regions:
+    #   region1:
+    #     enabled: true
+    #     world: world
+    #     min-x: -500
+    #     max-x: 500
+    #     min-y: 60
+    #     max-y: 120
+    #     min-z: -500
+    #     max-z: 500
+    #     weight: 2
+    #   region2:
+    #     enabled: true
+    #     world: world_nether
+    #     min-x: -200
+    #     max-x: 200
+    #     min-y: 40
+    #     max-y: 100
+    #     min-z: -200
+    #     max-z: 200
+    #     weight: 1
 
     # Recurring schedule that auto-spawns a new random beacon.
     schedule:

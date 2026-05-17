@@ -69,7 +69,7 @@ public class PlayerLookupService {
         }
 
         final Object finalProfile = profile;
-        Bukkit.getAsyncScheduler().runNow(plugin, task -> {
+        SchedulerAdapter.runAsync(plugin, () -> {
             try {
                 final UUID resolved = resolveProfileId(finalProfile);
                 future.complete(Optional.ofNullable(resolved));

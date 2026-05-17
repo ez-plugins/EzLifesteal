@@ -19,7 +19,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
-import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -212,18 +211,7 @@ public class BeaconReviveService {
             }
         }
 
-        if (result.playerName() != null && !result.playerName().isBlank()) {
-            final BanList nameBanList = Bukkit.getBanList(BanList.Type.NAME);
-            if (nameBanList.isBanned(result.playerName())) {
-                nameBanList.pardon(result.playerName());
-            }
-        }
-        try {
-            Bukkit.getBanList(BanList.Type.PROFILE).pardon(result.uniqueId().toString());
-        }
-        catch (IllegalArgumentException | UnsupportedOperationException ignored) {
-            // PROFILE ban list support differs by server/version.
-        }
+        plugin.getBanAdapter().removeBan(result.uniqueId(), result.playerName());
     }
 
     private CompletableFuture<Void> clearPersistedBanAsync(UUID uniqueId) {
@@ -287,21 +275,14 @@ public class BeaconReviveService {
                 continue;
             }
             final String playerName = onlinePlayer.getName();
-            final boolean bannedByName = Bukkit.getBanList(BanList.Type.NAME).isBanned(playerName);
-            boolean bannedByProfile;
-            try {
-                bannedByProfile = Bukkit.getBanList(BanList.Type.PROFILE)
-                        .isBanned(onlinePlayer.getUniqueId().toString());
-            }
-            catch (IllegalArgumentException | UnsupportedOperationException ignored) {
-                bannedByProfile = false;
-            }
+            final boolean bannedByProfile = plugin.getBanAdapter()
+                    .isBanned(onlinePlayer.getUniqueId(), playerName);
 
             candidates.add(new ReviveCandidate(
                     onlinePlayer.getUniqueId(),
                     playerName,
                     beaconLocation.distanceSquared(onlinePlayer.getLocation()),
-                    bannedByName || bannedByProfile
+                    bannedByProfile
             ));
         }
 

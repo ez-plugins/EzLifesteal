@@ -5,10 +5,10 @@ import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
 import com.skyblockexp.ezlifesteal.service.LifestealManager;
 import com.skyblockexp.ezlifesteal.storage.BanRecord;
 import com.skyblockexp.ezlifesteal.storage.repository.BanRepository;
+import com.skyblockexp.ezlifesteal.util.ban.PlatformBanAdapter;
 import java.lang.reflect.Method;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
 import org.bukkit.World;
@@ -21,7 +21,6 @@ import org.mockito.MockedStatic;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
@@ -30,16 +29,19 @@ import static org.mockito.Mockito.when;
 class PlayerListenerBanTest {
 
     @Test
+    @SuppressWarnings("unchecked")
     void handlePlayerDeath_appliesBanAndPersistsRecord_whenHeartsReachZero() throws Exception {
         PluginAccessor plugin = mock(PluginAccessor.class);
         LifestealManager manager = mock(LifestealManager.class);
         BanRepository banRepo = mock(BanRepository.class);
+        PlatformBanAdapter banAdapter = mock(PlatformBanAdapter.class);
 
         when(plugin.getLifestealManager()).thenReturn(manager);
         when(plugin.isGlobalLifestealEnabled()).thenReturn(true);
         when(plugin.isLifestealEnabledInWorld(any())).thenReturn(true);
         when(plugin.getBanRepository()).thenReturn(banRepo);
         when(plugin.getPluginName()).thenReturn("EzLifesteal");
+        when(plugin.getBanAdapter()).thenReturn(banAdapter);
 
         Player victim = mock(Player.class);
         UUID id = UUID.randomUUID();
@@ -65,15 +67,12 @@ class PlayerListenerBanTest {
             return mock(BukkitTask.class);
         });
 
-        BanList banList = mock(BanList.class);
-
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) {
             Server server = mock(Server.class);
             when(server.getName()).thenReturn("Paper");
 
             bukkit.when(Bukkit::getServer).thenReturn(server);
             bukkit.when(Bukkit::getScheduler).thenReturn(scheduler);
-            bukkit.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(banList);
 
             when(plugin.getPlugin()).thenReturn(mock(JavaPlugin.class));
 
@@ -85,8 +84,8 @@ class PlayerListenerBanTest {
 
             // BanRecord persisted
             verify(banRepo).saveBan(any(BanRecord.class));
-            // Bukkit ban added
-            bukkit.verify(() -> Bukkit.getBanList(BanList.Type.NAME), atLeastOnce());
+            // Ban adapter called to ban the player
+            verify(banAdapter).addBan(any(UUID.class), any(String.class), any(), any(), any());
         }
     }
 }

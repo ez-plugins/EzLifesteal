@@ -16,6 +16,7 @@ import com.skyblockexp.ezlifesteal.service.TeamBankService;
 import com.skyblockexp.ezlifesteal.storage.Storage;
 import com.skyblockexp.ezlifesteal.storage.repository.TeamBankRepository;
 import com.skyblockexp.ezlifesteal.util.PlayerLookupService;
+import com.skyblockexp.ezlifesteal.util.ban.PlatformBanAdapter;
 import java.util.UUID;
 import java.util.logging.Logger;
 import org.bukkit.command.CommandSender;
@@ -48,6 +49,10 @@ public final class RuntimePluginFacade implements PluginAccessor {
 
     @Override public String getPluginName() {
         return plugin.getName();
+    }
+
+    @Override public PlatformBanAdapter getBanAdapter() {
+        return runtime.getBanAdapter();
     }
 
     @Override public String getPluginVersion() {
@@ -136,6 +141,22 @@ public final class RuntimePluginFacade implements PluginAccessor {
 
     @Override public boolean shouldBypassForTeamKill(Player killer, Player victim) {
         return runtime.shouldBypassForTeamKill(killer, victim);
+    }
+
+    @Override public java.util.List<String> getTeamKillBypassExemptWorlds() {
+        return runtime.getTeamKillBypassExemptWorlds();
+    }
+
+    @Override public int getTeamKillBypassMinTeamSize() {
+        return runtime.getTeamKillBypassMinTeamSize();
+    }
+
+    @Override public double getTeamBankMaxHeartsForTeam(UUID teamId) {
+        return runtime.getTeamBankMaxHeartsForTeam(teamId);
+    }
+
+    @Override public com.skyblockexp.ezlifesteal.service.TeamBankAdminService getTeamBankAdminService() {
+        return runtime.getTeamBankAdminService();
     }
 
     @Override public boolean isAdminBypassHeartLoss() {

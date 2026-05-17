@@ -6,8 +6,6 @@ import com.skyblockexp.ezlifesteal.storage.StorageException;
 import com.skyblockexp.ezlifesteal.storage.repository.BanRepository;
 import com.skyblockexp.ezlifesteal.util.SchedulerAdapter;
 import java.time.Instant;
-import org.bukkit.BanList;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 /**
@@ -43,11 +41,8 @@ public class BanEnforcementService {
         }
 
         SchedulerAdapter.run(plugin.getPlugin(), () -> {
-            final BanList banList = Bukkit.getBanList(BanList.Type.NAME);
-            final String playerName = player.getName();
-            if (playerName != null && !banList.isBanned(playerName)) {
-                banList.addBan(playerName, banReason, (Instant) null, plugin.getPluginName());
-            }
+            plugin.getBanAdapter().addBan(player.getUniqueId(), player.getName(), banReason,
+                    plugin.getPluginName(), null);
             if (player.isOnline()) {
                 player.kickPlayer(kickReason);
             }

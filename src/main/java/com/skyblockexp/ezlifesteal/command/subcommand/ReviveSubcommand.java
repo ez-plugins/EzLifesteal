@@ -5,7 +5,6 @@ import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
 import com.skyblockexp.ezlifesteal.service.LifestealManager;
 import com.skyblockexp.ezlifesteal.storage.StorageException;
 import java.util.UUID;
-import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
@@ -52,19 +51,7 @@ public class ReviveSubcommand implements Subcommand {
                                 }
                             }
                             final String resolvedName = context.resolvePlayerNamePublic(reviveTarget, lookupTarget);
-                            if (resolvedName != null) {
-                                final BanList nameBanList = Bukkit.getBanList(BanList.Type.NAME);
-                                if (nameBanList.isBanned(resolvedName)) {
-                                    nameBanList.pardon(resolvedName);
-                                }
-                            }
-                            try {
-                                final BanList profileBanList = Bukkit.getBanList(BanList.Type.PROFILE);
-                                profileBanList.pardon(reviveTarget.getUniqueId().toString());
-                            }
-                            catch (IllegalArgumentException | UnsupportedOperationException ignored) {
-                                // PROFILE ban list not available on this server version.
-                            }
+                            plugin.getBanAdapter().removeBan(reviveTarget.getUniqueId(), resolvedName);
                             if (plugin.getBanRepository() != null) {
                                 try {
                                     plugin.getBanRepository().removeBan(reviveTarget.getUniqueId());

@@ -88,28 +88,24 @@ public class LifestealPlaceholderExpansion extends PlaceholderExpansion implemen
             if (player == null) {
                 return "";
             }
-            final String name = player.getName();
-            if (name == null) {
+            final UUID playerId = player.getUniqueId();
+            if (playerId == null) {
                 return "";
             }
-            final boolean banned = org.bukkit.Bukkit.getBanList(org.bukkit.BanList.Type.NAME).isBanned(name);
-            return banned ? "true" : "false";
+            return plugin.getBanAdapter().isBanned(playerId, player.getName()) ? "true" : "false";
         }
         if (normalized.startsWith("is_banned_")) {
             final String targetRaw = raw.substring("is_banned_".length());
-            String targetName = targetRaw;
             try {
                 final UUID id = UUID.fromString(targetRaw);
-                final OfflinePlayer op = Bukkit.getOfflinePlayer(id);
-                if (op != null && op.getName() != null && !op.getName().isBlank()) {
-                    targetName = op.getName();
-                }
+                return plugin.getBanAdapter().isBanned(id, null) ? "true" : "false";
             }
             catch (IllegalArgumentException ignored) {
-                // not a UUID, treat as name
+                // target is a name, not a UUID — scan ban entries by name
             }
-            final boolean banned = org.bukkit.Bukkit.getBanList(org.bukkit.BanList.Type.NAME).isBanned(targetName);
-            return banned ? "true" : "false";
+            final boolean nameBanned = plugin.getBanAdapter().getBanEntries().stream()
+                    .anyMatch(entry -> targetRaw.equalsIgnoreCase(entry.getPlayerName()));
+            return nameBanned ? "true" : "false";
         }
 
         return switch (normalized) {

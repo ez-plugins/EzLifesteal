@@ -39,7 +39,10 @@ public final class EzCountdownBeaconHook implements BeaconCountdownProvider {
             return Optional.empty();
         }
         try {
-            final String countdownName = COUNTDOWN_PREFIX + beaconShortId;
+            final String effectivePrefix = (settings.namePrefix() != null && !settings.namePrefix().isBlank())
+                    ? settings.namePrefix()
+                    : COUNTDOWN_PREFIX;
+            final String countdownName = effectivePrefix + beaconShortId;
             final Set<DisplayType> displayTypeSet = parseDisplayTypes(settings.displayTypes());
             final String formatMessage = settings.formatMessage() != null && !settings.formatMessage().isEmpty()
                     ? settings.formatMessage()

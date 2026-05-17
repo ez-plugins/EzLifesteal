@@ -7,12 +7,12 @@ import com.skyblockexp.ezlifesteal.service.LifestealManager;
 import com.skyblockexp.ezlifesteal.storage.repository.BanRepository;
 import com.skyblockexp.ezlifesteal.test.MockBukkitTestHelper;
 import com.skyblockexp.ezlifesteal.util.PlayerLookupService;
+import com.skyblockexp.ezlifesteal.util.ban.PlatformBanAdapter;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
-import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
@@ -22,8 +22,8 @@ import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockito.MockedStatic;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.spy;
@@ -51,6 +51,7 @@ class LifestealReviveBanPersistenceTest {
         PlayerLookupService lookup = mock(PlayerLookupService.class);
         MessageService messages = spy(new MessageService(""));
         BanRepository banRepository = mock(BanRepository.class);
+        PlatformBanAdapter banAdapter = mock(PlatformBanAdapter.class);
         Command bukkitCommand = mock(Command.class);
 
         messages.register("revive-success", "ok");
@@ -66,6 +67,7 @@ class LifestealReviveBanPersistenceTest {
         when(plugin.getLogger()).thenReturn(Logger.getLogger("test"));
         when(plugin.getPlugin()).thenReturn(mock(org.bukkit.plugin.java.JavaPlugin.class));
         when(plugin.getBanRepository()).thenReturn(banRepository);
+        when(plugin.getBanAdapter()).thenReturn(banAdapter);
         when(manager.getDefaultHearts()).thenReturn(10.0);
         when(manager.loadProfileAsync(targetId)).thenReturn(CompletableFuture.completedFuture(profile));
         when(manager.saveProfileAsync(any(LifestealProfile.class))).thenReturn(CompletableFuture.completedFuture(null));
@@ -74,24 +76,18 @@ class LifestealReviveBanPersistenceTest {
         LifestealCommand command = new LifestealCommand(plugin);
         MessageCapturingSender sender = new MessageCapturingSender(Set.of("lifesteal.manage.modify"));
 
-        BanList nameBanList = mock(BanList.class);
-        BanList profileBanList = mock(BanList.class);
-        when(nameBanList.isBanned("TargetName")).thenReturn(true);
         OfflinePlayer offlinePlayer = mock(OfflinePlayer.class);
         when(offlinePlayer.getName()).thenReturn("TargetName");
         when(offlinePlayer.getUniqueId()).thenReturn(targetId);
 
         try (MockedStatic<Bukkit> mocked = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) {
             mocked.when(() -> Bukkit.getOfflinePlayer(targetId)).thenReturn(offlinePlayer);
-            mocked.when(() -> Bukkit.getBanList(BanList.Type.NAME)).thenReturn(nameBanList);
-            mocked.when(() -> Bukkit.getBanList(BanList.Type.PROFILE)).thenReturn(profileBanList);
 
             command.onCommand(sender.getProxy(), bukkitCommand, "lifesteal", new String[]{"revive", "target"});
             server.getScheduler().performTicks(5);
         }
 
-        verify(nameBanList).pardon("TargetName");
-        verify(profileBanList).pardon(targetId.toString());
+        verify(banAdapter).removeBan(eq(targetId), any(String.class));
         verify(banRepository).removeBan(targetId);
     }
 }

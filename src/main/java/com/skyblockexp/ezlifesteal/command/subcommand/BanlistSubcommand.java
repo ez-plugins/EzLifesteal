@@ -40,11 +40,10 @@ public class BanlistSubcommand implements Subcommand {
         // If there's no BanRepository configured, fall back to the server BanList (Bukkit).
         if (plugin.getBanRepository() == null) {
             try {
-                final org.bukkit.BanList nameBanList = org.bukkit.Bukkit.getBanList(org.bukkit.BanList.Type.NAME);
-                final java.util.Set<org.bukkit.BanEntry> entries = nameBanList.getBanEntries();
-                final java.util.List<org.bukkit.BanEntry> filtered = new java.util.ArrayList<>();
+                final java.util.List<com.skyblockexp.ezlifesteal.util.ban.BanEntryView> filtered =
+                        new java.util.ArrayList<>();
                 final String sourceName = plugin.getPluginName();
-                for (org.bukkit.BanEntry e : entries) {
+                for (com.skyblockexp.ezlifesteal.util.ban.BanEntryView e : plugin.getBanAdapter().getBanEntries()) {
                     try {
                         final String src = e.getSource();
                         if (src != null && src.equals(sourceName)) {
@@ -84,8 +83,8 @@ public class BanlistSubcommand implements Subcommand {
 
                 final int end = Math.min(total, startCopy + pageSize);
                 for (int i = startCopy; i < end; i++) {
-                    final org.bukkit.BanEntry e = filtered.get(i);
-                    final String target = e.getTarget() == null ? "" : e.getTarget();
+                    final com.skyblockexp.ezlifesteal.util.ban.BanEntryView e = filtered.get(i);
+                    final String target = e.getPlayerName() == null ? "" : e.getPlayerName();
                     final String reason = e.getReason() == null ? "" : e.getReason();
                     final String created = e.getCreated() == null ? "" : e.getCreated().toString();
                     final String expires = e.getExpiration() == null ? "never" : e.getExpiration().toString();

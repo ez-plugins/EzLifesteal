@@ -108,15 +108,12 @@ public final class SpawnedBeaconListener implements Listener {
      * Collects the names of all currently banned (eliminated) players from Bukkit's in-memory
      * ban list. This is a synchronous, main-thread-safe operation.
      */
-    @SuppressWarnings("unchecked")
     private List<String> buildBannedPlayerList() {
         final List<String> names = new ArrayList<>();
-        for (Object raw : Bukkit.getBanList(org.bukkit.BanList.Type.NAME).getBanEntries()) {
-            if (raw instanceof org.bukkit.BanEntry<?> entry) {
-                final Object target = entry.getTarget();
-                if (target instanceof String name && !name.isBlank()) {
-                    names.add(name);
-                }
+        for (com.skyblockexp.ezlifesteal.util.ban.BanEntryView entry : accessor.getBanAdapter().getBanEntries()) {
+            final String name = entry.getPlayerName();
+            if (name != null && !name.isBlank()) {
+                names.add(name);
             }
         }
         names.sort(String::compareTo);

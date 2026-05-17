@@ -10,98 +10,199 @@ Release tags use the `v` prefix (e.g. `v1.1.0`).
 
 ## [Unreleased]
 
-### Added
-
-### Changed
-
-### Fixed
-
-### Removed
-
 ---
 
-## [1.1.0] - 2026-05-12
+## [1.1.0] - 2026-05-17
+
+> **What's new in 1.1.0:** shared Team Heart Bank (requires TeamsAPI), automated revive beacon
+> placement with scheduling and random regions, WorldGuard protection for auto-spawned beacons,
+> EzCountdown support for beacon warm-up timers, and an expanded interactive beacon GUI.
+> Several bug fixes for bans, beacons, and the team bank.
 
 ### Added
 
-- **Team Heart Bank (TeamsAPI-backed)**:
-  - New `/lifesteal teambank` command group with:
-    - `balance`
-    - `deposit <amount>`
-    - `withdraw <amount>`
-  - Shared team-bank balances stored per TeamsAPI team UUID.
-  - New storage layer for team banks with YAML and MySQL implementations.
-  - New permission nodes:
-    - `lifesteal.teambank.balance`
-    - `lifesteal.teambank.deposit`
-    - `lifesteal.teambank.withdraw`
-  - New `lifesteal-core.yml` keys:
-    - `team-bank.enabled`
-    - `team-bank.max-hearts`
-  - New language keys for team-bank success/failure and validation states.
-  - Unit tests for team-bank service, command handling, and storage repositories.
-- **Beacon spawn subsystem** (`revive-beacon.yml` → `revive-beacon.spawn.*`): the plugin can
-  now place BEACON blocks in the world automatically on a configurable schedule or on demand
-  via command.
-  - `max-concurrent` — cap on simultaneously active plugin-spawned beacons.
-  - `expiry-minutes` — beacons are auto-removed after the configured duration (set to `0` to
-    keep indefinitely).
-  - `random-spawn` — configurable world and XZ bounding box used when no explicit coordinates
-    are supplied.
-  - `schedule` — recurring auto-spawn at a configurable `interval-minutes`.
-  - `availability-event` — server broadcast, title overlay, particles, and fireworks that fire
-    when a beacon transitions to the AVAILABLE state.
-- **WorldGuard integration**: an optional region is created around each plugin-spawned beacon,
-  preventing tampering. Configurable radius and flag overrides (`deny-build`, `deny-pvp`,
-  `deny-mob-damage`, `deny-explosions`). Silently skipped when WorldGuard is absent.
-- **EzCountdown integration**: an optional countdown timer is shown while the beacon is warming
-  up. Supports `ACTION_BAR`, `BOSS_BAR`, `CHAT`, `TITLE`, and `SCOREBOARD` display types.
-  Falls back to an internal Bukkit task when EzCountdown is absent.
-- **TeamsAPI integration**: optional team-kill bypass — heart transfers are skipped when the
-  killer and victim are in the same team. Enabled via the new
-  `team-kill-bypass-with-teams-api` key in `lifesteal-core.yml`.
-- **`/beacon` command**: standalone alias for `/lifesteal beacon`. Accepts the same
-  subcommands: `add`, `remove`, `list`, `clear`, `spawn`, `despawn`, `spawns`.
-- **`beacon spawn / despawn / spawns` subcommands** under `/lifesteal beacon`:
-  - `spawn [world x y z]` — spawn a beacon at explicit coordinates or a random location.
-  - `despawn <id|all>` — remove one or all active plugin-spawned beacons.
-  - `spawns` — list all currently active plugin-spawned beacons and their status.
-- New language keys in all bundled locale files (`en`, `de`, `es`, `fr`, `nl`, `pt`, `ru`, `zh`):
-  `beacon-spawn-available-broadcast`, `beacon-spawn-available-title`,
-  `beacon-spawn-available-subtitle`, `beacon-spawn-not-available`, `beacon-spawn-protected`.
-- `WorldGuard`, `EzCountdown`, and `TeamsAPI` added to `softdepend` in `plugin.yml`.
+#### Team Heart Bank *(requires [TeamsAPI](https://modrinth.com/plugin/teams-api))*
+
+Teams can now pool hearts into a shared bank. Players deposit and withdraw hearts; admins can
+inspect or adjust any team's balance directly from the console or in-game.
+
+**Player commands:**
+
+| Command | Permission |
+|---|---|
+| `/lifesteal teambank balance` | `lifesteal.teambank.balance` |
+| `/lifesteal teambank deposit <amount>` | `lifesteal.teambank.deposit` |
+| `/lifesteal teambank withdraw <amount>` | `lifesteal.teambank.withdraw` |
+
+**Admin commands** — operate on any team by name or UUID:
+
+| Command | Permission |
+|---|---|
+| `/lifesteal teambank admin balance <team>` | `lifesteal.teambank.admin.balance` |
+| `/lifesteal teambank admin deposit <team> <amount>` | `lifesteal.teambank.admin.deposit` |
+| `/lifesteal teambank admin withdraw <team> <amount>` | `lifesteal.teambank.admin.withdraw` |
+| `/lifesteal teambank admin reset <team>` | `lifesteal.teambank.admin.reset` |
+| `/lifesteal teambank admin transfer <from> <to> <amount>` | `lifesteal.teambank.admin.transfer` |
+
+The bank uses YAML or MySQL storage, matching your existing storage setting.
+
+**New `lifesteal-core.yml` keys:**
+
+```yaml
+team-bank:
+  enabled: true
+  max-hearts: 100           # global cap on a team bank balance
+  per-team-overrides:       # optional per-team cap (overrides max-hearts for that team)
+    MyTeam: 50              # key: team name or UUID
+```
+
+**Team-kill bypass** — heart transfers are skipped when killer and victim share a team.
+Replaces the old flat `team-kill-bypass-with-teams-api` boolean with a richer section
+(old key still works as a fallback — see [Migration notes](#migration-notes) below):
+
+```yaml
+team-kill-bypass:
+  enabled: true
+  exempt-worlds:            # worlds where the bypass does NOT apply
+    - pvp-arena
+  min-team-size: 2          # bypass only activates when the team has at least N members
+```
+
+#### Beacon Auto-Spawn
+
+The plugin can now place revive beacons in the world automatically — on a recurring timer,
+on demand via command, or at a random location within a configured bounding box or weighted
+region list.
+
+![EzCountdown Beacon Countdown](https://cdn.discordapp.com/attachments/1468193926996557855/1503855388326629446/image.png?ex=6a0accb8&is=6a097b38&hm=b6c3f5eddf766b5bef6355ded5c2885bfb382bd92e6f4c7dda86282f187d224b&)
+
+![Minecraft Lifesteal Revive Beacon](https://media.discordapp.net/attachments/1468193926996557855/1503855113142276167/image.png?ex=6a0acc77&is=6a097af7&hm=550316dd91dfd6a77f34aa26ca2724cf9cc3f389a30a3cb812387fa88fde1b26&=&format=webp&quality=lossless)
+
+**New `/beacon` command** — top-level alias for `/lifesteal beacon` — with three new subcommands:
+
+| Command | Description |
+|---|---|
+| `/beacon spawn [world x y z]` | Place a beacon at explicit coordinates, or a random location |
+| `/beacon despawn <id\|all>` | Remove one or all active plugin-spawned beacons |
+| `/beacon spawns` | List all active plugin-spawned beacons and their status |
+
+**New `revive-beacon.yml` keys under `spawn`:**
+
+```yaml
+spawn:
+  max-concurrent: 1           # maximum simultaneously active plugin-spawned beacons
+  expiry-minutes: 60          # auto-remove after N minutes (0 = never expire)
+  cooldown-minutes: 30        # minimum time between consecutive spawns (0 = no cooldown)
+  schedule:
+    interval-minutes: 120     # auto-spawn every N minutes (0 = disabled)
+  random-spawn:
+    world: world
+    min-x: -1000
+    max-x:  1000
+    min-z: -1000
+    max-z:  1000
+    min-y: 0                  # 0 = use world surface height (getHighestBlockY)
+    max-y: 0
+  random-spawn-regions:       # optional: named weighted regions replace the single bounding box
+    spawn-area:
+      weight: 3
+      min-x: -200
+      max-x:  200
+      min-z: -200
+      max-z:  200
+  availability-event:         # announcements/effects when beacon becomes usable
+    broadcast: true
+    title: true
+    particles: true
+    fireworks: true
+  countdown:
+    name-prefix: "beacon-"    # EzCountdown timer name prefix
+    per-type-messages: {}     # per-display-type message overrides
+```
+
+#### WorldGuard integration *(optional)*
+
+A WorldGuard region is automatically created around each plugin-spawned beacon to prevent
+players from breaking or tampering with it. The region is removed when the beacon despawns.
+Configurable radius and flag overrides: `deny-build`, `deny-pvp`, `deny-mob-damage`,
+`deny-explosions`. Silently skipped when WorldGuard is not installed.
+
+#### EzCountdown integration *(optional)*
+
+An EzCountdown timer is shown while a beacon warms up before becoming available. Supports
+`ACTION_BAR`, `BOSS_BAR`, `CHAT`, `TITLE`, and `SCOREBOARD` display types. Falls back to
+an internal timer when EzCountdown is not installed.
+
+#### Soft dependencies
+
+`WorldGuard`, `EzCountdown`, and `TeamsAPI` are now listed as `softdepend` in `plugin.yml`.
+The plugin loads and works fully without any of them — each integration is silently skipped
+when its dependency is absent.
+
+#### Translations
+
+All new messages (team bank player/admin commands, beacon auto-spawn announcements) are
+translated in all eight bundled locales: `en`, `de`, `es`, `fr`, `nl`, `pt`, `ru`, `zh`.
 
 ### Fixed
 
-- **`TeamBankService`**: `deposit()` and `withdraw()` evaluated `isAmountValid()` before
-  `isTeamBankEnabled()`, causing `INVALID_AMOUNT` to be returned instead of `DISABLED` when
-  the feature was off and an invalid amount was supplied. Check order corrected so
-  `isTeamBankEnabled()` is tested first.
-- **`KillerRewardService`**: when a killer's inventory is full the overflow heart item was
-  dropped at `victim.getLocation()` inside a deferred scheduler task. Because the task runs
-  on the next tick the victim may have already respawned, placing the item at the respawn
-  point rather than the kill site. Fixed to use `killer.getLocation()` instead.
-- **`BeaconSpawnService`**: beacons configured with no countdown (instant availability) never
-  fired the availability event because `SpawnedBeacon` was initialised in the `AVAILABLE`
-  state, preventing the `COUNTDOWN → AVAILABLE` transition. Fixed by always starting beacons
-  in `COUNTDOWN` state and calling `markAvailable()` immediately when no countdown is needed.
-- **Locale files**: team-bank language keys were missing from all non-English locale files
-  (`de`, `es`, `fr`, `nl`, `pt`, `ru`, `zh`). All locale files now include the complete set
-  of team-bank message keys.
+- **Players were not banned at zero hearts when using the default `min-hearts` setting** —
+  the zero-heart ban check ran against an already-floored value, so players reaching zero
+  hearts were never banned under the default `min-hearts: 1.0`. Ban now fires correctly.
+- **`/pardon <player>` was reversed on server restart** — manually pardoning a player (via
+  `/pardon` or by editing `banned-players.json`) was undone the next time the server started,
+  because the plugin re-applied the stored ban. Bukkit's ban list is now treated as
+  authoritative: if a ban is missing there, it is removed from storage too.
+- **Crash on Paper 26.1.2 when banning players** — an incompatibility with the Paper 26.1.2
+  ban API caused a `ClassCastException` whenever the plugin tried to issue a ban. Fixed.
+- **Revive beacon GUI opened when holding a revive voucher** — right-clicking a beacon with a
+  valid voucher in hand should trigger a revive, not open the info GUI. The GUI was opening
+  anyway due to listener priority ordering. Fixed.
+- **Beacon availability broadcast and effects not fired for instant-availability beacons** —
+  beacons with no countdown (immediate availability) skipped the availability event entirely,
+  so no server broadcast, title overlay, particles, or fireworks were shown. Fixed.
+- **Team bank returned "invalid amount" instead of "feature disabled"** — when the team bank
+  was turned off, `deposit`/`withdraw` validated the heart amount before checking whether the
+  feature was enabled, returning a misleading error. Corrected to check enabled-state first.
+- **Overflow heart items dropped at the victim's respawn point instead of the kill location**
+  — when a killer's inventory was full, the extra heart item spawned at the victim's new
+  respawn position rather than at the kill site. Now dropped at the killer's location.
+- **Team-bank messages missing from non-English locales** — `de`, `es`, `fr`, `nl`, `pt`,
+  `ru`, and `zh` locale files were missing the team-bank message keys introduced in earlier
+  builds. All locale files are now complete.
 
 ### Changed
 
-- Documentation expanded for team bank support:
-  - Added `/lifesteal teambank` entries to command reference.
-  - Added team-bank nodes to permissions reference and role inheritance.
-  - Added team-bank configuration docs (including defaults and requirements).
-  - Updated core configuration overview to include team settings.
-- GitHub Actions dependencies bumped via Dependabot:
-  `actions/checkout` → v6, `actions/configure-pages` → v6, `actions/deploy-pages` → v5,
-  `actions/upload-artifact` → v7, `actions/upload-pages-artifact` → v5,
-  `DavidAnson/markdownlint-cli2-action` → v23, `codecov/codecov-action` → v6.
+- **Beacon info GUI** expanded from 27 to 54 slots: rows 4–5 now list eliminated players
+  (click to select a revive target); row 6 has pagination and a direct "Use Beacon" button
+  — players no longer need to close and reopen the beacon to perform a revive.
+- **`team-kill-bypass-with-teams-api`** flat key superseded by the new `team-kill-bypass`
+  section (see Added above). The old flat key is still read as a fallback — no immediate
+  action required.
+
+### Migration notes
+
+No breaking changes. Existing configs continue to work without modification.
+One key is superseded but remains backward-compatible:
+
+| Old key (`lifesteal-core.yml`) | Replacement | Notes |
+|---|---|---|
+| `team-kill-bypass-with-teams-api: true/false` | `team-kill-bypass.enabled: true/false` | Old key still works as a fallback |
+
+### Developer API
+
+Four Bukkit events are fired during the plugin-spawned beacon lifecycle
+(package `com.skyblockexp.ezlifesteal.api.event`):
+
+| Event | Cancellable | Fires when |
+|---|---|---|
+| `BeaconSpawnEvent` | ✓ | Before the beacon block is placed in the world |
+| `BeaconAvailableEvent` | | Beacon transitions from warm-up to available |
+| `BeaconUsedEvent` | | A player successfully uses a beacon to revive someone |
+| `BeaconExpiredEvent` | | Beacon expires naturally or is forcibly despawned |
 
 ---
 
 [Unreleased]: https://github.com/ez-plugins/EzLifesteal/compare/v1.1.0...HEAD
 [1.1.0]: https://modrinth.com/plugin/ezlifesteal/version/1.1.0
+

@@ -22,7 +22,8 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import org.bukkit.BanList;
+import com.skyblockexp.ezlifesteal.util.ban.BanEntryView;
+import com.skyblockexp.ezlifesteal.util.ban.PlatformBanAdapter;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -204,15 +205,24 @@ public class StorageService {
         if (activeBans.isEmpty()) {
             return;
         }
-        final BanList nameBanList = Bukkit.getBanList(BanList.Type.NAME);
+        final PlatformBanAdapter banAdapter = PlatformBanAdapter.create();
         for (BanRecord record : activeBans) {
             final String playerName = record.getPlayerName();
-            if (playerName == null || playerName.isBlank()) {
+            final UUID playerUuid = record.getUniqueId();
+            if (playerName == null || playerName.isBlank() || playerUuid == null) {
                 continue;
             }
-            final Date expiresAt = record.getExpiresAt() == null ? null : Date.from(record.getExpiresAt());
-            if (!nameBanList.isBanned(playerName)) {
-                nameBanList.addBan(playerName, record.getReason(), expiresAt, record.getSource());
+            if (!banAdapter.isBanned(playerUuid, playerName)) {
+                // The ban is active in storage but absent from Bukkit's ban list.
+                // This indicates the player was manually pardoned (e.g. /pardon). Sync the
+                // removal to storage so the player is not re-banned on the next restart.
+                try {
+                    getBanRepository().removeBan(playerUuid);
+                }
+                catch (StorageException exception) {
+                    plugin.getLogger().warning("Failed to sync pardon for " + playerName
+                            + " into storage: " + exception.getMessage());
+                }
             }
         }
     }
@@ -222,22 +232,18 @@ public class StorageService {
         if (repository == null) {
             return;
         }
-        final BanList nameBanList = Bukkit.getBanList(BanList.Type.NAME);
-        for (Object entryRaw : nameBanList.getBanEntries()) {
-            if (!(entryRaw instanceof org.bukkit.BanEntry entry)) {
-                continue;
-            }
+        for (BanEntryView entry : PlatformBanAdapter.create().getBanEntries()) {
             persistBanEntry(repository, entry);
         }
     }
 
-    private void persistBanEntry(BanRepository repository, org.bukkit.BanEntry entry) {
-        final String playerName = entry.getTarget();
-        if (playerName == null || playerName.isBlank()) {
+    private void persistBanEntry(BanRepository repository, BanEntryView entry) {
+        final UUID uniqueId = entry.getPlayerId();
+        if (uniqueId == null) {
             return;
         }
-        final UUID uniqueId = Bukkit.getOfflinePlayer(playerName).getUniqueId();
-        if (uniqueId == null) {
+        final String playerName = entry.getPlayerName();
+        if (playerName == null || playerName.isBlank()) {
             return;
         }
         try {

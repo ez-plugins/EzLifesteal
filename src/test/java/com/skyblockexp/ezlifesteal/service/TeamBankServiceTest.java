@@ -17,6 +17,7 @@ import org.bukkit.entity.Player;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -148,6 +149,7 @@ class TeamBankServiceTest {
         when(plugin.getTeamBankRepository()).thenReturn(bankRepository);
         when(plugin.isTeamBankEnabled()).thenReturn(enabled);
         when(plugin.getTeamBankMaxHearts()).thenReturn(maxHearts);
+        when(plugin.getTeamBankMaxHeartsForTeam(any())).thenReturn(maxHearts);
 
         TeamBankService.TeamResolver resolver = p -> teamId == null
                 ? Optional.empty()

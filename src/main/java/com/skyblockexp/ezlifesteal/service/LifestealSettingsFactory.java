@@ -5,7 +5,10 @@ import com.skyblockexp.ezlifesteal.config.LifestealConfigAdapter;
 import com.skyblockexp.ezlifesteal.config.ReviveAnimationSettings;
 import com.skyblockexp.ezlifesteal.runtime.DefaultPluginRuntimeServices;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import org.bukkit.configuration.ConfigurationSection;
 
 /**
  * Reads, sanitizes, and exposes immutable lifesteal gameplay settings.
@@ -151,6 +154,34 @@ public class LifestealSettingsFactory {
         );
         final BeaconSpawnSettings beaconSpawnSettings = parseBeaconSpawnSettings(lifestealConfigAdapter, warnings);
 
+        // Team kill bypass — support both old flat key and new nested section
+        final boolean teamKillBypassEnabled;
+        final List<String> teamKillBypassExemptWorlds;
+        final int teamKillBypassMinTeamSize;
+        if (lifestealConfigAdapter.getSection("team-kill-bypass") != null) {
+            teamKillBypassEnabled = lifestealConfigAdapter.getBoolean("team-kill-bypass.enabled", false);
+            teamKillBypassExemptWorlds = List.copyOf(lifestealConfigAdapter.getStringList("team-kill-bypass.exempt-worlds"));
+            teamKillBypassMinTeamSize = Math.max(1, lifestealConfigAdapter.getInt("team-kill-bypass.min-team-size", 1));
+        } else {
+            teamKillBypassEnabled = lifestealConfigAdapter.getBoolean("team-kill-bypass-with-teams-api", false);
+            teamKillBypassExemptWorlds = List.of();
+            teamKillBypassMinTeamSize = 1;
+        }
+
+        // Per-team bank overrides
+        final ConfigurationSection perTeamSection =
+                lifestealConfigAdapter.getSection("team-bank.per-team-overrides");
+        final Map<String, Double> teamBankPerTeamMaxHearts;
+        if (perTeamSection != null) {
+            final Map<String, Double> overrides = new HashMap<>();
+            for (String key : perTeamSection.getKeys(false)) {
+                overrides.put(key, perTeamSection.getDouble(key, 0.0));
+            }
+            teamBankPerTeamMaxHearts = Map.copyOf(overrides);
+        } else {
+            teamBankPerTeamMaxHearts = Map.of();
+        }
+
         return new LifestealSettings(
                 heartBounds.defaultHearts(),
                 heartBounds.minHearts(),
@@ -159,9 +190,12 @@ public class LifestealSettingsFactory {
                 lifestealConfigAdapter.getDouble("health-scale", 20.0),
                 lifestealConfigAdapter.getDouble("hearts-per-kill", 1.0),
                 lifestealConfigAdapter.getDouble("hearts-lost-on-death", 1.0),
-                lifestealConfigAdapter.getBoolean("team-kill-bypass-with-teams-api", false),
+                teamKillBypassEnabled,
+                teamKillBypassExemptWorlds,
+                teamKillBypassMinTeamSize,
                 lifestealConfigAdapter.getBoolean("team-bank.enabled", false),
                 Math.max(0.0D, lifestealConfigAdapter.getDouble("team-bank.max-hearts", 200.0D)),
+                teamBankPerTeamMaxHearts,
                 lifestealConfigAdapter.getBoolean("dont-remove-hearts-from-mobs", true),
                 lifestealConfigAdapter.getDouble("mob-remove-hearts-greater-than", -1.0),
                 dropHeartOnDeath,
@@ -242,13 +276,23 @@ public class LifestealSettingsFactory {
         );
 
         final String cdBase = base + ".countdown";
+        // Parse per-type messages map
+        final Map<String, String> perTypeMessages = new HashMap<>();
+        final ConfigurationSection perTypeSection = adapter.getSection(cdBase + ".per-type-messages");
+        if (perTypeSection != null) {
+            for (String key : perTypeSection.getKeys(false)) {
+                perTypeMessages.put(key, perTypeSection.getString(key, ""));
+            }
+        }
         final BeaconSpawnSettings.CountdownSettings countdown = new BeaconSpawnSettings.CountdownSettings(
                 adapter.getBoolean(cdBase + ".enabled", true),
                 Math.max(1, adapter.getInt(cdBase + ".duration-seconds", 300)),
                 List.copyOf(adapter.getStringList(cdBase + ".display-types")),
                 adapter.getString(cdBase + ".format-message", "&5\u2620 &d&lRevive Beacon &5\u2620 &r&7 {formatted} until active"),
                 adapter.getString(cdBase + ".boss-bar-color", "PURPLE"),
-                adapter.getString(cdBase + ".boss-bar-style", "SEGMENTED_20")
+                adapter.getString(cdBase + ".boss-bar-style", "SEGMENTED_20"),
+                adapter.getString(cdBase + ".name-prefix", "ezls-beacon-"),
+                Map.copyOf(perTypeMessages)
         );
 
         final String rsBase = base + ".random-spawn";
@@ -257,9 +301,40 @@ public class LifestealSettingsFactory {
                 adapter.getString(rsBase + ".world", "world"),
                 adapter.getInt(rsBase + ".min-x", -1000),
                 adapter.getInt(rsBase + ".max-x", 1000),
+                adapter.getInt(rsBase + ".min-y", 0),
+                adapter.getInt(rsBase + ".max-y", 0),
                 adapter.getInt(rsBase + ".min-z", -1000),
                 adapter.getInt(rsBase + ".max-z", 1000)
         );
+
+        // Multi-region support: parse random-spawn-regions list, with backward compat fallback
+        final List<BeaconSpawnSettings.RandomSpawnRegion> randomSpawnRegions;
+        final ConfigurationSection regionsSection = adapter.getSection(base + ".random-spawn-regions");
+        if (regionsSection != null) {
+            final List<BeaconSpawnSettings.RandomSpawnRegion> regions = new ArrayList<>();
+            for (String key : regionsSection.getKeys(false)) {
+                final ConfigurationSection reg = regionsSection.getConfigurationSection(key);
+                if (reg == null) {
+                    continue;
+                }
+                regions.add(new BeaconSpawnSettings.RandomSpawnRegion(
+                        reg.getBoolean("enabled", true),
+                        reg.getString("world", "world"),
+                        reg.getInt("min-x", -1000),
+                        reg.getInt("max-x", 1000),
+                        reg.getInt("min-y", 0),
+                        reg.getInt("max-y", 0),
+                        reg.getInt("min-z", -1000),
+                        reg.getInt("max-z", 1000),
+                        Math.max(1, reg.getInt("weight", 1))
+                ));
+            }
+            randomSpawnRegions = List.copyOf(regions);
+        } else {
+            randomSpawnRegions = List.of();
+        }
+
+        final int cooldownMinutes = Math.max(0, adapter.getInt(base + ".cooldown-minutes", 0));
 
         final String schBase = base + ".schedule";
         final BeaconSpawnSettings.ScheduleSettings schedule = new BeaconSpawnSettings.ScheduleSettings(
@@ -292,6 +367,8 @@ public class LifestealSettingsFactory {
                 wg,
                 countdown,
                 randomSpawn,
+                randomSpawnRegions,
+                cooldownMinutes,
                 schedule,
                 expiry,
                 availabilityEvent
@@ -418,8 +495,11 @@ public class LifestealSettingsFactory {
             double heartsPerKill,
             double heartsLostOnDeath,
             boolean teamKillBypassWithTeamsApi,
+            List<String> teamKillBypassExemptWorlds,
+            int teamKillBypassMinTeamSize,
             boolean teamBankEnabled,
             double teamBankMaxHearts,
+            Map<String, Double> teamBankPerTeamMaxHearts,
             boolean dontRemoveHeartsFromMobs,
             double mobRemoveHeartsGreaterThan,
             boolean dropHeartOnDeath,
