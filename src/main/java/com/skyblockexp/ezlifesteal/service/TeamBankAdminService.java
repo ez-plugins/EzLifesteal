@@ -234,24 +234,51 @@ public final class TeamBankAdminService {
                                 .orElseGet(() -> new TeamBankAccount(fromTeam.teamId(), 0.0D));
                         final TeamBankAccount toAccount = repo.loadAccount(toTeam.teamId())
                                 .orElseGet(() -> new TeamBankAccount(toTeam.teamId(), 0.0D));
-                        if (fromAccount.getHearts() < amount) {
+
+                        final double fromBefore = fromAccount.getHearts();
+                        final double toBefore = toAccount.getHearts();
+
+                        if (fromBefore < amount) {
                             return new TransferResult(TransferStatus.INSUFFICIENT_BANK_HEARTS,
                                     fromTeam.teamName(), toTeam.teamName(),
-                                    fromAccount.getHearts(), toAccount.getHearts());
+                                    fromBefore, toBefore);
                         }
                         final double toMax = plugin.getTeamBankMaxHeartsForTeam(toTeam.teamId());
-                        if (toAccount.getHearts() + amount > toMax) {
+                        if (toBefore + amount > toMax) {
                             return new TransferResult(TransferStatus.BANK_CAP_EXCEEDED,
                                     fromTeam.teamName(), toTeam.teamName(),
-                                    fromAccount.getHearts(), toAccount.getHearts());
+                                    fromBefore, toBefore);
                         }
-                        fromAccount.setHearts(fromAccount.getHearts() - amount);
-                        toAccount.setHearts(toAccount.getHearts() + amount);
-                        repo.saveAccount(fromAccount);
-                        repo.saveAccount(toAccount);
+
+                        final double fromAfter = fromBefore - amount;
+                        final double toAfter = toBefore + amount;
+
+                        // Persist snapshots: save from-team first, then to-team. Rollback from-team if to-team save fails.
+                        try {
+                            repo.saveAccount(new TeamBankAccount(fromTeam.teamId(), fromAfter));
+                        }
+                        catch (StorageException e) {
+                            throw new CompletionException(e);
+                        }
+
+                        try {
+                            repo.saveAccount(new TeamBankAccount(toTeam.teamId(), toAfter));
+                        }
+                        catch (StorageException bankEx) {
+                            // Attempt rollback of from-team
+                            try {
+                                repo.saveAccount(new TeamBankAccount(fromTeam.teamId(), fromBefore));
+                            }
+                            catch (StorageException rollbackEx) {
+                                plugin.getLogger().severe("Failed to rollback from-team after transfer failure: " + rollbackEx.getMessage());
+                                throw new CompletionException(rollbackEx);
+                            }
+                            throw new CompletionException(bankEx);
+                        }
+
                         return new TransferResult(TransferStatus.SUCCESS,
                                 fromTeam.teamName(), toTeam.teamName(),
-                                fromAccount.getHearts(), toAccount.getHearts());
+                                fromAfter, toAfter);
                     } catch (StorageException exception) {
                         throw new CompletionException(exception);
                     }
