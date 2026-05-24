@@ -17,7 +17,16 @@ Release tags use the `v` prefix (e.g. `v1.1.0`).
 ### Added
 
 - Bumped project version to 1.1.1.
-- Ensure team bank operations persist profile and bank atomically; profile rollback on bank save failure.
+- Short-term fix for team-bank persistence: perform a compensating rollback of a player's profile when a subsequent team-bank save fails, preventing inconsistent state between player hearts and the team bank.
+- Added focused unit tests that exercise team-bank rollback and atomicity paths to address patch-level coverage requirements; JaCoCo checks pass locally.
+
+### Changed
+
+- Bumped dependency versions (WorldEdit, WorldGuard, EzCountdown, Testcontainers, JUnit, Awaitility, SLF4J and others) per dependabot updates.
+
+### Fixed
+
+- Resolved a patch-coverage failure by adding targeted tests for `TeamBankService` and `TeamBankAdminService`; coverage for modified lines now meets project rules.
 
 ---
 
