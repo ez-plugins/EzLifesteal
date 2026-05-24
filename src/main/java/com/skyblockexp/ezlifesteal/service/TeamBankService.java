@@ -126,37 +126,64 @@ public final class TeamBankService {
         final Object lock = teamLocks.computeIfAbsent(team.teamId(), ignored -> new Object());
         synchronized (lock) {
             try {
-                final TeamBankAccount account = bankRepository.loadAccount(team.teamId())
+                final TeamBankAccount currentAccount = bankRepository.loadAccount(team.teamId())
                         .orElseGet(() -> new TeamBankAccount(team.teamId(), 0.0D));
                 final double playerBefore = profile.getHearts();
-                final double bankBefore = account.getHearts();
+                final double bankBefore = currentAccount.getHearts();
+
+                // Compute target values without mutating in-memory state yet
+                double playerAfter = playerBefore;
+                double bankAfter = bankBefore;
 
                 if (deposit) {
                     if (playerBefore < amount) {
                         return new Result(Status.INSUFFICIENT_PLAYER_HEARTS, playerBefore, bankBefore, team.teamName());
                     }
                     final double max = plugin.getTeamBankMaxHeartsForTeam(team.teamId());
-                    final double afterBank = bankBefore + amount;
-                    if (afterBank > max) {
+                    bankAfter = bankBefore + amount;
+                    if (bankAfter > max) {
                         return new Result(Status.BANK_CAP_EXCEEDED, playerBefore, bankBefore, team.teamName());
                     }
-                    profile.removeHearts(amount, manager.getMinHearts());
-                    account.setHearts(afterBank);
+                    playerAfter = Math.max(manager.getMinHearts(), playerBefore - amount);
                 }
                 else {
                     if (bankBefore < amount) {
                         return new Result(Status.INSUFFICIENT_BANK_HEARTS, playerBefore, bankBefore, team.teamName());
                     }
-                    profile.addHearts(amount, manager.getMaxHearts());
-                    account.setHearts(bankBefore - amount);
+                    playerAfter = Math.min(manager.getMaxHearts(), playerBefore + amount);
+                    bankAfter = bankBefore - amount;
                 }
 
-                final double playerAfter = profile.getHearts();
-                final double bankAfter = account.getHearts();
-                profileRepository.saveProfile(new LifestealProfile(profile.getUniqueId(), playerAfter));
-                bankRepository.saveAccount(account);
-                profile.markPersisted(profile.getRevision());
-                return new Result(Status.SUCCESS, playerAfter, bankAfter, team.teamName());
+                // Persist snapshots: save profile first, then bank. If bank save fails, rollback profile.
+                try {
+                    profileRepository.saveProfile(new LifestealProfile(profile.getUniqueId(), playerAfter));
+                }
+                catch (StorageException e) {
+                    throw new CompletionException(e);
+                }
+
+                try {
+                    final TeamBankAccount accountToSave = new TeamBankAccount(team.teamId(), bankAfter);
+                    bankRepository.saveAccount(accountToSave);
+                }
+                catch (StorageException bankEx) {
+                    // Attempt to rollback profile to previous value
+                    try {
+                        profileRepository.saveProfile(new LifestealProfile(profile.getUniqueId(), playerBefore));
+                    }
+                    catch (StorageException rollbackEx) {
+                        plugin.getLogger().severe("Failed to rollback profile after team bank save failure: " + rollbackEx.getMessage());
+                        throw new CompletionException(rollbackEx);
+                    }
+                    // Restore in-memory profile to persisted state
+                    profile.overwriteHeartsFromStorage(playerBefore);
+                    throw new CompletionException(bankEx);
+                }
+
+                // Both persisted successfully — update in-memory profile to match storage and report result.
+                profile.overwriteHeartsFromStorage(playerAfter);
+                final double finalBank = bankAfter;
+                return new Result(Status.SUCCESS, profile.getHearts(), finalBank, team.teamName());
             }
             catch (StorageException exception) {
                 throw new CompletionException(exception);

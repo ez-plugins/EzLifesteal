@@ -12,6 +12,15 @@ Release tags use the `v` prefix (e.g. `v1.1.0`).
 
 ---
 
+## [1.1.1] - 2026-05-24
+
+### Added
+
+- Bumped project version to 1.1.1.
+- Ensure team bank operations persist profile and bank atomically; profile rollback on bank save failure.
+
+---
+
 ## [1.1.0] - 2026-05-17
 
 > **What's new in 1.1.0:** shared Team Heart Bank (requires TeamsAPI), automated revive beacon
@@ -74,9 +83,17 @@ The plugin can now place revive beacons in the world automatically — on a recu
 on demand via command, or at a random location within a configured bounding box or weighted
 region list.
 
-![EzCountdown Beacon Countdown](https://cdn.discordapp.com/attachments/1468193926996557855/1503855388326629446/image.png?ex=6a0accb8&is=6a097b38&hm=b6c3f5eddf766b5bef6355ded5c2885bfb382bd92e6f4c7dda86282f187d224b&)
+**[EzCountdown](https://modrinth.com/plugin/ezcountdown) Bossbar countdown**
 
-![Minecraft Lifesteal Revive Beacon](https://media.discordapp.net/attachments/1468193926996557855/1503855113142276167/image.png?ex=6a0acc77&is=6a097af7&hm=550316dd91dfd6a77f34aa26ca2724cf9cc3f389a30a3cb812387fa88fde1b26&=&format=webp&quality=lossless)
+![EzCountdown Beacon Countdown](https://i.ibb.co/60VcQ6Z1/image.png)
+
+**Warming up time**
+
+![Minecraft Lifesteal Revive Beacon Warming Up](https://i.ibb.co/wZshsy8b/image.png)
+
+**Player selection**
+
+![Beacon Player selection Revive](https://i.ibb.co/KRpjZw0/image.png)
 
 **New `/beacon` command** — top-level alias for `/lifesteal beacon` — with three new subcommands:
 
@@ -200,9 +217,3 @@ Four Bukkit events are fired during the plugin-spawned beacon lifecycle
 | `BeaconAvailableEvent` | | Beacon transitions from warm-up to available |
 | `BeaconUsedEvent` | | A player successfully uses a beacon to revive someone |
 | `BeaconExpiredEvent` | | Beacon expires naturally or is forcibly despawned |
-
----
-
-[Unreleased]: https://github.com/ez-plugins/EzLifesteal/compare/v1.1.0...HEAD
-[1.1.0]: https://modrinth.com/plugin/ezlifesteal/version/1.1.0
-

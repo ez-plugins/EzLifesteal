@@ -16,7 +16,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import org.mockito.ArgumentCaptor;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -341,5 +343,137 @@ class TeamBankAdminServiceTest {
         when(repo.loadAccount(teamId)).thenThrow(new StorageException("read-fail"));
         CompletableFuture<AdminResult> future = service.adminDeposit("Alpha", 5.0D);
         assertThrows(CompletionException.class, future::join);
+    }
+
+    @Test
+    void adminTransfer_toSaveFails_rollsBackFromTeam() throws StorageException {
+        UUID betaId = UUID.randomUUID();
+        TeamsApiTeamResolver.TeamContext betaCtx = new TeamsApiTeamResolver.TeamContext(betaId, "Beta");
+        when(resolver.resolveTeamByName("Beta")).thenReturn(Optional.of(betaCtx));
+        when(repo.loadAccount(betaId)).thenReturn(Optional.of(new TeamBankAccount(betaId, 5.0D)));
+        when(plugin.getTeamBankMaxHeartsForTeam(betaId)).thenReturn(100.0D);
+
+        final double amount = 10.0D;
+        final double fromBefore = 20.0D;
+        final double toBefore = 5.0D;
+        final double fromAfter = fromBefore - amount;
+        final double toAfter = toBefore + amount;
+
+        // Make the to-team save fail, but allow other saves (including rollback) to succeed
+        org.mockito.Mockito.doAnswer(invocation -> {
+            TeamBankAccount acc = invocation.getArgument(0);
+            if (acc.getTeamId().equals(betaId) && Double.compare(acc.getHearts(), toAfter) == 0) {
+                throw new StorageException("write-fail");
+            }
+            return null;
+        }).when(repo).saveAccount(any(TeamBankAccount.class));
+
+        CompletableFuture<TransferResult> future = service.adminTransfer("Alpha", "Beta", amount);
+        assertThrows(CompletionException.class, future::join);
+
+        ArgumentCaptor<TeamBankAccount> captor = ArgumentCaptor.forClass(TeamBankAccount.class);
+        verify(repo, org.mockito.Mockito.atLeast(1)).saveAccount(captor.capture());
+        boolean rollbackOccurred = captor.getAllValues().stream()
+                .anyMatch(a -> a.getTeamId().equals(teamId) && Double.compare(a.getHearts(), fromBefore) == 0);
+        assertTrue(rollbackOccurred, "Rollback of from-team account should have been attempted with original balance");
+    }
+
+    @Test
+    void adminTransfer_fromSaveFails_propagatesAsCompletionException() throws StorageException {
+        UUID betaId = UUID.randomUUID();
+        TeamsApiTeamResolver.TeamContext betaCtx = new TeamsApiTeamResolver.TeamContext(betaId, "Beta");
+        when(resolver.resolveTeamByName("Beta")).thenReturn(Optional.of(betaCtx));
+        when(repo.loadAccount(betaId)).thenReturn(Optional.of(new TeamBankAccount(betaId, 5.0D)));
+        when(plugin.getTeamBankMaxHeartsForTeam(betaId)).thenReturn(100.0D);
+
+        final double amount = 10.0D;
+        final double fromAfter = 20.0D - amount;
+
+        // Make the from-team save fail
+        org.mockito.Mockito.doAnswer(invocation -> {
+            TeamBankAccount acc = invocation.getArgument(0);
+            if (acc.getTeamId().equals(teamId) && Double.compare(acc.getHearts(), fromAfter) == 0) {
+                throw new StorageException("write-fail");
+            }
+            return null;
+        }).when(repo).saveAccount(any(TeamBankAccount.class));
+
+        CompletableFuture<TransferResult> future = service.adminTransfer("Alpha", "Beta", amount);
+        assertThrows(CompletionException.class, future::join);
+    }
+
+    @Test
+    void adminTransfer_rollbackFails_logsSevereAndThrows() throws StorageException {
+        UUID betaId = UUID.randomUUID();
+        TeamsApiTeamResolver.TeamContext betaCtx = new TeamsApiTeamResolver.TeamContext(betaId, "Beta");
+        when(resolver.resolveTeamByName("Beta")).thenReturn(Optional.of(betaCtx));
+        when(repo.loadAccount(betaId)).thenReturn(Optional.of(new TeamBankAccount(betaId, 5.0D)));
+        when(plugin.getTeamBankMaxHeartsForTeam(betaId)).thenReturn(100.0D);
+
+        final double amount = 10.0D;
+        final double fromBefore = 20.0D;
+        final double toBefore = 5.0D;
+        final double toAfter = toBefore + amount;
+
+        java.util.logging.Logger logger = mock(java.util.logging.Logger.class);
+        when(plugin.getLogger()).thenReturn(logger);
+
+        // Make the to-team save fail and the rollback of from-team also fail
+        org.mockito.Mockito.doAnswer(invocation -> {
+            TeamBankAccount acc = invocation.getArgument(0);
+            if (acc.getTeamId().equals(betaId) && Double.compare(acc.getHearts(), toAfter) == 0) {
+                throw new StorageException("write-fail");
+            }
+            if (acc.getTeamId().equals(teamId) && Double.compare(acc.getHearts(), fromBefore) == 0) {
+                throw new StorageException("rollback-fail");
+            }
+            return null;
+        }).when(repo).saveAccount(any(TeamBankAccount.class));
+
+        CompletableFuture<TransferResult> future = service.adminTransfer("Alpha", "Beta", amount);
+        assertThrows(CompletionException.class, future::join);
+
+        org.mockito.Mockito.verify(logger).severe(org.mockito.ArgumentMatchers.contains("Failed to rollback from-team"));
+    }
+
+    @Test
+    void adminWithdraw_storageException_propagatesAsCompletionException() throws StorageException {
+        when(repo.loadAccount(teamId)).thenThrow(new StorageException("read-fail"));
+        CompletableFuture<AdminResult> future = service.adminWithdraw("Alpha", 5.0D);
+        assertThrows(CompletionException.class, future::join);
+    }
+
+    @Test
+    void adminReset_storageException_propagatesAsCompletionException() throws StorageException {
+        when(repo.loadAccount(teamId)).thenThrow(new StorageException("read-fail"));
+        CompletableFuture<AdminResult> future = service.adminReset("Alpha");
+        assertThrows(CompletionException.class, future::join);
+    }
+
+    @Test
+    void adminDeposit_loadAccountThrows_propagatesAsCompletionException() throws StorageException {
+        when(repo.loadAccount(teamId)).thenThrow(new StorageException("read-fail"));
+        CompletableFuture<AdminResult> future = service.adminDeposit("Alpha", 5.0D);
+        assertThrows(CompletionException.class, future::join);
+    }
+
+    @Test
+    void adminTransfer_loadAccountThrows_propagatesAsCompletionException() throws StorageException {
+        UUID betaId = UUID.randomUUID();
+        TeamsApiTeamResolver.TeamContext betaCtx = new TeamsApiTeamResolver.TeamContext(betaId, "Beta");
+        when(resolver.resolveTeamByName("Beta")).thenReturn(Optional.of(betaCtx));
+
+        // Make loading the from-team account fail with StorageException
+        when(repo.loadAccount(teamId)).thenThrow(new StorageException("read-fail"));
+
+        CompletableFuture<TransferResult> future = service.adminTransfer("Alpha", "Beta", 5.0D);
+        assertThrows(CompletionException.class, future::join);
+    }
+
+    @Test
+    void resolveTeam_resolverThrows_returnsTeamNotFound() {
+        when(resolver.resolveTeamByName("Alpha")).thenThrow(new RuntimeException("boom"));
+        TeamBankAdminService.AdminResult result = service.adminBalance("Alpha").join();
+        assertEquals(TeamBankAdminService.AdminStatus.TEAM_NOT_FOUND, result.status());
     }
 }
