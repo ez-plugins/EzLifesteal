@@ -131,27 +131,55 @@ jobs:
       #  7. MODRINTH RELEASE
       # ──────────────────────────────────────────────────────────────────────
       - name: Release to Modrinth (stable)
-        uses: Kir-Antipov/mc-publish@v3.3
-        with:
-          modrinth-id: ezlifesteal
-          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
-          modrinth-featured: true
-          name: "EzLifesteal ${{ steps.meta.outputs.version }}"
-          version: "${{ steps.meta.outputs.version }}"
-          version-type: release
-          files: target/ezlifesteal-v${{ steps.meta.outputs.version }}.jar
-          game-versions: ">=1.21"
-          game-versions-filter: release
-          loaders: |
-            paper
-            purpur
-          changelog-file: release-notes.md
-          dependencies: |
-            placeholderapi(optional)
-            worldguard(optional)
-            ezseasons(optional)
-            ezcountdown(optional)
-            teams-api(optional)
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+        run: |
+          VERSION="${{ steps.meta.outputs.version }}"
+          JAR="target/ezlifesteal-v${VERSION}.jar"
+
+          # Fetch all release game versions >= 1.21 from the Modrinth tag API.
+          GAME_VERSIONS=$(curl -sf "https://api.modrinth.com/v2/tag/game_version" | \
+            jq -c '[.[] |
+              select(.version_type == "release") |
+              select(
+                (.version | split(".") | .[0] | tonumber) > 1 or
+                (
+                  (.version | split(".") | .[0] | tonumber) == 1 and
+                  (.version | split(".") | .[1] | tonumber) >= 21
+                )
+              ) | .version
+            ]')
+
+          CHANGELOG=$(cat release-notes.md)
+
+          DATA=$(jq -n \
+            --arg     name            "EzLifesteal ${VERSION}" \
+            --arg     version_number  "${VERSION}" \
+            --arg     changelog       "$CHANGELOG" \
+            --argjson game_versions   "$GAME_VERSIONS" \
+            '{
+              name:           $name,
+              version_number: $version_number,
+              changelog:      $changelog,
+              dependencies: [
+                {project_id: "placeholderapi", dependency_type: "optional"},
+                {project_id: "worldguard",     dependency_type: "optional"},
+                {project_id: "ezseasons",      dependency_type: "optional"},
+                {project_id: "ezcountdown",    dependency_type: "optional"},
+                {project_id: "teams-api",      dependency_type: "optional"}
+              ],
+              game_versions:  $game_versions,
+              version_type:   "release",
+              loaders:        ["paper", "purpur"],
+              featured:       true,
+              project_id:     "ezlifesteal",
+              file_parts:     ["file"]
+            }')
+
+          curl -f --show-error -X POST "https://api.modrinth.com/v2/version" \
+            -H "Authorization: ${MODRINTH_TOKEN}" \
+            -F "data=${DATA};type=application/json" \
+            -F "file=@${JAR};type=application/java-archive"
 
       # ──────────────────────────────────────────────────────────────────────
       #  8. DISCORD NOTIFICATION
