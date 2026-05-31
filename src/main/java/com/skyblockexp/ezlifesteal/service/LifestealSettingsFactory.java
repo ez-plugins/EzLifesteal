@@ -284,6 +284,7 @@ public class LifestealSettingsFactory {
                 perTypeMessages.put(key, perTypeSection.getString(key, ""));
             }
         }
+        final List<String> endCommands = List.copyOf(adapter.getStringList(cdBase + ".end-commands"));
         final BeaconSpawnSettings.CountdownSettings countdown = new BeaconSpawnSettings.CountdownSettings(
                 adapter.getBoolean(cdBase + ".enabled", true),
                 Math.max(1, adapter.getInt(cdBase + ".duration-seconds", 300)),
@@ -292,7 +293,13 @@ public class LifestealSettingsFactory {
                 adapter.getString(cdBase + ".boss-bar-color", "PURPLE"),
                 adapter.getString(cdBase + ".boss-bar-style", "SEGMENTED_20"),
                 adapter.getString(cdBase + ".name-prefix", "ezls-beacon-"),
-                Map.copyOf(perTypeMessages)
+                Map.copyOf(perTypeMessages),
+                adapter.getString(cdBase + ".start-message", null),
+                adapter.getString(cdBase + ".end-message", null),
+                endCommands,
+                Math.max(1, adapter.getInt(cdBase + ".update-interval-seconds", 1)),
+                adapter.getString(cdBase + ".visibility-permission", null),
+                adapter.getBoolean(cdBase + ".ephemeral", true)
         );
 
         final String rsBase = base + ".random-spawn";

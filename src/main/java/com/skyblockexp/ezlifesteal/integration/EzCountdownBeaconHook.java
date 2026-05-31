@@ -1,6 +1,8 @@
 package com.skyblockexp.ezlifesteal.integration;
 
 import com.skyblockexp.ezcountdown.api.EzCountdownApi;
+import com.skyblockexp.ezcountdown.api.exception.DuplicateCountdownException;
+import com.skyblockexp.ezcountdown.api.exception.EzCountdownException;
 import com.skyblockexp.ezcountdown.api.model.Countdown;
 import com.skyblockexp.ezcountdown.api.model.CountdownBuilder;
 import com.skyblockexp.ezcountdown.api.model.CountdownType;
@@ -48,7 +50,7 @@ public final class EzCountdownBeaconHook implements BeaconCountdownProvider {
                     ? settings.formatMessage()
                     : DEFAULT_FORMAT_MESSAGE;
 
-            final Countdown countdown = CountdownBuilder.builder(countdownName)
+            final CountdownBuilder builder = CountdownBuilder.builder(countdownName)
                     .type(CountdownType.DURATION)
                     .displayTypes(displayTypeSet.isEmpty()
                             ? EnumSet.of(DisplayType.ACTION_BAR)
@@ -57,13 +59,38 @@ public final class EzCountdownBeaconHook implements BeaconCountdownProvider {
                     .formatMessage(formatMessage)
                     .bossBarColor(parseBossBarColor(settings.bossBarColor()))
                     .bossBarStyle(parseBossBarStyle(settings.bossBarStyle()))
-                    .build();
+                    .updateIntervalSeconds(Math.max(1, settings.updateIntervalSeconds()))
+                    .ephemeral(settings.ephemeral());
 
-            api.createCountdown(countdown);
+            if (settings.startMessage() != null && !settings.startMessage().isBlank()) {
+                builder.startMessage(settings.startMessage());
+            }
+            if (settings.endMessage() != null && !settings.endMessage().isBlank()) {
+                builder.endMessage(settings.endMessage());
+            }
+            if (settings.endCommands() != null && !settings.endCommands().isEmpty()) {
+                builder.endCommands(settings.endCommands());
+            }
+            if (settings.visibilityPermission() != null && !settings.visibilityPermission().isBlank()) {
+                builder.visibilityPermission(settings.visibilityPermission());
+            }
+
+            final Countdown countdown = builder.build();
+            if (!api.createCountdown(countdown)) {
+                logger.warning("EzCountdown: countdown '" + countdownName + "' already exists; skipping create.");
+            }
             api.startCountdown(countdownName);
             return Optional.of(countdownName);
-        } catch (Exception exception) {
+        } catch (DuplicateCountdownException exception) {
+            logger.warning("EzCountdown: duplicate countdown '" + exception.getCountdownName()
+                    + "' for beacon " + beaconShortId + "; attempting to reuse.");
+            return Optional.of(COUNTDOWN_PREFIX + beaconShortId);
+        } catch (EzCountdownException exception) {
             logger.warning("Failed to start EzCountdown for beacon "
+                    + beaconShortId + ": " + exception.getMessage());
+            return Optional.empty();
+        } catch (Exception exception) {
+            logger.warning("Unexpected error starting EzCountdown for beacon "
                     + beaconShortId + ": " + exception.getMessage());
             return Optional.empty();
         }

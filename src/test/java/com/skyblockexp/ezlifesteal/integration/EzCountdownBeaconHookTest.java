@@ -49,7 +49,13 @@ class EzCountdownBeaconHookTest {
                 "PURPLE",
                 "SEGMENTED_20",
                 "ezls-beacon-",
-                Map.of()
+                Map.of(),
+                null,
+                null,
+                List.of(),
+                1,
+                null,
+                true
         );
     }
 
@@ -82,7 +88,13 @@ class EzCountdownBeaconHookTest {
                 null,
                 null,
                 null,
-                null
+                null,
+                null,
+                null,
+                List.of(),
+                1,
+                null,
+                true
         );
         // No API registered, so returns empty — but validates the parseDisplayTypes path
         Optional<String> result = hook.startCountdown("testid12", settings);

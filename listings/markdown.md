@@ -54,7 +54,7 @@ EzLifesteal runs standalone. All integrations are soft dependencies, the plugin 
 | [Vault](https://modrinth.com/plugin/vault) | Economy payouts for kill streak rewards |
 | [EzSeasons](https://modrinth.com/plugin/ezseasons) | Automated season scheduling and heart resets |
 | [WorldGuard](https://modrinth.com/plugin/worldguard) | Protection region around each plugin-spawned beacon |
-| [EzCountdown](https://modrinth.com/plugin/ezcountdown) | Visible countdown timer during beacon warm-up (falls back to built-in Bukkit task) |
+| [EzCountdown](https://modrinth.com/plugin/ezcountdown) | Visible countdown timer during beacon warm-up — configurable start/end broadcasts, end commands, visibility permission, and ephemeral mode (falls back to built-in Bukkit task) |
 | TeamsAPI | Skip heart transfers between teammates (`team-kill-bypass-with-teams-api` in `lifesteal-core.yml`) |
 
 ## Configuration Presets

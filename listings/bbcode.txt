@@ -15,7 +15,7 @@
 [*]`/lifesteal hologram place` drops a self-updating leaderboard that survives restarts and can be cleared with one command. Run `/lifesteal hologram cleanup [radius]` to sweep ghost armor stands left by a crash — the plugin tags every stand with a PDC key so orphan detection is reliable across restarts. The scoreboard wildcard (`lifesteal.scoreboard.*`) makes it easy to hand out place/remove/cleanup access.
 [*]Need competitive seasons? Install the companion [URL=https://modrinth.com/plugin/ezseasons][B]EzSeasons[/B][/URL] plugin for automatic heart resets, start/end scheduling, countdowns, and reminder broadcasts. EzLifesteal now hooks into its public API automatically, so no extra bridge jars are required.
 [*]Revive banned players when a teammate right-clicks a beacon block with a voucher item. The plugin validates the item, restores the target, and plays the revive animation. Admins whitelist existing beacons or use [ICODE]/beacon spawn[/ICODE] to have the plugin place one automatically.
-[*][B]Beacon spawn subsystem[/B]: the plugin places BEACON blocks in the world on a schedule or on demand at random or explicit coordinates. Each beacon tracks its own lifecycle — optional WorldGuard protection region, optional EzCountdown warm-up timer, availability broadcast with title, particles, and fireworks, and automatic expiry removal.
+[*][B]Beacon spawn subsystem[/B]: the plugin places BEACON blocks in the world on a schedule or on demand at random or explicit coordinates. Each beacon tracks its own lifecycle — optional WorldGuard protection region, optional EzCountdown warm-up timer (configurable start/end broadcasts, end commands, visibility permission, and ephemeral mode), availability broadcast with title, particles, and fireworks, and automatic expiry removal.
 [*]Optional [B]TeamsAPI[/B] integration skips heart transfers when the killer and victim share a team. Toggle via [ICODE]team-kill-bypass-with-teams-api[/ICODE] in [ICODE]lifesteal-core.yml[/ICODE].
 [*]Smurf detection watches for players farming the same target or rotating killers, keeps history GUIs ready, and only alerts trusted staff.
 [*]`admin.yml` lists staff by ops, permission nodes, UUIDs, or names, chooses if admins bypass heart gain or loss, and decides whether smurf alerts stay admin-only.
@@ -25,6 +25,7 @@
 [*]Added focused unit tests to exercise team-bank rollback and atomicity paths (JaCoCo patch-coverage fix).
 [*]Dependency bumps: WorldEdit, WorldGuard, EzCountdown, Testcontainers, JUnit, Awaitility, SLF4J, and others.
 [*]Hologram orphan cleanup (1.1.2) — every spawned armor stand is PDC-tagged; `/lifesteal hologram cleanup [radius]` removes ghost stands left after a crash using the tag or a heuristic fallback.
+[*]EzCountdown 2.0.1 integration (1.1.2) — six new countdown config fields exposed in [ICODE]revive-beacon.yml[/ICODE]: start/end broadcasts, end commands, update interval, visibility permission, and ephemeral mode (beacon countdowns no longer persist to [ICODE]countdowns.yml[/ICODE]).
 [/LIST]
 
 [SIZE=4][B]Storage & reliability[/B][/SIZE]
@@ -50,7 +51,7 @@
 [*]Optional: [URL=https://modrinth.com/plugin/placeholderapi]PlaceholderAPI[/URL] for placeholders, MySQL 8+ for database storage.
 [*]Optional: [URL=https://modrinth.com/plugin/vault]Vault[/URL] plus an economy provider for kill streak currency rewards.
 [*]Optional: [URL=https://modrinth.com/plugin/worldguard]WorldGuard[/URL] for automatic region protection around plugin-spawned beacons.
-[*]Optional: [URL=https://modrinth.com/plugin/ezcountdown]EzCountdown[/URL] for a visible countdown timer during beacon warm-up. Falls back to a built-in Bukkit timer when absent.
+[*]Optional: [URL=https://modrinth.com/plugin/ezcountdown]EzCountdown[/URL] for a visible countdown timer during beacon warm-up with configurable broadcasts, end commands, and ephemeral mode. Falls back to a built-in Bukkit timer when absent.
 [*]Optional: TeamsAPI for team-kill bypass between teammates.
 [/LIST]
 

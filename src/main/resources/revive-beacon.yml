@@ -105,6 +105,20 @@ revive-beacon:
       # Per-display-type message overrides. Keys match display-types values (e.g. ACTION_BAR, BOSS_BAR).
       # Leave empty ({}) to use format-message for all types.
       per-type-messages: {}
+      # Broadcast sent to all online players when the countdown starts. Leave blank to disable.
+      start-message: ""
+      # Broadcast sent to all online players when the countdown ends. Leave blank to disable.
+      end-message: ""
+      # Console commands executed when the countdown ends. Use {name} for the countdown name.
+      # Example: ["say Beacon is now active!", "broadcast &aRevive beacon is ready!"]
+      end-commands: []
+      # How often (in seconds) EzCountdown refreshes the display. Default 1; increase to reduce load.
+      update-interval-seconds: 1
+      # Permission node required to see the countdown. Leave blank to show to all players.
+      visibility-permission: ""
+      # Ephemeral mode: countdown exists only in memory and is not saved to EzCountdown's countdowns.yml.
+      # Recommended: true (beacons are temporary; no leftover entries after server restart).
+      ephemeral: true
 
     # Random world-spawn bounds used by the schedule and '/lifesteal beacon spawn'
     # without explicit coordinates.
