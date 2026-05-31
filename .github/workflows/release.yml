@@ -172,7 +172,7 @@ jobs:
               version_type:   "release",
               loaders:        ["paper", "purpur"],
               featured:       true,
-              project_id:     "ezlifesteal",
+              project_id:     "wPNdCkBA",
               file_parts:     ["file"]
             }')
 
