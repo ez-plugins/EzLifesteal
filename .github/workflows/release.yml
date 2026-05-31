@@ -176,11 +176,16 @@ jobs:
               file_parts:     ["file"]
             }')
 
+          DATA_FILE=$(mktemp)
+          echo "$DATA" > "$DATA_FILE"
+
           curl -f --show-error -X POST "https://api.modrinth.com/v2/version" \
             -H "Authorization: ${MODRINTH_TOKEN}" \
             -H "User-Agent: EzLifesteal-release-workflow/1.0 (github.com/${{ github.repository }})" \
-            -F "data=${DATA};type=application/json" \
+            -F "data=@${DATA_FILE};type=application/json" \
             -F "file=@${JAR};type=application/java-archive"
+
+          rm -f "$DATA_FILE"
 
       # ──────────────────────────────────────────────────────────────────────
       #  8. DISCORD NOTIFICATION
