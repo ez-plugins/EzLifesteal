@@ -179,13 +179,21 @@ jobs:
           DATA_FILE=$(mktemp)
           echo "$DATA" > "$DATA_FILE"
 
-          curl -f --show-error -X POST "https://api.modrinth.com/v2/version" \
+          HTTP_CODE=$(curl -s -o /tmp/modrinth-response.json -w "%{http_code}" \
+            -X POST "https://api.modrinth.com/v2/version" \
             -H "Authorization: ${MODRINTH_TOKEN}" \
             -H "User-Agent: EzLifesteal-release-workflow/1.0 (github.com/${{ github.repository }})" \
             -F "data=@${DATA_FILE};type=application/json" \
-            -F "file=@${JAR};type=application/java-archive"
+            -F "file=@${JAR};type=application/java-archive")
 
           rm -f "$DATA_FILE"
+          echo "Modrinth response (HTTP ${HTTP_CODE}):"
+          cat /tmp/modrinth-response.json
+
+          if [[ "$HTTP_CODE" != "200" ]]; then
+            echo "::error::Modrinth publish failed with HTTP ${HTTP_CODE}"
+            exit 1
+          fi
 
       # ──────────────────────────────────────────────────────────────────────
       #  8. DISCORD NOTIFICATION
