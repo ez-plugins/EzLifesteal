@@ -6,20 +6,26 @@ import com.skyblockexp.ezlifesteal.model.LifestealProfile;
 import com.skyblockexp.ezlifesteal.service.LifestealManager;
 import com.skyblockexp.ezlifesteal.util.SchedulerAdapter;
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.PluginLogger;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -63,7 +69,7 @@ class TopHologramManagerTest {
             scheduler.when(() -> SchedulerAdapter.runTimer(any(), any(), any(Long.class), any(Long.class)))
                     .thenReturn(handle);
 
-            TopHologramManager manager = new TopHologramManager(plugin);
+            TopHologramManager manager = new TopHologramManager(plugin, mock(NamespacedKey.class));
 
             assertFalse(manager.remove());
             assertTrue(manager.place(location));
@@ -130,7 +136,7 @@ class TopHologramManagerTest {
             scheduler.when(() -> SchedulerAdapter.runTimer(any(), any(), any(Long.class), any(Long.class)))
                     .thenReturn(handle);
 
-            TopHologramManager manager = new TopHologramManager(plugin);
+            TopHologramManager manager = new TopHologramManager(plugin, mock(NamespacedKey.class));
 
             when(lifestealManager.loadTopProfilesAsync(any(Integer.class)))
                     .thenReturn(CompletableFuture.completedFuture(List.of()));
@@ -161,7 +167,7 @@ class TopHologramManagerTest {
         when(plugin.getLogger()).thenReturn(logger);
         when(plugin.getHologramSection(false)).thenReturn(section);
 
-        TopHologramManager manager = new TopHologramManager(plugin);
+        TopHologramManager manager = new TopHologramManager(plugin, mock(NamespacedKey.class));
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class);
              MockedStatic<SchedulerAdapter> scheduler = mockStatic(SchedulerAdapter.class)) {
@@ -183,5 +189,101 @@ class TopHologramManagerTest {
         Method removeArmorStands = TopHologramManager.class.getDeclaredMethod("removeArmorStands");
         removeArmorStands.setAccessible(true);
         removeArmorStands.invoke(manager);
+    }
+
+    @Test
+    void removeNearbyOrphans_returnsZeroForNullCenterOrWorld() {
+        EzLifestealPlugin plugin = mock(EzLifestealPlugin.class);
+
+        TopHologramManager manager = new TopHologramManager(plugin, mock(NamespacedKey.class));
+
+        assertEquals(0, manager.removeNearbyOrphans(null, 10.0));
+
+        World nullWorldWorld = mock(World.class);
+        Location nullWorldLoc = new Location(null, 0, 0, 0);
+        assertEquals(0, manager.removeNearbyOrphans(nullWorldLoc, 10.0));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void removeNearbyOrphans_removesTaggedOrphanStand() {
+        EzLifestealPlugin plugin = mock(EzLifestealPlugin.class);
+
+        World world = mock(World.class);
+        Location center = new Location(world, 10.0, 64.0, 10.0);
+
+        ArmorStand orphan = mock(ArmorStand.class);
+        PersistentDataContainer pdc = mock(PersistentDataContainer.class);
+        when(orphan.getPersistentDataContainer()).thenReturn(pdc);
+        when(pdc.has(any(NamespacedKey.class), eq(PersistentDataType.BYTE))).thenReturn(true);
+
+        when(world.getNearbyEntities(any(Location.class), any(Double.class), any(Double.class), any(Double.class)))
+                .thenReturn((Collection) List.of(orphan));
+
+        NamespacedKey testKey = mock(NamespacedKey.class);
+        TopHologramManager manager = new TopHologramManager(plugin, testKey);
+
+        int removed = manager.removeNearbyOrphans(center, 10.0);
+
+        assertEquals(1, removed);
+        verify(orphan).remove();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void removeNearbyOrphans_removesHeuristicOrphanStand() {
+        EzLifestealPlugin plugin = mock(EzLifestealPlugin.class);
+
+        World world = mock(World.class);
+        Location center = new Location(world, 0.0, 64.0, 0.0);
+
+        ArmorStand orphan = mock(ArmorStand.class);
+        PersistentDataContainer pdc = mock(PersistentDataContainer.class);
+        when(orphan.getPersistentDataContainer()).thenReturn(pdc);
+        when(pdc.has(any(NamespacedKey.class), eq(PersistentDataType.BYTE))).thenReturn(false);
+        when(orphan.isMarker()).thenReturn(true);
+        when(orphan.isInvisible()).thenReturn(true);
+        when(orphan.hasGravity()).thenReturn(false);
+        when(orphan.isSmall()).thenReturn(true);
+        when(orphan.isCustomNameVisible()).thenReturn(true);
+        when(orphan.hasBasePlate()).thenReturn(false);
+        when(orphan.hasArms()).thenReturn(false);
+
+        when(world.getNearbyEntities(any(Location.class), any(Double.class), any(Double.class), any(Double.class)))
+                .thenReturn((Collection) List.of(orphan));
+
+        TopHologramManager manager = new TopHologramManager(plugin, mock(NamespacedKey.class));
+
+        int removed = manager.removeNearbyOrphans(center, 10.0);
+
+        assertEquals(1, removed);
+        verify(orphan).remove();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void removeNearbyOrphans_skipsNonMatchingStands() {
+        EzLifestealPlugin plugin = mock(EzLifestealPlugin.class);
+
+        World world = mock(World.class);
+        Location center = new Location(world, 0.0, 64.0, 0.0);
+
+        ArmorStand normalStand = mock(ArmorStand.class);
+        PersistentDataContainer pdc = mock(PersistentDataContainer.class);
+        when(normalStand.getPersistentDataContainer()).thenReturn(pdc);
+        when(pdc.has(any(NamespacedKey.class), eq(PersistentDataType.BYTE))).thenReturn(false);
+        // Does not match heuristic (has gravity, not marker, etc.)
+        when(normalStand.isMarker()).thenReturn(false);
+        when(normalStand.hasGravity()).thenReturn(true);
+
+        when(world.getNearbyEntities(any(Location.class), any(Double.class), any(Double.class), any(Double.class)))
+                .thenReturn((Collection) List.of(normalStand));
+
+        TopHologramManager manager = new TopHologramManager(plugin, mock(NamespacedKey.class));
+
+        int removed = manager.removeNearbyOrphans(center, 10.0);
+
+        assertEquals(0, removed);
+        verify(normalStand, never()).remove();
     }
 }

@@ -6,6 +6,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.UUID;
 import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
 import org.bukkit.OfflinePlayer;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -19,7 +20,7 @@ class TopHologramManagerBuildLinesTest {
     @Test
     void buildLines_emptyAndSingleProfile() throws Exception {
         EzLifestealPlugin plugin = Mockito.mock(EzLifestealPlugin.class);
-        TopHologramManager manager = new TopHologramManager(plugin);
+        TopHologramManager manager = new TopHologramManager(plugin, Mockito.mock(NamespacedKey.class));
 
         Class<?> cls = TopHologramManager.class;
         Method buildLines = cls.getDeclaredMethod("buildLines", java.util.List.class);

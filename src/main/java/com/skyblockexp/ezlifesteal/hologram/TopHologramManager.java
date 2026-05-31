@@ -7,6 +7,7 @@ import com.skyblockexp.ezlifesteal.service.LifestealManager;
 import com.skyblockexp.ezlifesteal.util.SchedulerAdapter;
 import com.skyblockexp.ezlifesteal.util.SchedulerAdapter.TaskHandle;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -18,11 +19,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.persistence.PersistentDataType;
 
 /**
  * Manages a hologram leaderboard that shows the top lifesteal players.
@@ -32,6 +36,8 @@ public class TopHologramManager {
     private static final double LINE_SPACING = 0.30D;
 
     private final EzLifestealPlugin plugin;
+
+    private final NamespacedKey hologramLineKey;
 
     private final List<ArmorStand> armorStands = new ArrayList<>();
 
@@ -50,7 +56,16 @@ public class TopHologramManager {
 
 
     public TopHologramManager(EzLifestealPlugin plugin) {
+        this(plugin, new NamespacedKey(plugin, "hologram_line"));
+    }
+
+    /**
+     * Package-private constructor used in unit tests to supply a pre-built (or mocked)
+     * {@link NamespacedKey} without requiring a live Bukkit environment.
+     */
+    TopHologramManager(EzLifestealPlugin plugin, NamespacedKey hologramLineKey) {
         this.plugin = plugin;
+        this.hologramLineKey = hologramLineKey;
     }
 
     public synchronized void reload(ConfigurationSection section) {
@@ -268,7 +283,66 @@ public class TopHologramManager {
         stand.setArms(false);
         stand.setCustomNameVisible(true);
         stand.setCustomName(colorize(" "));
+        final org.bukkit.persistence.PersistentDataContainer pdc = stand.getPersistentDataContainer();
+        if (pdc != null && hologramLineKey != null) {
+            pdc.set(hologramLineKey, PersistentDataType.BYTE, (byte) 1);
+        }
         return stand;
+    }
+
+    /**
+     * Scans for armor stands near {@code center} within {@code radius} blocks that look like
+     * EzLifesteal hologram lines but are not currently tracked by this manager (orphans).
+     * Orphan detection uses a PersistentDataContainer tag first, then falls back to a
+     * heuristic for pre-existing untagged stands.
+     *
+     * <p>Must be called on the main thread.
+     *
+     * @param center the scan origin
+     * @param radius the search half-width in blocks (clamped to [1, 64])
+     * @return the number of orphaned armor stands removed
+     */
+    public synchronized int removeNearbyOrphans(Location center, double radius) {
+        if (center == null) {
+            return 0;
+        }
+        final World world = center.getWorld();
+        if (world == null) {
+            return 0;
+        }
+        final double clampedRadius = Math.max(1.0, Math.min(64.0, radius));
+        final Collection<Entity> nearby = world.getNearbyEntities(center, clampedRadius, clampedRadius, clampedRadius);
+        int removed = 0;
+        for (Entity entity : nearby) {
+            if (!(entity instanceof ArmorStand stand)) {
+                continue;
+            }
+            if (isOwnedByThisManager(stand)) {
+                continue;
+            }
+            if (isHologramStand(stand)) {
+                stand.remove();
+                removed++;
+            }
+        }
+        return removed;
+    }
+
+    private boolean isOwnedByThisManager(ArmorStand stand) {
+        return armorStands.contains(stand);
+    }
+
+    private boolean isHologramStand(ArmorStand stand) {
+        if (hologramLineKey != null && stand.getPersistentDataContainer().has(hologramLineKey, PersistentDataType.BYTE)) {
+            return true;
+        }
+        return stand.isMarker()
+                && stand.isInvisible()
+                && !stand.hasGravity()
+                && stand.isSmall()
+                && stand.isCustomNameVisible()
+                && !stand.hasBasePlate()
+                && !stand.hasArms();
     }
 
     private String renderMessage(String key, Map<String, String> placeholders, String fallback) {

@@ -61,6 +61,8 @@ hologram-placed: "&7Holograma do ranking colocado em &f%world% &7(&c%x%&7, &c%y%
 hologram-removed: "&7Holograma do ranking removido."
 hologram-not-found: "&cNão há holograma do ranking para remover."
 hologram-place-failed: "&cFalha ao colocar o holograma do ranking."
+hologram-cleanup-removed: "&7%count% &7suporte(s) de armadura de holograma órfão(s) removido(s) em &c%radius% &7blocos."
+hologram-cleanup-none: "&7Nenhum suporte de armadura de holograma órfão encontrado em &c%radius% &7blocos."
 no-permission: "&cVocê não tem permissão para fazer isso."
 smurf-gui-added: "&a%player% &7agora irá ignorar a detecção de smurf."
 smurf-gui-removed: "&c%player% &7não irá mais ignorar a detecção de smurf."

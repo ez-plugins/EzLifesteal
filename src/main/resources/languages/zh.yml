@@ -61,6 +61,8 @@ hologram-placed: "&7已在 &f%world% &7(&c%x%&7, &c%y%&7, &c%z%&7) 放置排行�
 hologram-removed: "&7已移除排行榜全息图。"
 hologram-not-found: "&c当前没有可移除的排行榜全息图。"
 hologram-place-failed: "&c放置排行榜全息图失败。"
+hologram-cleanup-removed: "&7已在 &c%radius% &7格内移除 &c%count% &7个孤立全息图盔甲架。"
+hologram-cleanup-none: "&7在 &c%radius% &7格内未找到孤立的全息图盔甲架。"
 no-permission: "&c你没有权限执行此操作。"
 smurf-gui-added: "&a%player% &7现在将跳过 smurf 检测。"
 smurf-gui-removed: "&c%player% &7将不再跳过 smurf 检测。"

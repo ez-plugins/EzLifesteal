@@ -61,6 +61,8 @@ hologram-placed: "&7Голограмма таблицы лидеров разм�
 hologram-removed: "&7Голограмма таблицы лидеров удалена."
 hologram-not-found: "&cНет голограммы таблицы лидеров для удаления."
 hologram-place-failed: "&cНе удалось разместить голограмму таблицы лидеров."
+hologram-cleanup-removed: "&7Удалено &c%count% &7брошенных стоек-призраков в радиусе &c%radius% &7блоков."
+hologram-cleanup-none: "&7Брошенных стоек-призраков в радиусе &c%radius% &7блоков не найдено."
 no-permission: "&cУ вас нет прав для этого действия."
 smurf-gui-added: "&a%player% &7теперь будет обходить smurf-детекцию."
 smurf-gui-removed: "&c%player% &7больше не будет обходить smurf-детекцию."

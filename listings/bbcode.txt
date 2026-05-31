@@ -1,6 +1,9 @@
 [CENTER][SIZE=6][B]EzLifesteal[/B][/SIZE]
 [SIZE=3]EzLifesteal is a configurable Lifesteal plugin for Paper, Spigot, Folia, and Bukkit servers. It ships with flexible heart rules, fast storage, hologram/scoreboard overlays, PlaceholderAPI hooks, and built-in smurf protection.[/SIZE][/CENTER]
 
+[CENTER][URL=https://github.com/ez-plugins/EzLifesteal/releases/latest][IMG]https://img.shields.io/github/v/release/ez-plugins/EzLifesteal?label=Latest%20Release&logo=github&style=flat-square[/IMG][/URL]
+[CENTER][URL=https://github.com/ez-plugins/EzLifesteal][IMG]https://img.shields.io/badge/GitHub-Repo-181717?logo=github[/IMG][/URL] [URL=https://discord.gg/yWP95XfmBS][IMG]https://img.shields.io/badge/Discord-Join%20our%20server-7289DA?logo=discord[/IMG][/URL] [URL=https://github.com/ez-plugins/EzLifesteal/blob/main/LICENSE][IMG]https://img.shields.io/github/license/ez-plugins/EzLifesteal[/IMG][/URL][/CENTER]
+
 [SIZE=4][B]Highlights[/B][/SIZE]
 [LIST]
 [*]Works with Paper 26.1 (Java 25) and stays friendly with Paper, Spigot, Folia, and Bukkit. The jar includes the `folia-supported` marker.
@@ -9,7 +12,7 @@
 [*]Optional kill streak rewards can hand out money, run console commands, give items, and broadcast wins when players hit streak milestones, with Vault support for economy payouts.
 [*]Combat logout protection tags PvP combat for a configurable window and punishes quitters so duels stay fair.
 [*]Built-in overlays show action-bar or boss-bar updates. `/lifesteal top` leaderboards, the hologram, and PlaceholderAPI placeholders share live standings anywhere.
-[*]`/lifesteal hologram place` drops a self-updating leaderboard that survives restarts and can be cleared with one command. The scoreboard wildcard (`lifesteal.scoreboard.*`) makes it easy to hand out place/remove access.
+[*]`/lifesteal hologram place` drops a self-updating leaderboard that survives restarts and can be cleared with one command. Run `/lifesteal hologram cleanup [radius]` to sweep ghost armor stands left by a crash — the plugin tags every stand with a PDC key so orphan detection is reliable across restarts. The scoreboard wildcard (`lifesteal.scoreboard.*`) makes it easy to hand out place/remove/cleanup access.
 [*]Need competitive seasons? Install the companion [URL=https://modrinth.com/plugin/ezseasons][B]EzSeasons[/B][/URL] plugin for automatic heart resets, start/end scheduling, countdowns, and reminder broadcasts. EzLifesteal now hooks into its public API automatically, so no extra bridge jars are required.
 [*]Revive banned players when a teammate right-clicks a beacon block with a voucher item. The plugin validates the item, restores the target, and plays the revive animation. Admins whitelist existing beacons or use [ICODE]/beacon spawn[/ICODE] to have the plugin place one automatically.
 [*][B]Beacon spawn subsystem[/B]: the plugin places BEACON blocks in the world on a schedule or on demand at random or explicit coordinates. Each beacon tracks its own lifecycle — optional WorldGuard protection region, optional EzCountdown warm-up timer, availability broadcast with title, particles, and fireworks, and automatic expiry removal.
@@ -18,12 +21,13 @@
 [*]`admin.yml` lists staff by ops, permission nodes, UUIDs, or names, chooses if admins bypass heart gain or loss, and decides whether smurf alerts stay admin-only.
 [*]Translate player messages quickly with built-in English and Dutch files in [code]languages/*.yml[/code].
 [*]`/lifesteal` staff commands make it easy to add, remove, reset, revive, or reset all hearts without touching storage files.
+[*]Atomic team-bank persistence rollback (1.1.1) — profile rollback when a team-bank save fails, preventing inconsistent player/bank state.
+[*]Added focused unit tests to exercise team-bank rollback and atomicity paths (JaCoCo patch-coverage fix).
+[*]Dependency bumps: WorldEdit, WorldGuard, EzCountdown, Testcontainers, JUnit, Awaitility, SLF4J, and others.
+[*]Hologram orphan cleanup (1.1.2) — every spawned armor stand is PDC-tagged; `/lifesteal hologram cleanup [radius]` removes ghost stands left after a crash using the tag or a heuristic fallback.
 [/LIST]
 
 [SIZE=4][B]Storage & reliability[/B][/SIZE]
-[LIST]
-[*]Storage tasks run on their own thread so slow disks or databases never freeze the main server.
-[*]YAML mode saves each player to `plugins/EzLifesteal/data/players/<uuid>.yml` and upgrades old `players.yml` data the first time it loads.
 [*]MySQL mode creates its table on startup (`uuid`/`hearts`) and uses `ON DUPLICATE KEY UPDATE` so repeat saves stay safe.
 [*]Use `/lifesteal reload` to refresh configuration, messages, admin rules, storage backends, overlays, and PlaceholderAPI hooks without restarting.
 [/LIST]
@@ -122,6 +126,17 @@ world-overrides:
 [SIZE=4][B]Revive Beacon & Beacon Spawn[/B][/SIZE]
 [LIST]
 [*]Banned players can be revived when a teammate right-clicks a beacon block with a voucher item. Configure the item, distance, and animation in [ICODE]revive-beacon.yml[/ICODE].
+[CENTER]
+[IMG]https://i.ibb.co/60VcQ6Z1/image.png[/IMG]
+[SIZE=2]Beacon countdown[/SIZE]
+
+[IMG]https://i.ibb.co/wZshsy8b/image.png[/IMG]
+[SIZE=2]Beacon warming-up[/SIZE]
+
+[IMG]https://i.ibb.co/KRpjZw0/image.png[/IMG]
+[SIZE=2]Beacon player selection[/SIZE]
+
+[/CENTER]
 [*]Admins whitelist existing beacon blocks with [ICODE]/lifesteal beacon add[/ICODE], or have the plugin place a tracked beacon with [ICODE]/beacon spawn [world x y z][/ICODE]. Omit coordinates to let the plugin pick a random location within the configured XZ bounding box.
 [*]The [B]beacon spawn subsystem[/B] manages the full lifecycle: placement → optional WorldGuard protection region → optional EzCountdown warm-up timer → AVAILABLE state → expiry removal. Set [ICODE]expiry-minutes: 0[/ICODE] to keep beacons indefinitely.
 [*][URL=https://modrinth.com/plugin/worldguard][B]WorldGuard[/B][/URL] (optional): a protection region is created around each spawned beacon with a configurable radius and flag overrides ([ICODE]deny-build[/ICODE], [ICODE]deny-pvp[/ICODE], [ICODE]deny-mob-damage[/ICODE], [ICODE]deny-explosions[/ICODE]). Silently skipped when WorldGuard is absent.

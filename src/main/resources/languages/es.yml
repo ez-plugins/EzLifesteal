@@ -61,6 +61,8 @@ hologram-placed: "&7Se colocó el holograma de clasificación en &f%world% &7(&c
 hologram-removed: "&7Se eliminó el holograma de clasificación."
 hologram-not-found: "&cNo hay un holograma de clasificación para eliminar."
 hologram-place-failed: "&cNo se pudo colocar el holograma de clasificación."
+hologram-cleanup-removed: "&7Se eliminaron &c%count% &7armaduras huérfanas de holograma dentro de &c%radius% &7bloques."
+hologram-cleanup-none: "&7No se encontraron armaduras huérfanas de holograma dentro de &c%radius% &7bloques."
 no-permission: "&cNo tienes permiso para hacer eso."
 smurf-gui-added: "&a%player% &7ahora omitirá la detección de smurf."
 smurf-gui-removed: "&c%player% &7ya no omitirá la detección de smurf."

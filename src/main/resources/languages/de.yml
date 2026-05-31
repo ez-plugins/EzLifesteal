@@ -61,6 +61,8 @@ hologram-placed: "&7Ranglisten-Hologramm in &f%world% &7bei (&c%x%&7, &c%y%&7, &
 hologram-removed: "&7Ranglisten-Hologramm entfernt."
 hologram-not-found: "&cEs gibt kein Ranglisten-Hologramm zum Entfernen."
 hologram-place-failed: "&cRanglisten-Hologramm konnte nicht platziert werden."
+hologram-cleanup-removed: "&7%count% &7verwaiste Hologramm-Rüstungsständer in &c%radius% &7Blöcken entfernt."
+hologram-cleanup-none: "&7Keine verwaisten Hologramm-Rüstungsständer in &c%radius% &7Blöcken gefunden."
 no-permission: "&cDu hast keine Berechtigung dafür."
 smurf-gui-added: "&a%player% &7überspringt nun die Smurf-Erkennung."
 smurf-gui-removed: "&c%player% &7überspringt die Smurf-Erkennung nicht mehr."

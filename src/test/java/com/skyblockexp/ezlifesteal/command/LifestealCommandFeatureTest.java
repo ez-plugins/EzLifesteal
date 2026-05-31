@@ -315,7 +315,7 @@ class LifestealCommandFeatureTest {
         MessageCapturingSender holoUsage =
                 new MessageCapturingSender(Set.of("lifesteal.scoreboard.place", "lifesteal.scoreboard.remove"));
         command.onCommand(holoUsage.getProxy(), bukkitCommand, "lifesteal", new String[]{"hologram"});
-        assertContains(holoUsage.getMessages(), "Usage: /lifesteal hologram <place|remove>");
+        assertContains(holoUsage.getMessages(), "Usage: /lifesteal hologram <place|remove|cleanup>");
 
         Player placeDenied = mock(Player.class);
         when(placeDenied.hasPermission(anyString())).thenReturn(false);
@@ -338,7 +338,7 @@ class LifestealCommandFeatureTest {
         verify(plugin.getMessageService()).sendMessage(eq(player), eq("hologram-removed"));
 
         command.onCommand(holoUsage.getProxy(), bukkitCommand, "lifesteal", new String[]{"hologram", "other"});
-        assertContains(holoUsage.getMessages(), "Usage: /lifesteal hologram <place|remove>");
+        assertContains(holoUsage.getMessages(), "Usage: /lifesteal hologram <place|remove|cleanup>");
     }
 
     private void assertContains(List<String> messages, String expectedPart) {
