@@ -162,11 +162,11 @@ jobs:
               version_number: $version_number,
               changelog:      $changelog,
               dependencies: [
-                {project_id: "placeholderapi", dependency_type: "optional"},
-                {project_id: "worldguard",     dependency_type: "optional"},
-                {project_id: "ezseasons",      dependency_type: "optional"},
-                {project_id: "ezcountdown",    dependency_type: "optional"},
-                {project_id: "teams-api",      dependency_type: "optional"}
+                {project_id: "lKEzGugV", dependency_type: "optional"},
+                {project_id: "DKY9btbd", dependency_type: "optional"},
+                {project_id: "UNGj0zYA", dependency_type: "optional"},
+                {project_id: "rCku0I4l", dependency_type: "optional"},
+                {project_id: "2NJKwgXC", dependency_type: "optional"}
               ],
               game_versions:  $game_versions,
               version_type:   "release",
