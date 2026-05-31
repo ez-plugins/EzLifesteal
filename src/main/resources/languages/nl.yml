@@ -61,6 +61,8 @@ hologram-placed: "&7Leaderboard-hologram geplaatst in &f%world% &7op (&c%x%&7, &
 hologram-removed: "&7Leaderboard-hologram verwijderd."
 hologram-not-found: "&cEr is geen leaderboard-hologram om te verwijderen."
 hologram-place-failed: "&cPlaatsen van leaderboard-hologram mislukt."
+hologram-cleanup-removed: "&7%count% &7verlaten hologram-wapenstandaard(s) verwijderd binnen &c%radius% &7blokken."
+hologram-cleanup-none: "&7Geen verlaten hologram-wapenstandaards gevonden binnen &c%radius% &7blokken."
 no-permission: "&cJe hebt geen toestemming om dat te doen."
 smurf-gui-added: "&a%player% &7zal nu smurfdetectie overslaan."
 smurf-gui-removed: "&c%player% &7zal smurfdetectie niet langer overslaan."

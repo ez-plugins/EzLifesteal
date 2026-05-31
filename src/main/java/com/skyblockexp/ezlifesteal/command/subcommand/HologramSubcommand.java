@@ -13,7 +13,7 @@ public class HologramSubcommand implements Subcommand {
     public boolean execute(CommandSender sender, Command command, String label, String[] args,
             LifestealCommand context) {
         if (args.length < 2) {
-            sender.sendMessage("Usage: /" + label + " hologram <place|remove>");
+            sender.sendMessage("Usage: /" + label + " hologram <place|remove|cleanup>");
             return true;
         }
         final String hologramAction = args[1].toLowerCase(Locale.ROOT);
@@ -69,8 +69,41 @@ public class HologramSubcommand implements Subcommand {
                     plugin.getMessageService().sendMessage(sender, "hologram-not-found");
                 }
                 return true;
+            case "cleanup":
+                if (!(sender instanceof Player cleanupPlayer)) {
+                    sender.sendMessage("This command can only be used by players.");
+                    return true;
+                }
+                if (!context.requirePermissionPublic(cleanupPlayer,
+                        "lifesteal.scoreboard.remove", "lifesteal.hologram", "lifesteal.admin")) {
+                    return true;
+                }
+                double radius = 10.0;
+                if (args.length >= 3) {
+                    try {
+                        radius = Double.parseDouble(args[2]);
+                        radius = Math.max(1.0, Math.min(64.0, radius));
+                    }
+                    catch (NumberFormatException ignored) {
+                        sender.sendMessage("Usage: /" + label + " hologram cleanup [radius]");
+                        return true;
+                    }
+                }
+                final int count = plugin.getTopHologramManager()
+                        .removeNearbyOrphans(cleanupPlayer.getLocation(), radius);
+                final java.util.Map<String, String> cleanupPlaceholders = java.util.Map.of(
+                        "count", Integer.toString(count),
+                        "radius", context.formatCoordinate(radius)
+                );
+                if (count > 0) {
+                    plugin.getMessageService().sendMessage(cleanupPlayer, "hologram-cleanup-removed", cleanupPlaceholders);
+                }
+                else {
+                    plugin.getMessageService().sendMessage(cleanupPlayer, "hologram-cleanup-none", cleanupPlaceholders);
+                }
+                return true;
             default:
-                sender.sendMessage("Usage: /" + label + " hologram <place|remove>");
+                sender.sendMessage("Usage: /" + label + " hologram <place|remove|cleanup>");
                 return true;
         }
     }

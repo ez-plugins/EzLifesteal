@@ -82,4 +82,106 @@ class HologramSubcommandTest {
         verify(manager).remove();
         verify(plugin).getMessageService();
     }
+
+    @Test
+    void cleanupAction_removesOrphansAndSendsCountMessage() {
+        PluginAccessor plugin = Mockito.mock(PluginAccessor.class);
+        TopHologramManager manager = Mockito.mock(TopHologramManager.class);
+        MessageService msg = Mockito.mock(MessageService.class);
+
+        when(plugin.getTopHologramManager()).thenReturn(manager);
+        when(plugin.getMessageService()).thenReturn(msg);
+        when(manager.removeNearbyOrphans(any(Location.class), anyDouble())).thenReturn(3);
+
+        Player player = Mockito.mock(Player.class);
+        World mockWorld = Mockito.mock(World.class);
+        Location loc = new Location(mockWorld, 0, 64, 0);
+        when(player.getLocation()).thenReturn(loc);
+
+        LifestealCommand context = Mockito.mock(LifestealCommand.class);
+        when(context.requirePermissionPublic(any(), anyString(), any(), any())).thenReturn(true);
+        when(context.getPluginAccessorPublic()).thenReturn(plugin);
+        when(context.formatCoordinate(anyDouble())).thenReturn("10");
+
+        HologramSubcommand sub = new HologramSubcommand();
+        boolean result = sub.execute(player, Mockito.mock(Command.class), "lifesteal",
+                new String[]{"hologram", "cleanup"}, context);
+
+        assert result;
+        verify(manager).removeNearbyOrphans(any(Location.class), anyDouble());
+        verify(msg).sendMessage(any(), Mockito.eq("hologram-cleanup-removed"), any());
+    }
+
+    @Test
+    void cleanupAction_noOrphans_sendsNoneMessage() {
+        PluginAccessor plugin = Mockito.mock(PluginAccessor.class);
+        TopHologramManager manager = Mockito.mock(TopHologramManager.class);
+        MessageService msg = Mockito.mock(MessageService.class);
+
+        when(plugin.getTopHologramManager()).thenReturn(manager);
+        when(plugin.getMessageService()).thenReturn(msg);
+        when(manager.removeNearbyOrphans(any(Location.class), anyDouble())).thenReturn(0);
+
+        Player player = Mockito.mock(Player.class);
+        World mockWorld = Mockito.mock(World.class);
+        when(player.getLocation()).thenReturn(new Location(mockWorld, 0, 64, 0));
+
+        LifestealCommand context = Mockito.mock(LifestealCommand.class);
+        when(context.requirePermissionPublic(any(), anyString(), any(), any())).thenReturn(true);
+        when(context.getPluginAccessorPublic()).thenReturn(plugin);
+        when(context.formatCoordinate(anyDouble())).thenReturn("10");
+
+        HologramSubcommand sub = new HologramSubcommand();
+        boolean result = sub.execute(player, Mockito.mock(Command.class), "lifesteal",
+                new String[]{"hologram", "cleanup"}, context);
+
+        assert result;
+        verify(msg).sendMessage(any(), Mockito.eq("hologram-cleanup-none"), any());
+    }
+
+    @Test
+    void cleanupAction_requiresPlayerSender() {
+        PluginAccessor plugin = Mockito.mock(PluginAccessor.class);
+        TopHologramManager manager = Mockito.mock(TopHologramManager.class);
+        when(plugin.getTopHologramManager()).thenReturn(manager);
+
+        CommandSender consoleSender = Mockito.mock(CommandSender.class);
+
+        LifestealCommand context = Mockito.mock(LifestealCommand.class);
+        when(context.getPluginAccessorPublic()).thenReturn(plugin);
+
+        HologramSubcommand sub = new HologramSubcommand();
+        boolean result = sub.execute(consoleSender, Mockito.mock(Command.class), "lifesteal",
+                new String[]{"hologram", "cleanup"}, context);
+
+        assert result;
+        verify(consoleSender).sendMessage(Mockito.contains("players"));
+        Mockito.verifyNoInteractions(manager);
+    }
+
+    @Test
+    void cleanupAction_customRadius_isPassedThrough() {
+        PluginAccessor plugin = Mockito.mock(PluginAccessor.class);
+        TopHologramManager manager = Mockito.mock(TopHologramManager.class);
+        MessageService msg = Mockito.mock(MessageService.class);
+
+        when(plugin.getTopHologramManager()).thenReturn(manager);
+        when(plugin.getMessageService()).thenReturn(msg);
+        when(manager.removeNearbyOrphans(any(Location.class), anyDouble())).thenReturn(0);
+
+        Player player = Mockito.mock(Player.class);
+        World mockWorld = Mockito.mock(World.class);
+        when(player.getLocation()).thenReturn(new Location(mockWorld, 0, 64, 0));
+
+        LifestealCommand context = Mockito.mock(LifestealCommand.class);
+        when(context.requirePermissionPublic(any(), anyString(), any(), any())).thenReturn(true);
+        when(context.getPluginAccessorPublic()).thenReturn(plugin);
+        when(context.formatCoordinate(anyDouble())).thenReturn("20");
+
+        HologramSubcommand sub = new HologramSubcommand();
+        sub.execute(player, Mockito.mock(Command.class), "lifesteal",
+                new String[]{"hologram", "cleanup", "20"}, context);
+
+        verify(manager).removeNearbyOrphans(any(Location.class), Mockito.eq(20.0));
+    }
 }

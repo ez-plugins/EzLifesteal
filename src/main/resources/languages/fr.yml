@@ -61,6 +61,8 @@ hologram-placed: "&7Hologramme du classement placé à &f%world% &7(&c%x%&7, &c%
 hologram-removed: "&7Hologramme du classement supprimé."
 hologram-not-found: "&cAucun hologramme de classement à supprimer."
 hologram-place-failed: "&cImpossible de placer l'hologramme du classement."
+hologram-cleanup-removed: "&7%count% &7support(s) d'armure hologramme orphelin(s) supprimé(s) dans &c%radius% &7blocs."
+hologram-cleanup-none: "&7Aucun support d'armure hologramme orphelin trouvé dans &c%radius% &7blocs."
 no-permission: "&cVous n'avez pas la permission de faire cela."
 smurf-gui-added: "&a%player% &7ignore désormais la détection smurf."
 smurf-gui-removed: "&c%player% &7n'ignore plus la détection smurf."

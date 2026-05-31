@@ -61,6 +61,8 @@ hologram-placed: "&7Placed the leaderboard hologram at &f%world% &7(&c%x%&7, &c%
 hologram-removed: "&7Removed the leaderboard hologram."
 hologram-not-found: "&cThere is no leaderboard hologram to remove."
 hologram-place-failed: "&cFailed to place the leaderboard hologram."
+hologram-cleanup-removed: "&7Removed &c%count% &7orphaned hologram armor stand(s) within &c%radius% &7blocks."
+hologram-cleanup-none: "&7No orphaned hologram armor stands found within &c%radius% &7blocks."
 no-permission: "&cYou do not have permission to do that."
 smurf-gui-added: "&a%player% &7will now bypass smurf detection."
 smurf-gui-removed: "&c%player% &7will no longer bypass smurf detection."

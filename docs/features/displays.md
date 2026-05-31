@@ -85,11 +85,16 @@ The hologram must be placed by an admin at runtime:
 ```text
 /lifesteal hologram place    # places at your current location
 /lifesteal hologram remove   # removes the hologram
+/lifesteal hologram cleanup [radius]  # removes orphaned ghost stands near you
 ```
 
 These commands require the `lifesteal.scoreboard.place` / `lifesteal.scoreboard.remove` permissions.
 
 The placement location is saved to `features.yml` and persists across reloads. The hologram is recreated on the next server start or `/lifesteal reload`.
+
+### Orphan cleanup
+
+After an unexpected server crash the manager's in-memory stand list is lost, leaving invisible armor stands in the world ("orphans"). Run `/lifesteal hologram cleanup [radius]` while standing near the old hologram to remove them. The command scans within `radius` blocks (default 10, clamped to 1–64) and removes any armor stands that carry the plugin's PDC tag or match the hologram heuristic (marker, invisible, small, no gravity, no base-plate, no arms).
 
 ### Hologram content
 

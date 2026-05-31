@@ -56,6 +56,7 @@ This page lists all player, moderator, and admin commands exposed by EzLifesteal
 | `/lifesteal smurf` | Opens the smurf detection review GUI. | `lifesteal.smurf.manage` |
 | `/lifesteal hologram place` | Places the top-heart hologram at your location. | `lifesteal.scoreboard.place` |
 | `/lifesteal hologram remove` | Removes the top-heart hologram. | `lifesteal.scoreboard.remove` |
+| `/lifesteal hologram cleanup [radius]` | Scans within `radius` blocks (default 10, max 64) and removes orphaned hologram armor stands not tracked by the manager. Useful after a crash. | `lifesteal.scoreboard.remove` |
 
 ## Beacon Commands
 
