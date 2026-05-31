@@ -65,7 +65,13 @@ public record BeaconSpawnSettings(
             String bossBarColor,
             String bossBarStyle,
             String namePrefix,
-            Map<String, String> perTypeMessages
+            Map<String, String> perTypeMessages,
+            String startMessage,
+            String endMessage,
+            List<String> endCommands,
+            int updateIntervalSeconds,
+            String visibilityPermission,
+            boolean ephemeral
     ) {
         public static CountdownSettings defaults() {
             return new CountdownSettings(
@@ -76,7 +82,13 @@ public record BeaconSpawnSettings(
                     "PURPLE",
                     "NOTCHED_20",
                     "ezls-beacon-",
-                    Map.of()
+                    Map.of(),
+                    null,
+                    null,
+                    List.of(),
+                    1,
+                    null,
+                    true
             );
         }
     }

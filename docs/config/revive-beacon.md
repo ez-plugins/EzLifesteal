@@ -268,6 +268,17 @@ When EzCountdown is installed and `countdown.enabled: true`, a visible countdown
 | `countdown.enabled` | boolean | `true` | Show an EzCountdown timer. |
 | `countdown.duration-seconds` | integer | `300` | Warm-up time in seconds before the beacon becomes interactive. |
 | `countdown.display-types` | list | `ACTION_BAR`, `BOSS_BAR` | EzCountdown display modes. Accepted values: `ACTION_BAR`, `BOSS_BAR`, `CHAT`, `TITLE`, `SCOREBOARD`. |
+| `countdown.format-message` | string | see config | Countdown text. Supports `{formatted}`, `{minutes}`, `{seconds}`, `{hours}`, `{days}`, `{name}`. |
+| `countdown.boss-bar-color` | string | `PURPLE` | Boss bar colour: `BLUE`, `GREEN`, `PINK`, `PURPLE`, `RED`, `WHITE`, `YELLOW`. |
+| `countdown.boss-bar-style` | string | `SEGMENTED_20` | Boss bar style: `SOLID`, `SEGMENTED_6`, `SEGMENTED_10`, `SEGMENTED_12`, `SEGMENTED_20`. |
+| `countdown.name-prefix` | string | `ezls-beacon-` | Prefix for the EzCountdown countdown ID (`<prefix><beacon-short-id>`). |
+| `countdown.per-type-messages` | map | `{}` | Per-display-type message overrides. Keys match `display-types` values. Leave empty to use `format-message` for all types. |
+| `countdown.start-message` | string | `""` | Server-wide broadcast sent when the countdown starts. Leave blank to disable. |
+| `countdown.end-message` | string | `""` | Server-wide broadcast sent when the countdown ends. Leave blank to disable. |
+| `countdown.end-commands` | list | `[]` | Console commands dispatched when the countdown ends. Supports `{name}` for the countdown ID. |
+| `countdown.update-interval-seconds` | integer | `1` | How often EzCountdown refreshes the display. Increase to reduce tick load on busy servers. |
+| `countdown.visibility-permission` | string | `""` | Permission node required to see the overlay. Leave blank to show to all players. |
+| `countdown.ephemeral` | boolean | `true` | When `true`, the countdown is kept only in memory and never saved to EzCountdown's `countdowns.yml`. Recommended: keep `true` to avoid orphaned entries after a restart. |
 
 ---
 
@@ -342,6 +353,17 @@ spawn:
     display-types:
       - ACTION_BAR
       - BOSS_BAR
+    format-message: "&5☠ &d&lRevive Beacon &5☠ &r&7 {formatted} until active"
+    boss-bar-color: PURPLE
+    boss-bar-style: SEGMENTED_20
+    name-prefix: "ezls-beacon-"
+    per-type-messages: {}
+    start-message: ""
+    end-message: ""
+    end-commands: []
+    update-interval-seconds: 1
+    visibility-permission: ""
+    ephemeral: true
 
   random-spawn:
     enabled: true

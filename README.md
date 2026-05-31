@@ -54,7 +54,7 @@ EzLifesteal runs standalone, but can integrate with:
 - **[PlaceholderAPI](https://modrinth.com/plugin/placeholderapi)** for placeholders in scoreboards, tab lists, and other plugins.
 - **[EzSeasons](https://modrinth.com/plugin/ezseasons)** for season reset workflows and season-aware progression.
 - **[WorldGuard](https://modrinth.com/plugin/worldguard)** for automatic region protection around plugin-spawned beacons.
-- **[EzCountdown](https://modrinth.com/plugin/ezcountdown)** for a visible countdown timer during the beacon warm-up phase.
+- **[EzCountdown](https://modrinth.com/plugin/ezcountdown)** for a visible countdown timer during the beacon warm-up phase, with configurable start/end broadcasts, end commands, visibility scoping, and ephemeral mode.
 
 If these plugins are not installed, EzLifesteal keeps running and only disables the corresponding integration behavior.
 

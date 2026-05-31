@@ -16,9 +16,20 @@ Release tags use the `v` prefix (e.g. `v1.1.0`).
 
 ### Added
 
-- **Hologram orphan cleanup command** — `/lifesteal hologram cleanup [radius]` (player-only, requires `lifesteal.scoreboard.remove` or `lifesteal.hologram` or `lifesteal.admin`). Scans nearby entities within the given radius (default 10, clamped to 1–64) and removes armor stands that look like EzLifesteal hologram lines but are no longer tracked by the manager. Useful after unexpected server crashes that leave ghost stands in the world.
+- **Hologram orphan cleanup command**: `/lifesteal hologram cleanup [radius]` (player-only, requires `lifesteal.scoreboard.remove` or `lifesteal.hologram` or `lifesteal.admin`). Scans nearby entities within the given radius (default 10, clamped to 1–64) and removes armor stands that look like EzLifesteal hologram lines but are no longer tracked by the manager. Useful after unexpected server crashes that leave ghost stands in the world.
 - **PersistentDataContainer tagging** — every armor stand spawned by `TopHologramManager` is now tagged with a `NamespacedKey("hologram_line")` PDC entry. This makes orphan detection reliable across server restarts. Pre-existing untagged stands are identified via a heuristic (marker, invisible, no gravity, small, custom-name-visible, no base-plate, no arms).
 - Language keys `hologram-cleanup-removed` and `hologram-cleanup-none` added to all 8 locale files (en, de, es, fr, nl, pt, ru, zh).
+- **EzCountdown 2.0.1: richer countdown configuration** — bumped the EzCountdown dependency to 2.0.1 and exposed six new `CountdownBuilder` fields through `revive-beacon.yml` under `spawn.countdown`:
+  - `start-message`: server-wide broadcast sent when the countdown starts (leave blank to disable).
+  - `end-message`: server-wide broadcast sent when the countdown ends (leave blank to disable).
+  - `end-commands`: list of console commands dispatched when the countdown ends; supports `{name}` placeholder for the countdown ID.
+  - `update-interval-seconds`: how often EzCountdown refreshes the display in seconds (default `1`; increase to reduce load on high-player-count servers).
+  - `visibility-permission`: permission node required to see the countdown overlay; leave blank to show to all players.
+  - `ephemeral`: when `true` (default) the countdown lives only in memory and is never written to EzCountdown's `countdowns.yml`, preventing orphaned entries after a server restart.
+
+### Changed
+
+- `EzCountdownBeaconHook` now catches `DuplicateCountdownException` separately (reuses an existing countdown by name rather than silently dropping it) and catches the base `EzCountdownException` for all other EzCountdown errors, with distinct log messages for easier diagnosis.
 
 ---
 
