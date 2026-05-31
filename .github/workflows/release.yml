@@ -137,17 +137,17 @@ jobs:
           VERSION="${{ steps.meta.outputs.version }}"
           JAR="target/ezlifesteal-v${VERSION}.jar"
 
-          # Fetch all release game versions >= 1.21 from the Modrinth tag API.
-          GAME_VERSIONS=$(curl -sf "https://api.modrinth.com/v2/tag/game_version" | \
+          # Fetch Minecraft 1.21+ release game versions from the Modrinth tag API.
+          # startswith("1.") is used so that 2026+ versions (26.x) are never matched.
+          # A User-Agent is required by Modrinth policy (https://docs.modrinth.com/api/#user-agents).
+          GAME_VERSIONS=$(curl -sf \
+            -H "User-Agent: EzLifesteal-release-workflow/1.0 (github.com/${{ github.repository }})" \
+            "https://api.modrinth.com/v2/tag/game_version" | \
             jq -c '[.[] |
               select(.version_type == "release") |
-              select(
-                (.version | split(".") | .[0] | tonumber) > 1 or
-                (
-                  (.version | split(".") | .[0] | tonumber) == 1 and
-                  (.version | split(".") | .[1] | tonumber) >= 21
-                )
-              ) | .version
+              select(.version | startswith("1.")) |
+              select(.version | split(".") | .[1] | tonumber >= 21) |
+              .version
             ]')
 
           CHANGELOG=$(cat release-notes.md)
@@ -178,6 +178,7 @@ jobs:
 
           curl -f --show-error -X POST "https://api.modrinth.com/v2/version" \
             -H "Authorization: ${MODRINTH_TOKEN}" \
+            -H "User-Agent: EzLifesteal-release-workflow/1.0 (github.com/${{ github.repository }})" \
             -F "data=${DATA};type=application/json" \
             -F "file=@${JAR};type=application/java-archive"
 
