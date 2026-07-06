@@ -80,7 +80,7 @@
         <dependency>
             <groupId>com.sk89q.worldedit</groupId>
             <artifactId>worldedit-bukkit</artifactId>
-            <version>7.4.3</version>
+            <version>7.4.4</version>
             <scope>provided</scope>
         </dependency>
         <!-- EzCountdown integration — optional softdepend; provided at runtime via JitPack -->
