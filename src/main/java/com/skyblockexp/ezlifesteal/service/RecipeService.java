@@ -1,6 +1,5 @@
 package com.skyblockexp.ezlifesteal.service;
 
-import com.skyblockexp.ezlifesteal.EzLifestealPlugin;
 import com.skyblockexp.ezlifesteal.heart.Heart;
 import com.skyblockexp.ezlifesteal.runtime.DefaultPluginRuntimeServices;
 import java.util.logging.Level;
@@ -8,6 +7,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 
 public class RecipeService {
 
@@ -17,7 +17,7 @@ public class RecipeService {
 
     private final HeartRecipeRegistrar registrar;
 
-    private final EzLifestealPlugin plugin;
+    private final Plugin plugin;
 
 
     public RecipeService(DefaultPluginRuntimeServices services) {
