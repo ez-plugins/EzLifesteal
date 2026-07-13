@@ -2,18 +2,14 @@ package com.skyblockexp.ezlifesteal.service;
 
 import com.skyblockexp.ezlifesteal.config.ReviveAnimationSettings;
 import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
+import com.skyblockexp.ezlifesteal.util.SchedulerAdapter;
 import java.util.Locale;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitTask;
 
-/**
- * Plays phased, low-cost revive animations near configured beacon locations.
- */
 public class ReviveAnimationService {
     private final PluginAccessor plugin;
 
@@ -32,8 +28,8 @@ public class ReviveAnimationService {
 
         final Location center = beaconLocation.clone().add(0.5D, 1.0D, 0.5D);
         final AnimationStepRunner stepRunner = new AnimationStepRunner(center, activator, settings);
-        final BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin.getPlugin(), stepRunner, 0L, 1L);
-        stepRunner.setTask(task);
+        final SchedulerAdapter.TaskHandle taskHandle = SchedulerAdapter.runTimer(plugin.getPlugin(), stepRunner, 0L, 1L);
+        stepRunner.setTaskHandle(taskHandle);
     }
 
     private final class AnimationStepRunner implements Runnable {
@@ -45,8 +41,7 @@ public class ReviveAnimationService {
 
         private int step;
 
-        private BukkitTask task;
-
+        private SchedulerAdapter.TaskHandle taskHandle;
 
         private AnimationStepRunner(Location center, Player activator, ReviveAnimationSettings settings) {
             this.center = center;
@@ -86,13 +81,13 @@ public class ReviveAnimationService {
         }
 
         private void cancel() {
-            if (task != null) {
-                task.cancel();
+            if (taskHandle != null) {
+                taskHandle.cancel();
             }
         }
 
-        private void setTask(BukkitTask task) {
-            this.task = task;
+        private void setTaskHandle(SchedulerAdapter.TaskHandle taskHandle) {
+            this.taskHandle = taskHandle;
         }
 
         private void emitStep(World world, Location centerPoint, ReviveAnimationSettings animationSettings,

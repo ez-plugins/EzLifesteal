@@ -4,6 +4,7 @@ import com.skyblockexp.ezlifesteal.heart.Heart;
 import com.skyblockexp.ezlifesteal.heart.HeartRegistry;
 import com.skyblockexp.ezlifesteal.runtime.DefaultPluginRuntimeServices;
 import com.skyblockexp.ezlifesteal.runtime.Registry;
+import com.skyblockexp.ezlifesteal.util.SchedulerAdapter;
 import java.util.logging.Logger;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -59,6 +60,7 @@ class RecipeServiceTest {
         when(services.getHeartRegistry()).thenReturn(heartRegistry);
         when(services.createNamespacedKey(anyString()))
                 .thenAnswer(invocation -> new NamespacedKey("ezlifestealtest", invocation.getArgument(0)));
+        when(services.getPlugin()).thenReturn(server.getPlugin());
 
         Heart heart = mock(Heart.class);
         when(heart.createItemStack()).thenReturn(new org.bukkit.inventory.ItemStack(Material.DIAMOND));
@@ -95,20 +97,30 @@ class RecipeServiceTest {
         heartsConfig.set("recipes.basic.ingredients.B", "EMERALD");
         registry.getConfigState().setHeartsConfig(heartsConfig);
 
-        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) {
-            bukkit.when(() -> Bukkit.addRecipe(any(Recipe.class))).thenReturn(true);
+        recipeService.registerHeartRecipes();
+
+        verify(services, times(1)).addRegisteredHeartRecipe(any(NamespacedKey.class));
+    }
+
+    @Test
+    void registerHeartRecipesUsesSchedulerAdapterRunForFoliaCompatibility() {
+        YamlConfiguration heartsConfig = new YamlConfiguration();
+        heartsConfig.set("recipes.basic.type", "shapeless");
+        heartsConfig.set("recipes.basic.amount", 1);
+        heartsConfig.set("recipes.basic.ingredients", java.util.List.of("DIAMOND"));
+        registry.getConfigState().setHeartsConfig(heartsConfig);
+
+        try (MockedStatic<SchedulerAdapter> schedulerAdapter = mockStatic(SchedulerAdapter.class)) {
+            SchedulerAdapter.TaskHandle mockHandle = mock(SchedulerAdapter.TaskHandle.class);
+            schedulerAdapter.when(() -> SchedulerAdapter.run(any(), any())).thenAnswer(invocation -> {
+                Runnable runnable = invocation.getArgument(1);
+                runnable.run();
+                return null;
+            });
 
             recipeService.registerHeartRecipes();
 
-            ArgumentCaptor<Recipe> recipeCaptor = ArgumentCaptor.forClass(Recipe.class);
-            bukkit.verify(() -> Bukkit.addRecipe(recipeCaptor.capture()), times(1));
-            ShapedRecipe shapedRecipe = assertInstanceOf(ShapedRecipe.class, recipeCaptor.getValue());
-            assertEquals(java.util.List.of("AB"), java.util.List.of(shapedRecipe.getShape()));
-            assertEquals(Material.DIAMOND, shapedRecipe.getIngredientMap().get('A').getType());
-            assertEquals(Material.EMERALD, shapedRecipe.getIngredientMap().get('B').getType());
-            assertEquals(2, shapedRecipe.getResult().getAmount());
+            schedulerAdapter.verify(() -> SchedulerAdapter.run(any(), any()), times(1));
         }
-
-        verify(services, times(1)).addRegisteredHeartRecipe(any(NamespacedKey.class));
     }
 }

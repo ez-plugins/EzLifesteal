@@ -3,14 +3,12 @@ package com.skyblockexp.ezlifesteal.util;
 import io.papermc.paper.threadedregions.scheduler.GlobalRegionScheduler;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
 
-/**
- * Utility that abstracts scheduling tasks between Paper and Folia.
- */
 public final class SchedulerAdapter {
 
     private static volatile Boolean FOLIA = null;
@@ -31,10 +29,6 @@ public final class SchedulerAdapter {
     private SchedulerAdapter() {
     }
 
-    /**
-     * Schedules a task to run asynchronously, off the main thread.
-     * Uses Paper/Folia's async scheduler when available; falls back to the Bukkit scheduler.
-     */
     public static void runAsync(Plugin plugin, Runnable runnable) {
         Objects.requireNonNull(plugin, "plugin");
         Objects.requireNonNull(runnable, "runnable");

@@ -417,11 +417,11 @@ public class BeaconReviveService {
     private void queuePendingRevive(Player player, Block clickedBlock, ItemStack heldItem, String configuredVoucherId,
                                     double holdSeconds) {
         final PendingBeaconRevive previous = PENDING_REVIVES.remove(player.getUniqueId());
-        if (previous != null && previous.task() != null) {
-            previous.task().cancel();
+        if (previous != null && previous.taskHandle() != null) {
+            previous.taskHandle().cancel();
         }
         final long holdTicks = Math.max(1L, Math.round(holdSeconds * 20.0D));
-        final BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin.getPlugin(), () -> {
+        final SchedulerAdapter.TaskHandle taskHandle = SchedulerAdapter.runLater(plugin.getPlugin(), () -> {
             final PendingBeaconRevive pending = PENDING_REVIVES.remove(player.getUniqueId());
             if (pending == null) {
                 return;
@@ -456,8 +456,10 @@ public class BeaconReviveService {
             }
             executeReviveFlow(player, heldItem, clickedBlock, candidates, manager);
         }, holdTicks);
-        PENDING_REVIVES.put(player.getUniqueId(),
-                new PendingBeaconRevive(serializeLocation(clickedBlock.getLocation()), task));
+        if (taskHandle != null) {
+            PENDING_REVIVES.put(player.getUniqueId(),
+                    new PendingBeaconRevive(serializeLocation(clickedBlock.getLocation()), taskHandle));
+        }
         sendFailure(player, "beacon-revive-hold-started",
                 "Keep the voucher in the beacon for " + String.format(Locale.US, "%.1f", holdSeconds) + " seconds.");
         maybeBroadcastHoldStart(player, clickedBlock.getLocation(), holdSeconds);
@@ -635,7 +637,7 @@ public class BeaconReviveService {
     private record ReviveCandidate(UUID uniqueId, String playerName, double distanceSquared, boolean bukkitBanned) {
     }
 
-    private record PendingBeaconRevive(String beaconKey, BukkitTask task) {
+    private record PendingBeaconRevive(String beaconKey, SchedulerAdapter.TaskHandle taskHandle) {
     }
 
     private enum BeaconReviveStatus {

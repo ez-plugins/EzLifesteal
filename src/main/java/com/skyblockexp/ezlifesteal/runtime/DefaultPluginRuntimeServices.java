@@ -143,6 +143,10 @@ public final class DefaultPluginRuntimeServices {
         return plugin.getLogger();
     }
 
+    public EzLifestealPlugin getPlugin() {
+        return plugin;
+    }
+
     public PlatformBanAdapter getBanAdapter() {
         return banAdapter;
     }
@@ -1277,7 +1281,7 @@ public final class DefaultPluginRuntimeServices {
         }
         for (NamespacedKey key : new java.util.ArrayList<>(registeredHeartRecipes)) {
             try {
-                Bukkit.getServer().removeRecipe(key);
+                SchedulerAdapter.run(plugin, () -> Bukkit.getServer().removeRecipe(key));
             }
             catch (Throwable ignored) {
             }
