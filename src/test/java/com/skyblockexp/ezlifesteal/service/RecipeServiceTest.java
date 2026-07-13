@@ -1,5 +1,6 @@
 package com.skyblockexp.ezlifesteal.service;
 
+import com.skyblockexp.ezlifesteal.EzLifestealPlugin;
 import com.skyblockexp.ezlifesteal.heart.Heart;
 import com.skyblockexp.ezlifesteal.heart.HeartRegistry;
 import com.skyblockexp.ezlifesteal.runtime.DefaultPluginRuntimeServices;
@@ -9,7 +10,6 @@ import java.util.logging.Logger;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,13 +39,13 @@ class RecipeServiceTest {
 
     private Logger logger;
 
-    private JavaPlugin plugin;
+    private EzLifestealPlugin plugin;
 
 
     @BeforeEach
     void setUp() {
         server = MockBukkit.mock();
-        plugin = MockBukkit.createMockPlugin();
+        plugin = mock(EzLifestealPlugin.class);
 
         services = mock(DefaultPluginRuntimeServices.class);
         heartRegistry = mock(HeartRegistry.class);
