@@ -6,24 +6,18 @@ import com.skyblockexp.ezlifesteal.runtime.DefaultPluginRuntimeServices;
 import com.skyblockexp.ezlifesteal.runtime.Registry;
 import com.skyblockexp.ezlifesteal.util.SchedulerAdapter;
 import java.util.logging.Logger;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.inventory.Recipe;
-import org.bukkit.inventory.ShapedRecipe;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
-import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -45,10 +39,13 @@ class RecipeServiceTest {
 
     private Logger logger;
 
+    private JavaPlugin plugin;
+
 
     @BeforeEach
     void setUp() {
         server = MockBukkit.mock();
+        plugin = MockBukkit.createMockPlugin();
 
         services = mock(DefaultPluginRuntimeServices.class);
         heartRegistry = mock(HeartRegistry.class);
@@ -60,7 +57,7 @@ class RecipeServiceTest {
         when(services.getHeartRegistry()).thenReturn(heartRegistry);
         when(services.createNamespacedKey(anyString()))
                 .thenAnswer(invocation -> new NamespacedKey("ezlifestealtest", invocation.getArgument(0)));
-        when(services.getPlugin()).thenReturn(server.getPlugin());
+        when(services.getPlugin()).thenReturn(plugin);
 
         Heart heart = mock(Heart.class);
         when(heart.createItemStack()).thenReturn(new org.bukkit.inventory.ItemStack(Material.DIAMOND));
@@ -111,7 +108,6 @@ class RecipeServiceTest {
         registry.getConfigState().setHeartsConfig(heartsConfig);
 
         try (MockedStatic<SchedulerAdapter> schedulerAdapter = mockStatic(SchedulerAdapter.class)) {
-            SchedulerAdapter.TaskHandle mockHandle = mock(SchedulerAdapter.TaskHandle.class);
             schedulerAdapter.when(() -> SchedulerAdapter.run(any(), any())).thenAnswer(invocation -> {
                 Runnable runnable = invocation.getArgument(1);
                 runnable.run();
