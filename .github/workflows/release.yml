@@ -170,7 +170,7 @@ jobs:
               ],
               game_versions:  $game_versions,
               version_type:   "release",
-              loaders:        ["paper", "purpur"],
+              loaders:        ["paper", "purpur", "folia", "spigot"],
               featured:       true,
               project_id:     "wPNdCkBA",
               file_parts:     ["file"]
