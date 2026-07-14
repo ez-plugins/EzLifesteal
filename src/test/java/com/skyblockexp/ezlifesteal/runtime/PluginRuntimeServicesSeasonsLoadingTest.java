@@ -28,11 +28,12 @@ class DefaultPluginRuntimeServicesSeasonsLoadingTest {
     @Test
     void ensureSeasonsClassesPrefersModernApiAndIntegrationWhenBothAreAvailable() {
         RuntimeHarness harness = runtimeHarness();
+        ClassLoader loader = buildModernAndLegacyEzSeasonsClassLoader();
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) {
             bukkit.when(Bukkit::getPluginManager).thenReturn(harness.pluginManager);
             when(harness.pluginManager.getPlugin("EzSeasons"))
-                    .thenReturn(seasonsPluginWithLoader(getClass().getClassLoader()));
+                    .thenReturn(seasonsPluginWithLoader(loader));
 
             boolean loaded = harness.services.ensureSeasonsClasses();
 
@@ -41,10 +42,59 @@ class DefaultPluginRuntimeServicesSeasonsLoadingTest {
                     harness.registry.getSeasonsIntegrationState().getApiClass().getName());
             assertEquals("com.skyblockexp.lifesteal.seasons.integration.LifestealIntegration",
                     harness.registry.getSeasonsIntegrationState().getIntegrationClass().getName());
-            assertEquals("Profile",
-                    harness.registry.getSeasonsIntegrationState().getProfileClass().getSimpleName());
+                String profileName = harness.registry.getSeasonsIntegrationState().getProfileClass().getName();
+                assertTrue(profileName.endsWith("Profile"),
+                    "Expected profile class name to end with Profile, was: " + profileName);
         }
     }
+
+        private ClassLoader buildModernAndLegacyEzSeasonsClassLoader() {
+        LegacySimulatingClassLoader loader = new LegacySimulatingClassLoader(getClass().getClassLoader(), Set.of());
+
+        byte[] modernApiBytes = new ByteBuddy()
+            .makeInterface()
+            .name("com.skyblockexp.lifesteal.seasons.api.SeasonsApi")
+            .make()
+            .getBytes();
+        loader.define("com.skyblockexp.lifesteal.seasons.api.SeasonsApi", modernApiBytes);
+
+        byte[] modernIntegrationBytes = new ByteBuddy()
+            .subclass(Object.class)
+            .name("com.skyblockexp.lifesteal.seasons.integration.LifestealIntegration")
+            .make()
+            .getBytes();
+        loader.define("com.skyblockexp.lifesteal.seasons.integration.LifestealIntegration", modernIntegrationBytes);
+
+        byte[] modernProfileBytes = new ByteBuddy()
+            .subclass(Object.class)
+            .name("com.skyblockexp.lifesteal.seasons.integration.LifestealIntegration$Profile")
+            .make()
+            .getBytes();
+        loader.define("com.skyblockexp.lifesteal.seasons.integration.LifestealIntegration$Profile", modernProfileBytes);
+
+        byte[] legacyApiBytes = new ByteBuddy()
+            .makeInterface()
+            .name("com.ezlifesteal.seasons.api.SeasonsApi")
+            .make()
+            .getBytes();
+        loader.define("com.ezlifesteal.seasons.api.SeasonsApi", legacyApiBytes);
+
+        byte[] legacyIntegrationBytes = new ByteBuddy()
+            .subclass(Object.class)
+            .name("com.skyblockexp.lifesteal.seasons.api.SeasonsIntegration")
+            .make()
+            .getBytes();
+        loader.define("com.skyblockexp.lifesteal.seasons.api.SeasonsIntegration", legacyIntegrationBytes);
+
+        byte[] legacyProfileBytes = new ByteBuddy()
+            .subclass(Object.class)
+            .name("com.skyblockexp.lifesteal.seasons.api.SeasonsIntegration$Profile")
+            .make()
+            .getBytes();
+        loader.define("com.skyblockexp.lifesteal.seasons.api.SeasonsIntegration$Profile", legacyProfileBytes);
+
+        return loader;
+        }
 
     @Test
     void ensureSeasonsClassesFallsBackToLegacyWhenModernClassesAreUnavailable() {

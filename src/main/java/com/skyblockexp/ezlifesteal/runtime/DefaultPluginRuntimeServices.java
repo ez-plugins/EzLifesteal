@@ -1229,7 +1229,7 @@ public final class DefaultPluginRuntimeServices {
             integrationState.setProfileClass(resolveSeasonsProfileClass(integrationState.getIntegrationClass()));
             return integrationState.getProfileClass() != null;
         }
-        catch (ReflectiveOperationException exception) {
+        catch (ReflectiveOperationException | LinkageError exception) {
             integrationState.clearLoadedClasses();
             return false;
         }
@@ -1255,6 +1255,11 @@ public final class DefaultPluginRuntimeServices {
             }
             catch (ClassNotFoundException exception) {
                 lastFailure = exception;
+            }
+            catch (LinkageError error) {
+                lastFailure = new ClassNotFoundException(
+                        "Candidate class is present but not loadable on this runtime: " + candidate,
+                        error);
             }
         }
         if (lastFailure != null) {
