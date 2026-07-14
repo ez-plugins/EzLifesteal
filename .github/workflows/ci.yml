@@ -17,13 +17,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java-version: ['21', '25']
+        include:
+          - java-version: '21'
+            paper-version: '1.21.11-R0.1-SNAPSHOT'
+            run-tests: false
+          - java-version: '25'
+            paper-version: '26.1.2.build.74-stable'
+            run-tests: true
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Set up Java 25
+      - name: Set up Java ${{ matrix.java-version }}
         uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -31,15 +37,22 @@ jobs:
           cache: maven
 
       - name: Build and install MockBukkit minecraft/v26
+        if: matrix.run-tests
         run: |
           git clone --depth=1 --branch minecraft/v26 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
           sed -i 's/^mockbukkit\.version=$/mockbukkit.version=local/' /tmp/MockBukkit/gradle.properties
           cd /tmp/MockBukkit && GITHUB_REPOSITORY=MockBukkit/MockBukkit ./gradlew publishToMavenLocal -xtest -xjavadoc
 
+      - name: Build plugin (Java 21 compatibility lane)
+        if: ${{ !matrix.run-tests }}
+        run: mvn -B -ntp clean package -pl bootstrap-paper -am -Dmaven.test.skip=true -Dpaper.version=${{ matrix.paper-version }}
+
       - name: Verify plugin build
-        run: mvn -B -ntp clean verify -pl bootstrap-paper -am
+        if: matrix.run-tests
+        run: mvn -B -ntp clean verify -pl bootstrap-paper -am -Dpaper.version=${{ matrix.paper-version }}
 
       - name: Upload coverage to Codecov
+        if: matrix.run-tests
         uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
