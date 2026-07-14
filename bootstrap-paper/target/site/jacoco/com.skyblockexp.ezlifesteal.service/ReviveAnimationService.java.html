@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReviveAnimationService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.service</a> &gt; <span class="el_source">ReviveAnimationService.java</span></div><h1>ReviveAnimationService.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.service;
+
+import com.skyblockexp.ezlifesteal.compat.AdapterSupport;
+import com.skyblockexp.ezlifesteal.config.ReviveAnimationSettings;
+import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
+import com.skyblockexp.ezlifesteal.util.SchedulerAdapter;
+import java.util.Locale;
+import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
+import org.bukkit.World;
+import org.bukkit.entity.Player;
+
+public class ReviveAnimationService {
+    private final PluginAccessor plugin;
+
+<span class="fc" id="L17">    public ReviveAnimationService(PluginAccessor plugin) {</span>
+<span class="fc" id="L18">        this.plugin = plugin;</span>
+<span class="fc" id="L19">    }</span>
+
+    public void playReviveAnimation(Location beaconLocation, Player activator, ReviveAnimationSettings settings) {
+<span class="pc bpc" id="L22" title="4 of 8 branches missed.">        if (beaconLocation == null || activator == null || settings == null || !settings.enabled()) {</span>
+<span class="nc" id="L23">            return;</span>
+        }
+<span class="fc" id="L25">        final World world = beaconLocation.getWorld();</span>
+<span class="pc bpc" id="L26" title="2 of 4 branches missed.">        if (world == null || !activator.isOnline()) {</span>
+<span class="nc" id="L27">            return;</span>
+        }
+
+<span class="fc" id="L30">        final Location center = beaconLocation.clone().add(0.5D, 1.0D, 0.5D);</span>
+<span class="fc" id="L31">        final AnimationStepRunner stepRunner = new AnimationStepRunner(center, activator, settings);</span>
+<span class="fc" id="L32">        final SchedulerAdapter.TaskHandle taskHandle = SchedulerAdapter.runTimer(plugin.getPlugin(), stepRunner, 0L, 1L);</span>
+<span class="fc" id="L33">        stepRunner.setTaskHandle(taskHandle);</span>
+<span class="fc" id="L34">    }</span>
+
+    private final class AnimationStepRunner implements Runnable {
+        private final Location center;
+
+        private final Player activator;
+
+        private final ReviveAnimationSettings settings;
+
+        private int step;
+
+        private SchedulerAdapter.TaskHandle taskHandle;
+
+<span class="fc" id="L47">        private AnimationStepRunner(Location center, Player activator, ReviveAnimationSettings settings) {</span>
+<span class="fc" id="L48">            this.center = center;</span>
+<span class="fc" id="L49">            this.activator = activator;</span>
+<span class="fc" id="L50">            this.settings = settings;</span>
+<span class="fc" id="L51">        }</span>
+
+        @Override
+        public void run() {
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">            if (!isStillValid()) {</span>
+<span class="nc" id="L56">                cancel();</span>
+<span class="nc" id="L57">                return;</span>
+            }
+<span class="fc bfc" id="L59" title="All 2 branches covered.">            if (step &gt;= settings.durationTicks()) {</span>
+<span class="fc" id="L60">                playImpact(center.getWorld(), center, activator, settings);</span>
+<span class="fc" id="L61">                cancel();</span>
+<span class="fc" id="L62">                return;</span>
+            }
+
+<span class="fc" id="L65">            final World world = center.getWorld();</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">            if (world == null) {</span>
+<span class="nc" id="L67">                cancel();</span>
+<span class="nc" id="L68">                return;</span>
+            }
+<span class="fc" id="L70">            emitStep(world, center, settings, step);</span>
+<span class="fc" id="L71">            step++;</span>
+<span class="fc" id="L72">        }</span>
+
+        private boolean isStillValid() {
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">            if (!activator.isOnline()) {</span>
+<span class="nc" id="L76">                return false;</span>
+            }
+<span class="fc" id="L78">            final World centerWorld = center.getWorld();</span>
+<span class="fc" id="L79">            final World playerWorld = activator.getWorld();</span>
+<span class="pc bpc" id="L80" title="2 of 4 branches missed.">            return centerWorld != null &amp;&amp; playerWorld != null</span>
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">                    &amp;&amp; centerWorld.getUID().equals(playerWorld.getUID());</span>
+        }
+
+        private void cancel() {
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">            if (taskHandle != null) {</span>
+<span class="fc" id="L86">                taskHandle.cancel();</span>
+            }
+<span class="fc" id="L88">        }</span>
+
+        private void setTaskHandle(SchedulerAdapter.TaskHandle taskHandle) {
+<span class="fc" id="L91">            this.taskHandle = taskHandle;</span>
+<span class="fc" id="L92">        }</span>
+
+        private void emitStep(World world, Location centerPoint, ReviveAnimationSettings animationSettings,
+                int currentStep) {
+<span class="fc" id="L96">            final double progress = (double) currentStep / Math.max(1, animationSettings.durationTicks());</span>
+<span class="fc" id="L97">            final double verticalOffset = animationSettings.verticalLiftPerStep() * currentStep;</span>
+<span class="fc" id="L98">            final double baseRadius = 0.8D + (0.9D * progress);</span>
+
+<span class="fc bfc" id="L100" title="All 2 branches covered.">            for (int ring = 0; ring &lt; animationSettings.ringCount(); ring++) {</span>
+<span class="fc" id="L101">                final double ringRadius = baseRadius + (ring * 0.35D);</span>
+<span class="fc" id="L102">                final double angle = (currentStep * 0.35D) + ((Math.PI * 2.0D / animationSettings.ringCount()) * ring);</span>
+<span class="fc" id="L103">                final Location ringLocation = centerPoint.clone().add(</span>
+<span class="fc" id="L104">                        Math.cos(angle) * ringRadius,</span>
+                        0.4D + verticalOffset,
+<span class="fc" id="L106">                        Math.sin(angle) * ringRadius</span>
+                );
+<span class="fc" id="L108">                spawnParticle(world, ringLocation, animationSettings.ringParticle());</span>
+            }
+
+<span class="fc bfc" id="L111" title="All 2 branches covered.">            for (int index = 0; index &lt; animationSettings.spiralSteps(); index++) {</span>
+<span class="fc" id="L112">                final double phase = ((double) index / animationSettings.spiralSteps()) * (Math.PI * 2.0D);</span>
+<span class="fc" id="L113">                final double angle = phase + (currentStep * 0.35D);</span>
+<span class="fc" id="L114">                final double radius = 0.4D + (progress * 0.7D);</span>
+<span class="fc" id="L115">                final Location spiralLocation = centerPoint.clone().add(</span>
+<span class="fc" id="L116">                        Math.cos(angle) * radius,</span>
+                        0.2D + verticalOffset + (index * 0.02D),
+<span class="fc" id="L118">                        Math.sin(angle) * radius</span>
+                );
+<span class="fc" id="L120">                spawnParticle(world, spiralLocation, animationSettings.spiralParticle());</span>
+            }
+
+<span class="fc" id="L123">            playSound(world, centerPoint, animationSettings.loopSound());</span>
+<span class="fc" id="L124">        }</span>
+
+        private void spawnParticle(World world, Location location, ReviveAnimationSettings.ParticlePreset preset) {
+<span class="fc" id="L127">            final Particle particle = parseParticle(preset.type(), Particle.END_ROD);</span>
+<span class="fc" id="L128">            AdapterSupport.runAtLocation(plugin.getPlugin(), location, () -&gt; world.spawnParticle(</span>
+                particle,
+                location,
+<span class="fc" id="L131">                preset.count(),</span>
+<span class="fc" id="L132">                preset.offsetX(),</span>
+<span class="fc" id="L133">                preset.offsetY(),</span>
+<span class="fc" id="L134">                preset.offsetZ(),</span>
+<span class="fc" id="L135">                preset.speed()</span>
+            ));
+<span class="fc" id="L137">        }</span>
+
+        private void playImpact(World world, Location centerPoint, Player source,
+                ReviveAnimationSettings animationSettings) {
+<span class="fc" id="L141">            spawnParticle(world, centerPoint, animationSettings.impactParticle());</span>
+<span class="fc" id="L142">            playSound(world, centerPoint, animationSettings.impactSound());</span>
+<span class="fc" id="L143">            world.playSound(source.getLocation(), Sound.ITEM_TOTEM_USE, 0.8F, 1.0F);</span>
+<span class="fc" id="L144">        }</span>
+
+        private void playSound(World world, Location location, ReviveAnimationSettings.SoundPreset preset) {
+<span class="fc" id="L147">            final Sound sound = parseSound(preset.type(), Sound.BLOCK_BEACON_AMBIENT);</span>
+<span class="fc" id="L148">            AdapterSupport.runAtLocation(plugin.getPlugin(), location,</span>
+<span class="fc" id="L149">                    () -&gt; world.playSound(location, sound, preset.volume(), preset.pitch()));</span>
+<span class="fc" id="L150">        }</span>
+
+        private Particle parseParticle(String raw, Particle fallback) {
+<span class="pc bpc" id="L153" title="2 of 4 branches missed.">            if (raw == null || raw.isBlank()) {</span>
+<span class="nc" id="L154">                return fallback;</span>
+            }
+            try {
+<span class="fc" id="L157">                return Particle.valueOf(raw.toUpperCase(Locale.ROOT));</span>
+            }
+<span class="nc" id="L159">            catch (IllegalArgumentException exception) {</span>
+<span class="nc" id="L160">                return fallback;</span>
+            }
+        }
+
+        private Sound parseSound(String raw, Sound fallback) {
+<span class="pc bpc" id="L165" title="2 of 4 branches missed.">            if (raw == null || raw.isBlank()) {</span>
+<span class="nc" id="L166">                return fallback;</span>
+            }
+            try {
+<span class="fc" id="L169">                return Sound.valueOf(raw.toUpperCase(Locale.ROOT));</span>
+            }
+<span class="nc" id="L171">            catch (IllegalArgumentException exception) {</span>
+<span class="nc" id="L172">                return fallback;</span>
+            }
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

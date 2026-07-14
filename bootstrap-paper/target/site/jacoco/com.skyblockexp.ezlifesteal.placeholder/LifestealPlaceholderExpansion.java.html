@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LifestealPlaceholderExpansion.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.placeholder</a> &gt; <span class="el_source">LifestealPlaceholderExpansion.java</span></div><h1>LifestealPlaceholderExpansion.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.placeholder;
+
+import com.skyblockexp.ezlifesteal.model.LifestealProfile;
+import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
+import com.skyblockexp.ezlifesteal.service.LifestealManager;
+import java.text.DecimalFormat;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
+import me.clip.placeholderapi.expansion.PlaceholderExpansion;
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
+
+public class LifestealPlaceholderExpansion extends PlaceholderExpansion implements PlaceholderHook {
+
+<span class="fc" id="L23">    private static final ThreadLocal&lt;DecimalFormat&gt; FORMATTER =</span>
+<span class="fc" id="L24">            ThreadLocal.withInitial(() -&gt; new DecimalFormat(&quot;0.##&quot;));</span>
+
+<span class="fc" id="L26">    private static final TopCache EMPTY_TOP_CACHE = new TopCache(Collections.emptyList(), 0L);</span>
+
+
+    private final PluginAccessor plugin;
+
+    private final Duration playerCacheTtl;
+
+    private final Duration topCacheTtl;
+
+<span class="fc" id="L35">    private final Map&lt;UUID, PlayerCache&gt; playerCache = new ConcurrentHashMap&lt;&gt;();</span>
+
+<span class="fc" id="L37">    private final AtomicReference&lt;TopCache&gt; topCache = new AtomicReference&lt;&gt;(EMPTY_TOP_CACHE);</span>
+
+<span class="fc" id="L39">    private final AtomicReference&lt;CompletableFuture&lt;?&gt;&gt; topRefresh = new AtomicReference&lt;&gt;();</span>
+
+
+    public LifestealPlaceholderExpansion(PluginAccessor plugin) {
+<span class="fc" id="L43">        this(plugin, Duration.ofMillis(500), Duration.ofSeconds(5));</span>
+<span class="fc" id="L44">    }</span>
+
+<span class="fc" id="L46">    LifestealPlaceholderExpansion(PluginAccessor plugin, Duration playerCacheTtl, Duration topCacheTtl) {</span>
+<span class="fc" id="L47">        this.plugin = plugin;</span>
+<span class="fc" id="L48">        this.playerCacheTtl = playerCacheTtl;</span>
+<span class="fc" id="L49">        this.topCacheTtl = topCacheTtl;</span>
+<span class="fc" id="L50">    }</span>
+
+    @Override
+    public boolean canRegister() {
+<span class="fc" id="L54">        return true;</span>
+    }
+
+    @Override
+    public boolean persist() {
+<span class="fc" id="L59">        return true;</span>
+    }
+
+    @Override
+    public String getIdentifier() {
+<span class="fc" id="L64">        return &quot;ezlifesteal&quot;;</span>
+    }
+
+    @Override
+    public String getAuthor() {
+<span class="fc" id="L69">        return plugin.getPluginAuthors();</span>
+    }
+
+    @Override
+    public String getVersion() {
+<span class="fc" id="L74">        return plugin.getPluginVersion();</span>
+    }
+
+    @Override
+    public String onRequest(OfflinePlayer player, String params) {
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        if (params == null) {</span>
+<span class="fc" id="L80">            return &quot;&quot;;</span>
+        }
+<span class="fc" id="L82">        final String raw = params;</span>
+<span class="fc" id="L83">        final String normalized = raw.toLowerCase(Locale.ROOT);</span>
+        // Support checking if a player is banned:
+        // - %ezlifesteal_is_banned% -&gt; checks the provided player
+        // - %ezlifesteal_is_banned_&lt;player&gt;% -&gt; checks specified player name or UUID
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        if (&quot;is_banned&quot;.equals(normalized)) {</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">            if (player == null) {</span>
+<span class="nc" id="L89">                return &quot;&quot;;</span>
+            }
+<span class="fc" id="L91">            final UUID playerId = player.getUniqueId();</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">            if (playerId == null) {</span>
+<span class="fc" id="L93">                return &quot;&quot;;</span>
+            }
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">            return plugin.getBanAdapter().isBanned(playerId, player.getName()) ? &quot;true&quot; : &quot;false&quot;;</span>
+        }
+<span class="fc bfc" id="L97" title="All 2 branches covered.">        if (normalized.startsWith(&quot;is_banned_&quot;)) {</span>
+<span class="fc" id="L98">            final String targetRaw = raw.substring(&quot;is_banned_&quot;.length());</span>
+            try {
+<span class="fc" id="L100">                final UUID id = UUID.fromString(targetRaw);</span>
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">                return plugin.getBanAdapter().isBanned(id, null) ? &quot;true&quot; : &quot;false&quot;;</span>
+            }
+<span class="fc" id="L103">            catch (IllegalArgumentException ignored) {</span>
+                // target is a name, not a UUID — scan ban entries by name
+            }
+<span class="fc" id="L106">            final boolean nameBanned = plugin.getBanAdapter().getBanEntries().stream()</span>
+<span class="fc" id="L107">                    .anyMatch(entry -&gt; targetRaw.equalsIgnoreCase(entry.getPlayerName()));</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">            return nameBanned ? &quot;true&quot; : &quot;false&quot;;</span>
+        }
+
+<span class="fc bfc" id="L111" title="All 5 branches covered.">        return switch (normalized) {</span>
+<span class="fc" id="L112">            case &quot;hearts&quot;, &quot;current_hearts&quot; -&gt; formatHearts(resolvePlayerHearts(player));</span>
+<span class="fc" id="L113">            case &quot;default_hearts&quot; -&gt; formatHearts(getManager().map(LifestealManager::getDefaultHearts));</span>
+<span class="fc" id="L114">            case &quot;min_hearts&quot; -&gt; formatHearts(getManager().map(LifestealManager::getMinHearts));</span>
+<span class="fc" id="L115">            case &quot;max_hearts&quot; -&gt; formatHearts(getManager().map(LifestealManager::getMaxHearts));</span>
+            default -&gt; {
+<span class="fc bfc" id="L117" title="All 2 branches covered.">                if (normalized.startsWith(&quot;top_&quot;)) {</span>
+<span class="fc" id="L118">                    yield handleTopPlaceholder(normalized.substring(4));</span>
+                }
+<span class="fc" id="L120">                yield &quot;&quot;;</span>
+            }
+        };
+    }
+
+    @Override
+    public void clearCache() {
+<span class="fc" id="L127">        playerCache.clear();</span>
+<span class="fc" id="L128">        topCache.set(EMPTY_TOP_CACHE);</span>
+<span class="fc" id="L129">    }</span>
+
+    @Override
+    public boolean register() {
+<span class="nc" id="L133">        return super.register();</span>
+    }
+
+    @Override
+    public boolean unregisterExpansion() {
+<span class="nc" id="L138">        clearCache();</span>
+<span class="nc" id="L139">        return super.unregister();</span>
+    }
+
+    private Optional&lt;LifestealManager&gt; getManager() {
+<span class="fc" id="L143">        final LifestealManager manager = plugin.getLifestealManager();</span>
+<span class="fc" id="L144">        return Optional.ofNullable(manager);</span>
+    }
+
+    private double resolvePlayerHearts(OfflinePlayer player) {
+<span class="pc bpc" id="L148" title="1 of 4 branches missed.">        if (player == null || player.getUniqueId() == null) {</span>
+<span class="fc" id="L149">            return getManager().map(LifestealManager::getDefaultHearts).orElse(0.0);</span>
+        }
+<span class="fc" id="L151">        final UUID uniqueId = player.getUniqueId();</span>
+<span class="fc" id="L152">        final long now = System.currentTimeMillis();</span>
+<span class="fc" id="L153">        final PlayerCache cached = playerCache.compute(uniqueId, (id, existing) -&gt; {</span>
+<span class="fc bfc" id="L154" title="All 4 branches covered.">            if (existing != null &amp;&amp; now - existing.timestamp &lt;= playerCacheTtl.toMillis()) {</span>
+<span class="fc" id="L155">                return existing;</span>
+            }
+<span class="fc" id="L157">            final double hearts = fetchPlayerHearts(uniqueId);</span>
+<span class="fc" id="L158">            return new PlayerCache(hearts, now);</span>
+        });
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">        return cached != null ? cached.hearts : getManager().map(LifestealManager::getDefaultHearts).orElse(0.0);</span>
+    }
+
+    private double fetchPlayerHearts(UUID uniqueId) {
+<span class="fc" id="L164">        final Optional&lt;LifestealManager&gt; managerOptional = getManager();</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">        if (managerOptional.isEmpty()) {</span>
+<span class="nc" id="L166">            return 0.0;</span>
+        }
+<span class="fc" id="L168">        final LifestealManager manager = managerOptional.get();</span>
+<span class="fc" id="L169">        return manager.getLoadedProfile(uniqueId)</span>
+<span class="fc" id="L170">                .map(LifestealProfile::getHearts)</span>
+<span class="fc" id="L171">                .orElse(manager.getDefaultHearts());</span>
+    }
+
+    private String handleTopPlaceholder(String query) {
+<span class="fc" id="L175">        final String[] parts = query.split(&quot;_&quot;, 2);</span>
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">        if (parts.length != 2) {</span>
+<span class="nc" id="L177">            return &quot;&quot;;</span>
+        }
+        final int position;
+        try {
+<span class="fc" id="L181">            position = Integer.parseInt(parts[0]);</span>
+        }
+<span class="fc" id="L183">        catch (NumberFormatException exception) {</span>
+<span class="fc" id="L184">            return &quot;&quot;;</span>
+<span class="fc" id="L185">        }</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">        if (position &lt;= 0) {</span>
+<span class="fc" id="L187">            return &quot;&quot;;</span>
+        }
+<span class="fc" id="L189">        final TopCache cache = requestTopCache(position);</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">        if (cache.profiles().size() &lt; position) {</span>
+<span class="fc" id="L191">            return &quot;&quot;;</span>
+        }
+<span class="fc" id="L193">        final LifestealProfile profile = cache.profiles().get(position - 1);</span>
+<span class="pc bpc" id="L194" title="1 of 4 branches missed.">        return switch (parts[1]) {</span>
+<span class="fc" id="L195">            case &quot;hearts&quot;, &quot;current_hearts&quot; -&gt; formatHearts(profile.getHearts());</span>
+<span class="fc" id="L196">            case &quot;player&quot;, &quot;name&quot; -&gt; Optional.ofNullable(Bukkit.getOfflinePlayer(profile.getUniqueId()).getName())</span>
+<span class="fc" id="L197">                    .orElse(&quot;Unknown&quot;);</span>
+<span class="fc" id="L198">            case &quot;uuid&quot; -&gt; profile.getUniqueId().toString();</span>
+<span class="nc" id="L199">            default -&gt; &quot;&quot;;</span>
+        };
+    }
+
+    private TopCache requestTopCache(int requiredPosition) {
+<span class="fc" id="L204">        final LifestealManager manager = plugin.getLifestealManager();</span>
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">        if (manager == null) {</span>
+<span class="nc" id="L206">            return EMPTY_TOP_CACHE;</span>
+        }
+<span class="fc" id="L208">        final long now = System.currentTimeMillis();</span>
+<span class="fc" id="L209">        final TopCache current = topCache.get();</span>
+<span class="fc bfc" id="L210" title="All 2 branches covered.">        final boolean expired = now - current.timestamp() &gt; topCacheTtl.toMillis();</span>
+<span class="fc bfc" id="L211" title="All 2 branches covered.">        final boolean insufficient = current.profiles().size() &lt; requiredPosition;</span>
+<span class="pc bpc" id="L212" title="2 of 6 branches missed.">        if ((expired || insufficient) &amp;&amp; shouldRefreshTopCache()) {</span>
+<span class="fc" id="L213">            final int limit = Math.max(requiredPosition, 10);</span>
+<span class="fc" id="L214">            final CompletableFuture&lt;List&lt;LifestealProfile&gt;&gt; future = manager.loadTopProfilesAsync(limit);</span>
+<span class="fc" id="L215">            future.thenAccept(list -&gt; topCache.set(new TopCache(List.copyOf(list), System.currentTimeMillis())))</span>
+<span class="fc" id="L216">                    .exceptionally(throwable -&gt; {</span>
+<span class="nc" id="L217">                        plugin.getLogger()</span>
+<span class="nc" id="L218">                                .warning(&quot;Failed to refresh lifesteal leaderboard cache: &quot; + throwable.getMessage());</span>
+<span class="nc" id="L219">                        return null;</span>
+                    });
+<span class="fc" id="L221">            topRefresh.set(future);</span>
+        }
+<span class="fc" id="L223">        return topCache.get();</span>
+    }
+
+    private boolean shouldRefreshTopCache() {
+<span class="fc" id="L227">        final CompletableFuture&lt;?&gt; inFlight = topRefresh.get();</span>
+<span class="pc bpc" id="L228" title="1 of 4 branches missed.">        return inFlight == null || inFlight.isDone();</span>
+    }
+
+    private String formatHearts(double value) {
+<span class="fc" id="L232">        return FORMATTER.get().format(value);</span>
+    }
+
+    private String formatHearts(Optional&lt;Double&gt; value) {
+<span class="fc" id="L236">        return value.map(this::formatHearts).orElse(&quot;&quot;);</span>
+    }
+
+<span class="fc" id="L239">    private record PlayerCache(double hearts, long timestamp) {</span>
+    }
+
+<span class="fc" id="L242">    private record TopCache(List&lt;LifestealProfile&gt; profiles, long timestamp) {</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

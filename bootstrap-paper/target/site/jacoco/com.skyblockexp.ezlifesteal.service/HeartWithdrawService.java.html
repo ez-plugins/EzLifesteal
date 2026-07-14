@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HeartWithdrawService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.service</a> &gt; <span class="el_source">HeartWithdrawService.java</span></div><h1>HeartWithdrawService.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.service;
+
+import com.skyblockexp.ezlifesteal.compat.AdapterSupport;
+import com.skyblockexp.ezlifesteal.heart.Heart;
+import com.skyblockexp.ezlifesteal.heart.HeartRegistry;
+import com.skyblockexp.ezlifesteal.model.LifestealProfile;
+import java.util.Map;
+import java.util.Optional;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+
+/**
+ * Handles player-driven heart withdrawals into voucher items.
+ */
+<span class="fc" id="L15">public class HeartWithdrawService {</span>
+
+    private static final String DEFAULT_WITHDRAW_HEART_ID = &quot;basic&quot;;
+
+    public WithdrawResult withdraw(Player player, LifestealManager manager, HeartRegistry heartRegistry) {
+<span class="fc bfc" id="L20" title="All 6 branches covered.">        if (player == null || manager == null || heartRegistry == null) {</span>
+<span class="fc" id="L21">            return WithdrawResult.unavailable();</span>
+        }
+
+<span class="fc" id="L24">        final Heart withdrawHeart = resolveWithdrawHeart(heartRegistry);</span>
+<span class="fc bfc" id="L25" title="All 4 branches covered.">        if (withdrawHeart == null || withdrawHeart.getHearts() &lt;= 0) {</span>
+<span class="fc" id="L26">            return WithdrawResult.unavailable();</span>
+        }
+
+<span class="fc" id="L29">        final Optional&lt;LifestealProfile&gt; profileOptional = manager.getLoadedProfile(player.getUniqueId());</span>
+<span class="fc bfc" id="L30" title="All 2 branches covered.">        if (profileOptional.isEmpty()) {</span>
+<span class="fc" id="L31">            return WithdrawResult.profileMissing();</span>
+        }
+
+<span class="fc" id="L34">        final LifestealProfile profile = profileOptional.get();</span>
+<span class="fc" id="L35">        final double withdrawAmount = withdrawHeart.getHearts();</span>
+<span class="fc" id="L36">        final double minHearts = manager.getMinHearts();</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        if ((profile.getHearts() - withdrawAmount) &lt; minHearts) {</span>
+<span class="fc" id="L38">            return WithdrawResult.insufficient();</span>
+        }
+
+<span class="fc" id="L41">        profile.removeHearts(withdrawAmount, minHearts);</span>
+<span class="fc" id="L42">        manager.saveProfileAsync(profile);</span>
+<span class="fc" id="L43">        manager.applyHearts(player, profile);</span>
+
+<span class="fc" id="L45">        final ItemStack voucher = withdrawHeart.createItemStack();</span>
+<span class="fc" id="L46">        final Map&lt;Integer, ItemStack&gt; leftovers = player.getInventory().addItem(voucher);</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        if (!leftovers.isEmpty()) {</span>
+<span class="fc" id="L48">            AdapterSupport.dropItemLeftoversAtPlayer(manager.getPlugin(), player, leftovers);</span>
+        }
+
+<span class="fc" id="L51">        return WithdrawResult.success(withdrawHeart.getId(), profile.getHearts());</span>
+    }
+
+    private Heart resolveWithdrawHeart(HeartRegistry heartRegistry) {
+<span class="fc" id="L55">        final Heart byId = heartRegistry.getById(DEFAULT_WITHDRAW_HEART_ID);</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (byId != null) {</span>
+<span class="fc" id="L57">            return byId;</span>
+        }
+<span class="fc" id="L59">        final Heart byTier = heartRegistry.getByTier(1);</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        if (byTier != null) {</span>
+<span class="fc" id="L61">            return byTier;</span>
+        }
+<span class="fc" id="L63">        return heartRegistry.getAll().values().stream()</span>
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">                .filter(heart -&gt; Math.abs(heart.getHearts() - 1.0D) &lt; 0.0000001D)</span>
+<span class="fc" id="L65">                .findFirst()</span>
+<span class="fc" id="L66">                .orElse(null);</span>
+    }
+
+<span class="fc" id="L69">    public record WithdrawResult(Status status, String heartId, double remainingHearts) {</span>
+        public static WithdrawResult success(String heartId, double remainingHearts) {
+<span class="fc" id="L71">            return new WithdrawResult(Status.SUCCESS, heartId, remainingHearts);</span>
+        }
+
+        public static WithdrawResult insufficient() {
+<span class="fc" id="L75">            return new WithdrawResult(Status.INSUFFICIENT_HEARTS, null, 0.0D);</span>
+        }
+
+        public static WithdrawResult unavailable() {
+<span class="fc" id="L79">            return new WithdrawResult(Status.UNAVAILABLE, null, 0.0D);</span>
+        }
+
+        public static WithdrawResult profileMissing() {
+<span class="fc" id="L83">            return new WithdrawResult(Status.PROFILE_NOT_LOADED, null, 0.0D);</span>
+        }
+    }
+
+<span class="fc" id="L87">    public enum Status {</span>
+<span class="fc" id="L88">        SUCCESS,</span>
+<span class="fc" id="L89">        INSUFFICIENT_HEARTS,</span>
+<span class="fc" id="L90">        UNAVAILABLE,</span>
+<span class="fc" id="L91">        PROFILE_NOT_LOADED</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SpawnedBeacon.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.model</a> &gt; <span class="el_source">SpawnedBeacon.java</span></div><h1>SpawnedBeacon.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.model;
+
+import java.util.UUID;
+import org.bukkit.Location;
+
+/**
+ * Represents a beacon that was physically spawned in the world by the plugin.
+ *
+ * &lt;p&gt;One instance is created per spawn event and its lifecycle follows
+ * {@link SpawnedBeaconStatus}: COUNTDOWN → AVAILABLE → USED/EXPIRED.&lt;/p&gt;
+ */
+public final class SpawnedBeacon {
+
+    private final UUID id;
+
+    private final Location location;
+
+    /** WorldGuard region identifier created for this beacon, or {@code null} when WG is absent. */
+    private final String wgRegionId;
+
+    /** EzCountdown countdown identifier, or {@code null} when EzCountdown is absent. */
+    private final String countdownId;
+
+    private final long spawnedAtMillis;
+
+    private SpawnedBeaconStatus status;
+
+    /** Epoch-millisecond timestamp when the beacon should be removed, or 0 for &quot;never expire&quot;. */
+    private long expiresAtMillis;
+
+    /** UUID of the invisible glowing Shulker entity placed on the beacon block for visual effect. */
+    private UUID glowEntityId;
+
+    public SpawnedBeacon(
+            UUID id,
+            Location location,
+            String wgRegionId,
+            String countdownId,
+            long spawnedAtMillis,
+            SpawnedBeaconStatus status,
+            long expiresAtMillis
+<span class="fc" id="L42">    ) {</span>
+<span class="fc" id="L43">        this.id = id;</span>
+<span class="fc" id="L44">        this.location = location;</span>
+<span class="fc" id="L45">        this.wgRegionId = wgRegionId;</span>
+<span class="fc" id="L46">        this.countdownId = countdownId;</span>
+<span class="fc" id="L47">        this.spawnedAtMillis = spawnedAtMillis;</span>
+<span class="fc" id="L48">        this.status = status;</span>
+<span class="fc" id="L49">        this.expiresAtMillis = expiresAtMillis;</span>
+<span class="fc" id="L50">    }</span>
+
+    public UUID getId() {
+<span class="fc" id="L53">        return id;</span>
+    }
+
+    public Location getLocation() {
+<span class="fc" id="L57">        return location;</span>
+    }
+
+    public String getWgRegionId() {
+<span class="fc" id="L61">        return wgRegionId;</span>
+    }
+
+    public String getCountdownId() {
+<span class="nc" id="L65">        return countdownId;</span>
+    }
+
+    public long getSpawnedAtMillis() {
+<span class="nc" id="L69">        return spawnedAtMillis;</span>
+    }
+
+    public SpawnedBeaconStatus getStatus() {
+<span class="fc" id="L73">        return status;</span>
+    }
+
+    public void setStatus(SpawnedBeaconStatus status) {
+<span class="fc" id="L77">        this.status = status;</span>
+<span class="fc" id="L78">    }</span>
+
+    public long getExpiresAtMillis() {
+<span class="nc" id="L81">        return expiresAtMillis;</span>
+    }
+
+    public void setExpiresAtMillis(long expiresAtMillis) {
+<span class="nc" id="L85">        this.expiresAtMillis = expiresAtMillis;</span>
+<span class="nc" id="L86">    }</span>
+
+    public UUID getGlowEntityId() {
+<span class="fc" id="L89">        return glowEntityId;</span>
+    }
+
+    public void setGlowEntityId(UUID glowEntityId) {
+<span class="fc" id="L93">        this.glowEntityId = glowEntityId;</span>
+<span class="fc" id="L94">    }</span>
+
+    /** Returns {@code true} if the beacon has already passed its expiry time. */
+    public boolean isExpired() {
+<span class="nc bnc" id="L98" title="All 4 branches missed.">        return expiresAtMillis &gt; 0 &amp;&amp; System.currentTimeMillis() &gt; expiresAtMillis;</span>
+    }
+
+    /** Short hex prefix of the UUID, used in WG region and countdown IDs. */
+    public String shortId() {
+<span class="fc" id="L103">        return id.toString().substring(0, 8);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GameplayStateApplier.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.service</a> &gt; <span class="el_source">GameplayStateApplier.java</span></div><h1>GameplayStateApplier.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.service;
+
+import com.skyblockexp.ezlifesteal.killstreak.KillStreakSettings;
+import com.skyblockexp.ezlifesteal.runtime.state.DropRulesState;
+import com.skyblockexp.ezlifesteal.runtime.state.GameplayState;
+import com.skyblockexp.ezlifesteal.runtime.state.HeartRulesState;
+import com.skyblockexp.ezlifesteal.runtime.state.MobRulesState;
+import com.skyblockexp.ezlifesteal.runtime.state.ReviveBeaconState;
+import com.skyblockexp.ezlifesteal.runtime.state.WorldRulesState;
+import java.util.Set;
+
+/**
+ * Applies parsed gameplay settings into registry gameplay state.
+ */
+<span class="fc" id="L15">public class GameplayStateApplier {</span>
+
+    public void apply(
+            GameplayState gameplayState,
+            LifestealSettingsFactory.LifestealSettings lifestealSettings,
+            AdminSettingsFactory.AdminSettings adminSettings,
+            KillStreakSettings killStreakSettings,
+            Set&lt;String&gt; enabledWorlds,
+            Set&lt;String&gt; disabledWorlds
+    ) {
+<span class="fc" id="L25">        final HeartRulesState heartRulesState = gameplayState.getHeartRulesState();</span>
+<span class="fc" id="L26">        final DropRulesState dropRulesState = gameplayState.getDropRulesState();</span>
+<span class="fc" id="L27">        final ReviveBeaconState reviveBeaconState = gameplayState.getReviveBeaconState();</span>
+<span class="fc" id="L28">        final WorldRulesState worldRulesState = gameplayState.getWorldRulesState();</span>
+<span class="fc" id="L29">        final MobRulesState mobRulesState = gameplayState.getMobRulesState();</span>
+
+<span class="fc" id="L31">        heartRulesState.setHeartsPerKill(lifestealSettings.heartsPerKill());</span>
+<span class="fc" id="L32">        heartRulesState.setHeartsLostOnDeath(lifestealSettings.heartsLostOnDeath());</span>
+<span class="fc" id="L33">        heartRulesState.setTeamKillBypassWithTeamsApi(lifestealSettings.teamKillBypassWithTeamsApi());</span>
+<span class="fc" id="L34">        heartRulesState.setTeamKillBypassExemptWorlds(lifestealSettings.teamKillBypassExemptWorlds());</span>
+<span class="fc" id="L35">        heartRulesState.setTeamKillBypassMinTeamSize(lifestealSettings.teamKillBypassMinTeamSize());</span>
+<span class="fc" id="L36">        heartRulesState.setTeamBankEnabled(lifestealSettings.teamBankEnabled());</span>
+<span class="fc" id="L37">        heartRulesState.setTeamBankMaxHearts(lifestealSettings.teamBankMaxHearts());</span>
+<span class="fc" id="L38">        heartRulesState.setTeamBankPerTeamMaxHearts(lifestealSettings.teamBankPerTeamMaxHearts());</span>
+<span class="fc" id="L39">        heartRulesState.setBanWhenZeroHearts(lifestealSettings.banWhenZeroHearts());</span>
+<span class="fc" id="L40">        heartRulesState.setGlobalLifestealEnabled(lifestealSettings.globalLifestealEnabled());</span>
+<span class="fc" id="L41">        heartRulesState.setAdminBypassHeartLoss(adminSettings.adminBypassHeartLoss());</span>
+<span class="fc" id="L42">        heartRulesState.setAdminBypassHeartGain(adminSettings.adminBypassHeartGain());</span>
+
+<span class="fc" id="L44">        dropRulesState.setDropHeartOnKill(lifestealSettings.dropHeartOnKill());</span>
+<span class="fc" id="L45">        dropRulesState.setDropHeartOnDeath(lifestealSettings.dropHeartOnDeath());</span>
+<span class="fc" id="L46">        dropRulesState.setDropHeartOnlyWhenKilledByPlayer(lifestealSettings.dropHeartOnlyWhenKilledByPlayer());</span>
+<span class="fc" id="L47">        dropRulesState.setDropHeartId(lifestealSettings.dropHeartId());</span>
+<span class="fc" id="L48">        dropRulesState.setDropHeartAmount(lifestealSettings.dropHeartAmount());</span>
+
+<span class="fc" id="L50">        reviveBeaconState.setReviveBeaconEnabled(lifestealSettings.reviveBeaconEnabled());</span>
+<span class="fc" id="L51">        reviveBeaconState.setReviveBeaconVoucherHeartId(lifestealSettings.reviveBeaconVoucherHeartId());</span>
+<span class="fc" id="L52">        reviveBeaconState.setReviveBeaconRequireSneak(lifestealSettings.reviveBeaconRequireSneak());</span>
+<span class="fc" id="L53">        reviveBeaconState.setReviveBeaconMaxDistance(lifestealSettings.reviveBeaconMaxDistance());</span>
+<span class="fc" id="L54">        reviveBeaconState.setReviveBeaconConsumeOnFail(lifestealSettings.reviveBeaconConsumeOnFail());</span>
+<span class="fc" id="L55">        reviveBeaconState.setReviveBeaconRequireVoucherInBeacon(lifestealSettings.reviveBeaconRequireVoucherInBeacon());</span>
+<span class="fc" id="L56">        reviveBeaconState.setReviveBeaconVoucherHoldSeconds(lifestealSettings.reviveBeaconVoucherHoldSeconds());</span>
+<span class="fc" id="L57">        reviveBeaconState.setReviveBeaconWhitelistEnabled(lifestealSettings.reviveBeaconWhitelistEnabled());</span>
+<span class="fc" id="L58">        reviveBeaconState.setReviveBeaconWhitelistedBeacons(lifestealSettings.reviveBeaconWhitelistedBeacons());</span>
+<span class="fc" id="L59">        reviveBeaconState.setReviveAnimationSettings(lifestealSettings.reviveAnimationSettings());</span>
+<span class="fc" id="L60">        reviveBeaconState.setReviveBeaconBroadcastEnabled(lifestealSettings.reviveBeaconBroadcastEnabled());</span>
+<span class="fc" id="L61">        reviveBeaconState.setReviveBeaconBroadcastHoldStartMessageKey(</span>
+<span class="fc" id="L62">                lifestealSettings.reviveBeaconBroadcastHoldStartMessageKey()</span>
+        );
+<span class="fc" id="L64">        reviveBeaconState.setReviveBeaconBroadcastCompleteMessageKey(</span>
+<span class="fc" id="L65">                lifestealSettings.reviveBeaconBroadcastCompleteMessageKey()</span>
+        );
+<span class="fc" id="L67">        reviveBeaconState.setBeaconSpawnSettings(lifestealSettings.beaconSpawnSettings());</span>
+
+<span class="fc" id="L69">        mobRulesState.setDontRemoveHeartsFromMobs(lifestealSettings.dontRemoveHeartsFromMobs());</span>
+<span class="fc" id="L70">        mobRulesState.setMobRemoveHeartsGreaterThan(lifestealSettings.mobRemoveHeartsGreaterThan());</span>
+
+<span class="fc" id="L72">        worldRulesState.setEnabledWorlds(enabledWorlds);</span>
+<span class="fc" id="L73">        worldRulesState.setDisabledWorlds(disabledWorlds);</span>
+
+<span class="fc" id="L75">        gameplayState.setKillStreakSettings(killStreakSettings);</span>
+<span class="fc" id="L76">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

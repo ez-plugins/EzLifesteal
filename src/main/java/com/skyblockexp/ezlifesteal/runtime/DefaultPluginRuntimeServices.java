@@ -7,6 +7,7 @@ import com.skyblockexp.ezlifesteal.config.LegacyConfigResolver;
 import com.skyblockexp.ezlifesteal.config.LifestealConfigAdapter;
 import com.skyblockexp.ezlifesteal.config.MessageService;
 import com.skyblockexp.ezlifesteal.config.SmurfConfigAdapter;
+import com.skyblockexp.ezlifesteal.compat.AdapterSupport;
 import com.skyblockexp.ezlifesteal.detector.AdminDetector;
 import com.skyblockexp.ezlifesteal.detector.SmurfDetector;
 import com.skyblockexp.ezlifesteal.hologram.TopHologramManager;
@@ -1492,13 +1493,13 @@ public final class DefaultPluginRuntimeServices {
                 if (heart != null) {
                     final com.skyblockexp.ezlifesteal.heart.Heart selected = heart;
                     final int giveAmount = Math.max(1, dropHeartAmount);
-                    SchedulerAdapter.run(plugin, () -> {
+                    AdapterSupport.runForPlayer(plugin, killer, () -> {
                         final ItemStack stack = selected.createItemStack();
                         for (int i = 0; i < giveAmount; i++) {
                             final ItemStack toGive = stack.clone();
                             final Map<Integer, ItemStack> leftover = killer.getInventory().addItem(toGive);
                             if (!leftover.isEmpty()) {
-                                killer.getWorld().dropItemNaturally(killer.getLocation(), toGive);
+                                AdapterSupport.dropItemLeftoversAtPlayer(plugin, killer, leftover);
                             }
                         }
                     });
@@ -1528,7 +1529,7 @@ public final class DefaultPluginRuntimeServices {
                 });
             }
         }
-        SchedulerAdapter.run(plugin, () -> {
+        AdapterSupport.runForPlayer(plugin, killer, () -> {
             manager.applyHearts(killer, killerProfile);
             sendHeartStatus(killer, killerProfile.getHearts());
         });

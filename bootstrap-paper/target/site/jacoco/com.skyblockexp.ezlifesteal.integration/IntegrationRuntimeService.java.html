@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IntegrationRuntimeService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.integration</a> &gt; <span class="el_source">IntegrationRuntimeService.java</span></div><h1>IntegrationRuntimeService.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.integration;
+
+import com.skyblockexp.ezlifesteal.EzLifestealPlugin;
+import com.skyblockexp.ezlifesteal.listener.SeasonsServiceListener;
+import com.skyblockexp.ezlifesteal.listener.VaultServiceListener;
+import com.skyblockexp.ezlifesteal.runtime.DefaultPluginRuntimeServices;
+import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
+import com.skyblockexp.ezlifesteal.runtime.Registry;
+import com.skyblockexp.ezlifesteal.util.PluginLifecycleSupport;
+import java.lang.reflect.Method;
+import java.util.logging.Level;
+import org.bukkit.Bukkit;
+import org.bukkit.event.Event;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.HandlerList;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.RegisteredServiceProvider;
+
+public final class IntegrationRuntimeService {
+
+    private static final String SEASONS_PLUGIN_NAME = &quot;EzSeasons&quot;;
+
+    private final EzLifestealPlugin plugin;
+
+    private final PluginAccessor pluginAccessor;
+
+    private final DefaultPluginRuntimeServices runtime;
+
+    private final Registry registry;
+
+
+    public IntegrationRuntimeService(EzLifestealPlugin plugin, PluginAccessor pluginAccessor,
+<span class="fc" id="L33">            DefaultPluginRuntimeServices runtime, Registry registry) {</span>
+<span class="fc" id="L34">        this.plugin = plugin;</span>
+<span class="fc" id="L35">        this.pluginAccessor = pluginAccessor;</span>
+<span class="fc" id="L36">        this.runtime = runtime;</span>
+<span class="fc" id="L37">        this.registry = registry;</span>
+<span class="fc" id="L38">    }</span>
+
+    public void start() {
+<span class="fc" id="L41">        registerServiceListeners();</span>
+<span class="fc" id="L42">        refreshVaultIntegration();</span>
+<span class="fc" id="L43">        registerSeasonResetListener();</span>
+<span class="fc" id="L44">        hookIntoEzSeasons();</span>
+<span class="fc" id="L45">    }</span>
+
+    public void reload() {
+<span class="fc" id="L48">        refreshVaultIntegration();</span>
+<span class="fc" id="L49">        hookIntoEzSeasons();</span>
+<span class="fc" id="L50">    }</span>
+
+    public void stop() {
+<span class="fc" id="L53">        unhookFromEzSeasons();</span>
+<span class="fc" id="L54">        unregisterServiceListeners();</span>
+<span class="fc" id="L55">        unregisterSeasonResetListener();</span>
+<span class="fc" id="L56">    }</span>
+
+    public void refreshVaultIntegration() {
+<span class="fc" id="L59">        runtime.setupVault();</span>
+<span class="fc" id="L60">    }</span>
+
+    public void hookIntoEzSeasons() {
+<span class="fc" id="L63">        final var integrationState = registry.getSeasonsIntegrationState();</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        if (integrationState.getIntegrationProxy() != null) {</span>
+<span class="fc" id="L65">            return;</span>
+        }
+<span class="fc" id="L67">        final Object api = findSeasonsApi();</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        if (api == null) {</span>
+<span class="fc" id="L69">            return;</span>
+        }
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        if (!runtime.ensureSeasonsClasses()) {</span>
+<span class="nc" id="L72">            return;</span>
+        }
+        try {
+<span class="fc" id="L75">            final Method register = resolveIntegrationMethod(</span>
+<span class="fc" id="L76">                    integrationState.getApiClass(),</span>
+                    null,
+                    &quot;registerIntegration&quot;,
+                    &quot;registerLifestealIntegration&quot;
+            );
+<span class="fc" id="L81">            final Object integration = createSeasonsIntegrationProxy(register.getParameterTypes()[0]);</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">            if (integration == null) {</span>
+<span class="fc" id="L83">                plugin.getLogger().warning(&quot;Failed to create EzSeasons integration proxy.&quot;);</span>
+<span class="fc" id="L84">                return;</span>
+            }
+<span class="fc" id="L86">            final Object result = register.invoke(api, integration);</span>
+<span class="pc bpc" id="L87" title="2 of 4 branches missed.">            if (!(result instanceof Boolean) || Boolean.TRUE.equals(result)) {</span>
+<span class="fc" id="L88">                integrationState.setApiInstance(api);</span>
+<span class="fc" id="L89">                integrationState.setIntegrationProxy(integration);</span>
+<span class="fc" id="L90">                plugin.getLogger().info(&quot;Hooked into EzSeasons. Hearts will reset automatically at season end.&quot;);</span>
+            }
+            else {
+<span class="nc" id="L93">                plugin.getLogger()</span>
+<span class="nc" id="L94">                        .warning(&quot;EzSeasons rejected the integration registration. Another plugin may already control&quot;</span>
+                                + &quot; resets.&quot;);
+            }
+        }
+<span class="fc" id="L98">        catch (IllegalStateException | ReflectiveOperationException exception) {</span>
+<span class="fc" id="L99">            plugin.getLogger().log(Level.WARNING, &quot;Failed to register EzSeasons integration.&quot;, exception);</span>
+<span class="fc" id="L100">        }</span>
+<span class="fc" id="L101">    }</span>
+
+    public void unhookFromEzSeasons() {
+<span class="fc" id="L104">        final var integrationState = registry.getSeasonsIntegrationState();</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        if (integrationState.getApiInstance() != null</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">                &amp;&amp; integrationState.getIntegrationProxy() != null</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">                &amp;&amp; integrationState.getApiClass() != null</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">                &amp;&amp; integrationState.getIntegrationClass() != null) {</span>
+            try {
+<span class="fc" id="L110">                final Method unregister = resolveIntegrationMethod(</span>
+<span class="fc" id="L111">                        integrationState.getApiClass(),</span>
+<span class="fc" id="L112">                        integrationState.getIntegrationProxy(),</span>
+                        &quot;unregisterIntegration&quot;,
+                        &quot;unregisterLifestealIntegration&quot;
+                );
+<span class="fc" id="L116">                unregister.invoke(integrationState.getApiInstance(), integrationState.getIntegrationProxy());</span>
+            }
+<span class="fc" id="L118">            catch (IllegalStateException | ReflectiveOperationException exception) {</span>
+<span class="fc" id="L119">                plugin.getLogger().log(Level.WARNING, &quot;Failed to unregister EzSeasons integration cleanly.&quot;, exception);</span>
+<span class="fc" id="L120">            }</span>
+        }
+<span class="fc" id="L122">        integrationState.clearIntegrationRegistration();</span>
+<span class="fc" id="L123">    }</span>
+
+    private void registerServiceListeners() {
+<span class="fc" id="L126">        final VaultServiceListener vaultServiceListener =</span>
+<span class="fc" id="L127">                new VaultServiceListener(runtime::ensureVaultEconomyClassesAvailable,</span>
+                this::refreshVaultIntegration);
+<span class="fc" id="L129">        registry.getVaultIntegrationState().setServiceListener(vaultServiceListener);</span>
+<span class="fc" id="L130">        registry.setVaultServiceListener(vaultServiceListener);</span>
+<span class="fc" id="L131">        Bukkit.getPluginManager().registerEvents(vaultServiceListener, plugin);</span>
+
+<span class="fc" id="L133">        final SeasonsServiceListener seasonsServiceListener = new SeasonsServiceListener(plugin,</span>
+                this::hookIntoEzSeasons, this::unhookFromEzSeasons);
+<span class="fc" id="L135">        registry.getSeasonsIntegrationState().setServiceListener(seasonsServiceListener);</span>
+<span class="fc" id="L136">        registry.setSeasonsServiceListener(seasonsServiceListener);</span>
+<span class="fc" id="L137">        Bukkit.getPluginManager().registerEvents(seasonsServiceListener, plugin);</span>
+<span class="fc" id="L138">    }</span>
+
+    private void unregisterServiceListeners() {
+<span class="fc" id="L141">        final VaultServiceListener vaultServiceListener = registry.getVaultIntegrationState().getServiceListener();</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">        if (vaultServiceListener != null) {</span>
+<span class="fc" id="L143">            PluginLifecycleSupport.unregisterListener(vaultServiceListener);</span>
+<span class="fc" id="L144">            registry.getVaultIntegrationState().setServiceListener(null);</span>
+<span class="fc" id="L145">            registry.setVaultServiceListener(null);</span>
+        }
+<span class="fc" id="L147">        final SeasonsServiceListener seasonsServiceListener =</span>
+<span class="fc" id="L148">                registry.getSeasonsIntegrationState().getServiceListener();</span>
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">        if (seasonsServiceListener != null) {</span>
+<span class="fc" id="L150">            PluginLifecycleSupport.unregisterListener(seasonsServiceListener);</span>
+<span class="fc" id="L151">            registry.getSeasonsIntegrationState().setServiceListener(null);</span>
+<span class="fc" id="L152">            registry.setSeasonsServiceListener(null);</span>
+        }
+<span class="fc" id="L154">    }</span>
+
+    private Object createSeasonsIntegrationProxy(Class&lt;?&gt; integrationInterface) {
+<span class="fc" id="L157">        final var integrationState = registry.getSeasonsIntegrationState();</span>
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">        if (integrationInterface == null) {</span>
+<span class="nc" id="L159">            return null;</span>
+        }
+<span class="fc bfc" id="L161" title="All 2 branches covered.">        if (supportsLifecycleCallbacks(integrationInterface)) {</span>
+<span class="fc" id="L162">            return new SeasonsIntegration(plugin).createLifecycleProxy(integrationInterface);</span>
+        }
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        if (integrationState.getProfileClass() == null) {</span>
+<span class="fc" id="L165">            return null;</span>
+        }
+        try {
+<span class="fc" id="L168">            return new SeasonsIntegration(plugin).createProxy(integrationInterface, integrationState.getProfileClass());</span>
+        }
+<span class="nc" id="L170">        catch (RuntimeException exception) {</span>
+<span class="nc" id="L171">            plugin.getLogger().log(Level.WARNING, &quot;Failed to create EzSeasons integration proxy.&quot;, exception);</span>
+<span class="nc" id="L172">            return null;</span>
+        }
+    }
+
+    private Method resolveIntegrationMethod(Class&lt;?&gt; apiClass, Object integrationProxy, String... methodNames) {
+<span class="fc" id="L177">        Method fallback = null;</span>
+<span class="fc" id="L178">        final Class&lt;?&gt; integrationClass = registry.getSeasonsIntegrationState().getIntegrationClass();</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">        for (String methodName : methodNames) {</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">            for (Method method : apiClass.getMethods()) {</span>
+<span class="pc bpc" id="L181" title="1 of 4 branches missed.">                if (!methodName.equals(method.getName()) || method.getParameterCount() != 1) {</span>
+<span class="nc" id="L182">                    continue;</span>
+                }
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">                if (fallback == null) {</span>
+<span class="fc" id="L185">                    fallback = method;</span>
+                }
+<span class="fc" id="L187">                final Class&lt;?&gt; parameterType = method.getParameterTypes()[0];</span>
+<span class="pc bpc" id="L188" title="1 of 4 branches missed.">                if (integrationProxy != null &amp;&amp; parameterType.isInstance(integrationProxy)) {</span>
+<span class="fc" id="L189">                    return method;</span>
+                }
+<span class="fc bfc" id="L191" title="All 4 branches covered.">                if (integrationClass != null &amp;&amp; (parameterType.isAssignableFrom(integrationClass)</span>
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">                        || integrationClass.isAssignableFrom(parameterType))) {</span>
+<span class="fc" id="L193">                    return method;</span>
+                }
+            }
+        }
+<span class="fc bfc" id="L197" title="All 2 branches covered.">        if (fallback != null) {</span>
+<span class="fc" id="L198">            return fallback;</span>
+        }
+<span class="fc" id="L200">        throw new IllegalStateException(&quot;Unable to resolve EzSeasons integration registration methods.&quot;);</span>
+    }
+
+    private boolean supportsLifecycleCallbacks(Class&lt;?&gt; integrationInterface) {
+<span class="fc bfc" id="L204" title="All 2 branches covered.">        for (Method method : integrationInterface.getMethods()) {</span>
+<span class="pc bpc" id="L205" title="1 of 4 branches missed.">            if (&quot;onRegister&quot;.equals(method.getName()) &amp;&amp; method.getParameterCount() == 1) {</span>
+<span class="fc" id="L206">                return true;</span>
+            }
+        }
+<span class="fc" id="L209">        return false;</span>
+    }
+
+    private Object findSeasonsApi() {
+<span class="fc bfc" id="L213" title="All 2 branches covered.">        if (!runtime.ensureSeasonsClasses()) {</span>
+<span class="fc" id="L214">            return null;</span>
+        }
+<span class="fc" id="L216">        final Class&lt;?&gt; seasonsApiClass = registry.getSeasonsIntegrationState().getApiClass();</span>
+        @SuppressWarnings({&quot;rawtypes&quot;, &quot;unchecked&quot;})
+        final RegisteredServiceProvider&lt;?&gt; provider =
+<span class="fc" id="L219">                Bukkit.getServicesManager().getRegistration((Class) seasonsApiClass);</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">        if (provider == null) {</span>
+<span class="fc" id="L221">            return null;</span>
+        }
+<span class="fc" id="L223">        final Object api = provider.getProvider();</span>
+<span class="pc bpc" id="L224" title="2 of 4 branches missed.">        if (api == null || !seasonsApiClass.isInstance(api)) {</span>
+<span class="nc" id="L225">            return null;</span>
+        }
+<span class="fc" id="L227">        registry.getSeasonsIntegrationState().setApiInstance(api);</span>
+<span class="fc" id="L228">        return api;</span>
+    }
+
+    private void registerSeasonResetListener() {
+<span class="fc" id="L232">        final var integrationState = registry.getSeasonsIntegrationState();</span>
+<span class="fc" id="L233">        final Class&lt;? extends Event&gt; eventClass = loadSeasonsResetEventClass();</span>
+<span class="fc bfc" id="L234" title="All 2 branches covered.">        if (eventClass == null) {</span>
+<span class="fc" id="L235">            return;</span>
+        }
+<span class="fc bfc" id="L237" title="All 2 branches covered.">        if (integrationState.getSeasonResetListener() != null) {</span>
+<span class="fc" id="L238">            return;</span>
+        }
+        try {
+<span class="fc" id="L241">            final SeasonResetListener seasonResetListener = new SeasonResetListener(pluginAccessor);</span>
+<span class="fc" id="L242">            integrationState.setSeasonResetListener(seasonResetListener);</span>
+<span class="fc" id="L243">            Bukkit.getPluginManager().registerEvent(</span>
+                    eventClass, seasonResetListener, EventPriority.NORMAL,
+<span class="nc" id="L245">                    (listener, event) -&gt; ((SeasonResetListener) listener).onSeasonReset(event),</span>
+                    plugin);
+<span class="fc" id="L247">            plugin.getLogger().info(&quot;Registered EzSeasons season reset listener.&quot;);</span>
+        }
+<span class="nc" id="L249">        catch (LinkageError | RuntimeException exception) {</span>
+<span class="nc" id="L250">            integrationState.setSeasonResetListener(null);</span>
+<span class="nc" id="L251">            plugin.getLogger().log(Level.WARNING, &quot;Failed to register EzSeasons season reset listener.&quot;, exception);</span>
+<span class="fc" id="L252">        }</span>
+<span class="fc" id="L253">    }</span>
+
+    private void unregisterSeasonResetListener() {
+<span class="fc" id="L256">        final SeasonResetListener seasonResetListener = registry.getSeasonsIntegrationState().getSeasonResetListener();</span>
+<span class="fc bfc" id="L257" title="All 2 branches covered.">        if (seasonResetListener == null) {</span>
+<span class="fc" id="L258">            return;</span>
+        }
+<span class="fc" id="L260">        HandlerList.unregisterAll(seasonResetListener);</span>
+<span class="fc" id="L261">        registry.getSeasonsIntegrationState().setSeasonResetListener(null);</span>
+<span class="fc" id="L262">    }</span>
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    private Class&lt;? extends Event&gt; loadSeasonsResetEventClass() {
+<span class="fc" id="L266">        final Plugin seasonsPlugin = Bukkit.getPluginManager().getPlugin(SEASONS_PLUGIN_NAME);</span>
+<span class="fc bfc" id="L267" title="All 2 branches covered.">        if (seasonsPlugin == null) {</span>
+<span class="fc" id="L268">            return null;</span>
+        }
+<span class="fc" id="L270">        final ClassLoader loader = seasonsPlugin.getClass().getClassLoader();</span>
+        try {
+<span class="fc" id="L272">            return (Class&lt;? extends Event&gt;) Class.forName(</span>
+                    &quot;com.skyblockexp.lifesteal.seasons.api.events.SeasonResetEvent&quot;, false, loader);
+        }
+<span class="nc" id="L275">        catch (ClassNotFoundException exception) {</span>
+<span class="nc" id="L276">            return null;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

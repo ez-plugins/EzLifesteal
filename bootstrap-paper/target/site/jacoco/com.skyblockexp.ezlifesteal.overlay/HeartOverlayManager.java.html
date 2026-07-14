@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HeartOverlayManager.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.overlay</a> &gt; <span class="el_source">HeartOverlayManager.java</span></div><h1>HeartOverlayManager.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.overlay;
+
+import com.skyblockexp.ezlifesteal.EzLifestealPlugin;
+import com.skyblockexp.ezlifesteal.util.ActionBarHelper;
+import com.skyblockexp.ezlifesteal.util.SchedulerAdapter;
+import com.skyblockexp.ezlifesteal.util.SchedulerAdapter.TaskHandle;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Player;
+
+public class HeartOverlayManager {
+
+    private final EzLifestealPlugin plugin;
+
+<span class="fc" id="L26">    private final Map&lt;UUID, Double&gt; trackedHearts = new ConcurrentHashMap&lt;&gt;();</span>
+
+<span class="fc" id="L28">    private final Map&lt;UUID, BossBar&gt; bossBars = new ConcurrentHashMap&lt;&gt;();</span>
+
+
+    private boolean enabled;
+
+<span class="fc" id="L33">    private DisplayMode mode = DisplayMode.ACTION_BAR;</span>
+
+<span class="fc" id="L35">    private long updateIntervalTicks = 40L;</span>
+
+<span class="fc" id="L37">    private String messageTemplate = &quot;&amp;c❤ %hearts% &amp;7hearts&quot;;</span>
+
+<span class="fc" id="L39">    private Set&lt;String&gt; enabledWorlds = Collections.emptySet();</span>
+
+<span class="fc" id="L41">    private Set&lt;String&gt; disabledWorlds = Collections.emptySet();</span>
+
+<span class="fc" id="L43">    private BarColor bossBarColor = BarColor.RED;</span>
+
+<span class="fc" id="L45">    private BarStyle bossBarStyle = BarStyle.SOLID;</span>
+
+<span class="fc" id="L47">    private double maxHearts = 40.0D;</span>
+
+    private TaskHandle task;
+
+
+<span class="fc" id="L52">    public HeartOverlayManager(EzLifestealPlugin plugin) {</span>
+<span class="fc" id="L53">        this.plugin = plugin;</span>
+<span class="fc" id="L54">    }</span>
+
+    public synchronized void reload(ConfigurationSection section, double maxHearts) {
+<span class="fc" id="L57">        shutdown();</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">        this.maxHearts = maxHearts &lt;= 0 ? 20.0D : maxHearts;</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        if (section == null) {</span>
+<span class="fc" id="L60">            this.enabled = false;</span>
+<span class="fc" id="L61">            return;</span>
+        }
+<span class="fc" id="L63">        this.enabled = section.getBoolean(&quot;enabled&quot;, false);</span>
+<span class="fc" id="L64">        final String modeName = section.getString(&quot;mode&quot;, &quot;ACTION_BAR&quot;);</span>
+<span class="fc" id="L65">        this.mode = DisplayMode.fromString(modeName);</span>
+<span class="fc" id="L66">        final long configuredInterval = section.getLong(&quot;update-interval-ticks&quot;, 40L);</span>
+<span class="fc" id="L67">        this.updateIntervalTicks = Math.max(1L, configuredInterval);</span>
+<span class="fc" id="L68">        final String template = section.getString(&quot;message&quot;, &quot;&amp;c❤ %hearts% &amp;7hearts&quot;);</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">        this.messageTemplate = template == null ? &quot;&amp;c❤ %hearts% &amp;7hearts&quot; : template;</span>
+<span class="fc" id="L70">        this.enabledWorlds = parseWorldList(section.getStringList(&quot;enabled-worlds&quot;));</span>
+<span class="fc" id="L71">        this.disabledWorlds = parseWorldList(section.getStringList(&quot;disabled-worlds&quot;));</span>
+
+<span class="fc" id="L73">        final ConfigurationSection bossBarSection = section.getConfigurationSection(&quot;boss-bar&quot;);</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        if (bossBarSection != null) {</span>
+<span class="fc" id="L75">            this.bossBarColor = parseBossBarColor(bossBarSection.getString(&quot;color&quot;));</span>
+<span class="fc" id="L76">            this.bossBarStyle = parseBossBarStyle(bossBarSection.getString(&quot;overlay&quot;));</span>
+        }
+        else {
+<span class="fc" id="L79">            this.bossBarColor = BarColor.RED;</span>
+<span class="fc" id="L80">            this.bossBarStyle = BarStyle.SOLID;</span>
+        }
+
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (enabled) {</span>
+<span class="fc" id="L84">            ensureTask();</span>
+        }
+<span class="fc" id="L86">    }</span>
+
+    public synchronized void shutdown() {
+<span class="fc" id="L89">        trackedHearts.clear();</span>
+<span class="fc" id="L90">        cancelTask();</span>
+<span class="fc" id="L91">        bossBars.values().forEach(BossBar::removeAll);</span>
+<span class="fc" id="L92">        bossBars.clear();</span>
+<span class="fc" id="L93">    }</span>
+
+    public void sendHeartStatus(Player player, double hearts) {
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        if (!enabled) {</span>
+<span class="fc" id="L97">            clear(player.getUniqueId());</span>
+<span class="fc" id="L98">            return;</span>
+        }
+<span class="fc" id="L100">        trackedHearts.put(player.getUniqueId(), hearts);</span>
+<span class="fc" id="L101">        displayOnce(player, hearts);</span>
+<span class="fc" id="L102">        ensureTask();</span>
+<span class="fc" id="L103">    }</span>
+
+    public void clear(UUID uniqueId) {
+<span class="fc" id="L106">        trackedHearts.remove(uniqueId);</span>
+<span class="fc" id="L107">        final BossBar bossBar = bossBars.remove(uniqueId);</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">        if (bossBar != null) {</span>
+<span class="fc" id="L109">            bossBar.removeAll();</span>
+        }
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">        if (trackedHearts.isEmpty()) {</span>
+<span class="fc" id="L112">            cancelTask();</span>
+        }
+<span class="fc" id="L114">    }</span>
+
+    public boolean isEnabled() {
+<span class="fc" id="L117">        return enabled;</span>
+    }
+
+    private void tick() {
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">        if (!enabled) {</span>
+<span class="nc" id="L122">            shutdown();</span>
+<span class="nc" id="L123">            return;</span>
+        }
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        for (Map.Entry&lt;UUID, Double&gt; entry : trackedHearts.entrySet()) {</span>
+<span class="fc" id="L126">            final UUID uniqueId = entry.getKey();</span>
+<span class="fc" id="L127">            final Player player = Bukkit.getPlayer(uniqueId);</span>
+<span class="pc bpc" id="L128" title="1 of 4 branches missed.">            if (player == null || !player.isOnline()) {</span>
+<span class="fc" id="L129">                clear(uniqueId);</span>
+<span class="fc" id="L130">                continue;</span>
+            }
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">            if (!isWorldAllowed(player.getWorld().getName())) {</span>
+<span class="nc" id="L133">                hideBossBar(uniqueId, player);</span>
+<span class="nc" id="L134">                continue;</span>
+            }
+<span class="fc" id="L136">            displayOverlay(player, entry.getValue());</span>
+<span class="fc" id="L137">        }</span>
+<span class="fc" id="L138">    }</span>
+
+    private void displayOnce(Player player, double hearts) {
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">        if (!isWorldAllowed(player.getWorld().getName())) {</span>
+<span class="nc" id="L142">            hideBossBar(player.getUniqueId(), player);</span>
+<span class="nc" id="L143">            return;</span>
+        }
+<span class="fc" id="L145">        displayOverlay(player, hearts);</span>
+<span class="fc" id="L146">    }</span>
+
+    private void displayOverlay(Player player, double hearts) {
+<span class="fc" id="L149">        final String message = formatMessage(player, hearts);</span>
+<span class="pc bpc" id="L150" title="1 of 3 branches missed.">        switch (mode) {</span>
+<span class="fc" id="L151">            case ACTION_BAR -&gt; ActionBarHelper.sendActionBar(player, message);</span>
+<span class="fc" id="L152">            case BOSS_BAR -&gt; updateBossBar(player, message, hearts);</span>
+        }
+<span class="fc" id="L154">    }</span>
+
+    private String formatMessage(Player player, double hearts) {
+<span class="fc" id="L157">        final String formatted = messageTemplate</span>
+<span class="fc" id="L158">                .replace(&quot;%player%&quot;, player.getName())</span>
+<span class="fc" id="L159">                .replace(&quot;%world%&quot;, player.getWorld().getName())</span>
+<span class="fc" id="L160">                .replace(&quot;%hearts%&quot;, formatHearts(hearts))</span>
+<span class="fc" id="L161">                .replace(&quot;%max_hearts%&quot;, formatHearts(maxHearts));</span>
+<span class="fc" id="L162">        return colorize(formatted);</span>
+    }
+
+    private String formatHearts(double value) {
+<span class="pc bpc" id="L166" title="2 of 4 branches missed.">        if (Double.isNaN(value) || Double.isInfinite(value)) {</span>
+<span class="nc" id="L167">            return &quot;0&quot;;</span>
+        }
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">        return value % 1 == 0 ? Integer.toString((int) value) : String.format(Locale.US, &quot;%.1f&quot;, value);</span>
+    }
+
+    private void updateBossBar(Player player, String message, double hearts) {
+<span class="fc" id="L173">        final UUID uniqueId = player.getUniqueId();</span>
+<span class="fc" id="L174">        final BossBar bossBar = bossBars.computeIfAbsent(uniqueId,</span>
+<span class="fc" id="L175">                id -&gt; Bukkit.createBossBar(message, bossBarColor, bossBarStyle));</span>
+<span class="fc" id="L176">        bossBar.setTitle(message);</span>
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">        final double denominator = maxHearts &lt;= 0 ? 20.0D : maxHearts;</span>
+<span class="fc" id="L178">        final double progress = Math.max(0.0D, Math.min(1.0D, hearts / denominator));</span>
+<span class="fc" id="L179">        bossBar.setProgress(progress);</span>
+<span class="fc" id="L180">        bossBar.setColor(bossBarColor);</span>
+<span class="fc" id="L181">        bossBar.setStyle(bossBarStyle);</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">        if (!bossBar.getPlayers().contains(player)) {</span>
+<span class="fc" id="L183">            bossBar.addPlayer(player);</span>
+        }
+<span class="fc" id="L185">    }</span>
+
+    private void hideBossBar(UUID uniqueId, Player player) {
+<span class="nc" id="L188">        final BossBar bossBar = bossBars.get(uniqueId);</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">        if (bossBar != null) {</span>
+<span class="nc" id="L190">            bossBar.removePlayer(player);</span>
+        }
+<span class="nc" id="L192">    }</span>
+
+    private void cancelTask() {
+<span class="fc bfc" id="L195" title="All 2 branches covered.">        if (task != null) {</span>
+<span class="fc" id="L196">            task.cancel();</span>
+<span class="fc" id="L197">            task = null;</span>
+        }
+<span class="fc" id="L199">    }</span>
+
+    private void ensureTask() {
+<span class="pc bpc" id="L202" title="1 of 4 branches missed.">        if (!enabled || trackedHearts.isEmpty()) {</span>
+<span class="fc" id="L203">            return;</span>
+        }
+<span class="pc bpc" id="L205" title="1 of 4 branches missed.">        if (task != null &amp;&amp; !task.isCancelled()) {</span>
+<span class="fc" id="L206">            return;</span>
+        }
+<span class="fc" id="L208">        task = SchedulerAdapter.runTimer(plugin, this::tick, updateIntervalTicks, updateIntervalTicks);</span>
+<span class="fc" id="L209">    }</span>
+
+    private Set&lt;String&gt; parseWorldList(Iterable&lt;String&gt; worlds) {
+<span class="pc bpc" id="L212" title="1 of 2 branches missed.">        if (worlds == null) {</span>
+<span class="nc" id="L213">            return Collections.emptySet();</span>
+        }
+<span class="fc" id="L215">        final Set&lt;String&gt; parsed = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">        for (String world : worlds) {</span>
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">            if (world == null) {</span>
+<span class="nc" id="L218">                continue;</span>
+            }
+<span class="fc" id="L220">            final String trimmed = world.trim();</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">            if (!trimmed.isEmpty()) {</span>
+<span class="fc" id="L222">                parsed.add(trimmed.toLowerCase(Locale.ROOT));</span>
+            }
+<span class="fc" id="L224">        }</span>
+<span class="fc bfc" id="L225" title="All 2 branches covered.">        return parsed.isEmpty() ? Collections.emptySet() : Collections.unmodifiableSet(parsed);</span>
+    }
+
+    private boolean isWorldAllowed(String worldName) {
+<span class="pc bpc" id="L229" title="2 of 4 branches missed.">        if (worldName == null || worldName.isBlank()) {</span>
+<span class="nc" id="L230">            return enabledWorlds.isEmpty();</span>
+        }
+<span class="fc" id="L232">        final String normalized = worldName.toLowerCase(Locale.ROOT);</span>
+<span class="pc bpc" id="L233" title="1 of 4 branches missed.">        if (!enabledWorlds.isEmpty() &amp;&amp; !enabledWorlds.contains(normalized)) {</span>
+<span class="nc" id="L234">            return false;</span>
+        }
+<span class="pc bpc" id="L236" title="1 of 2 branches missed.">        return !disabledWorlds.contains(normalized);</span>
+    }
+
+    private BarColor parseBossBarColor(String colorName) {
+<span class="pc bpc" id="L240" title="2 of 4 branches missed.">        if (colorName == null || colorName.isBlank()) {</span>
+<span class="nc" id="L241">            return BarColor.RED;</span>
+        }
+        try {
+<span class="fc" id="L244">            return BarColor.valueOf(colorName.trim().toUpperCase(Locale.ROOT));</span>
+        }
+<span class="nc" id="L246">        catch (IllegalArgumentException exception) {</span>
+<span class="nc" id="L247">            plugin.getLogger().warning(&quot;Unknown boss bar color '&quot; + colorName + &quot;'. Defaulting to RED.&quot;);</span>
+<span class="nc" id="L248">            return BarColor.RED;</span>
+        }
+    }
+
+    private BarStyle parseBossBarStyle(String overlayName) {
+<span class="pc bpc" id="L253" title="2 of 4 branches missed.">        if (overlayName == null || overlayName.isBlank()) {</span>
+<span class="nc" id="L254">            return BarStyle.SOLID;</span>
+        }
+<span class="fc" id="L256">        final String normalized = overlayName.trim().toUpperCase(Locale.ROOT);</span>
+        try {
+<span class="nc" id="L258">            return BarStyle.valueOf(normalized);</span>
+        }
+<span class="fc" id="L260">        catch (IllegalArgumentException ignored) {</span>
+<span class="fc" id="L261">            return mapLegacyOverlay(normalized);</span>
+        }
+    }
+
+    private BarStyle mapLegacyOverlay(String overlayName) {
+<span class="pc bpc" id="L266" title="5 of 6 branches missed.">        return switch (overlayName) {</span>
+<span class="fc" id="L267">            case &quot;PROGRESS&quot; -&gt; BarStyle.SOLID;</span>
+<span class="nc" id="L268">            case &quot;NOTCHED_6&quot; -&gt; BarStyle.SEGMENTED_6;</span>
+<span class="nc" id="L269">            case &quot;NOTCHED_10&quot; -&gt; BarStyle.SEGMENTED_10;</span>
+<span class="nc" id="L270">            case &quot;NOTCHED_12&quot; -&gt; BarStyle.SEGMENTED_12;</span>
+<span class="nc" id="L271">            case &quot;NOTCHED_20&quot; -&gt; BarStyle.SEGMENTED_20;</span>
+            default -&gt; {
+<span class="nc" id="L273">                plugin.getLogger().warning(&quot;Unknown boss bar overlay '&quot; + overlayName + &quot;'. Defaulting to SOLID.&quot;);</span>
+<span class="nc" id="L274">                yield BarStyle.SOLID;</span>
+            }
+        };
+    }
+
+    private String colorize(String message) {
+<span class="pc bpc" id="L280" title="1 of 2 branches missed.">        if (message == null) {</span>
+<span class="nc" id="L281">            return &quot;&quot;;</span>
+        }
+<span class="fc" id="L283">        return ChatColor.translateAlternateColorCodes('&amp;', message);</span>
+    }
+
+<span class="fc" id="L286">    private enum DisplayMode {</span>
+<span class="fc" id="L287">        ACTION_BAR,</span>
+<span class="fc" id="L288">        BOSS_BAR;</span>
+
+        static DisplayMode fromString(String value) {
+<span class="pc bpc" id="L291" title="1 of 2 branches missed.">            if (value == null) {</span>
+<span class="nc" id="L292">                return ACTION_BAR;</span>
+            }
+            try {
+<span class="fc" id="L295">                return DisplayMode.valueOf(value.trim().toUpperCase(Locale.ROOT));</span>
+            }
+<span class="nc" id="L297">            catch (IllegalArgumentException exception) {</span>
+<span class="nc" id="L298">                return ACTION_BAR;</span>
+            }
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

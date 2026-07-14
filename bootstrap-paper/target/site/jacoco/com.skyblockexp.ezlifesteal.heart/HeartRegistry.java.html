@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HeartRegistry.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.heart</a> &gt; <span class="el_source">HeartRegistry.java</span></div><h1>HeartRegistry.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.heart;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
+
+public class HeartRegistry {
+<span class="fc" id="L11">    private final Map&lt;String, Heart&gt; byId = new HashMap&lt;&gt;();</span>
+
+<span class="fc" id="L13">    private final Map&lt;Integer, Heart&gt; byTier = new HashMap&lt;&gt;();</span>
+
+
+<span class="fc" id="L16">    public HeartRegistry(YamlConfiguration config) {</span>
+<span class="fc bfc" id="L17" title="All 2 branches covered.">        if (config == null) {</span>
+<span class="fc" id="L18">            return;</span>
+        }
+<span class="fc" id="L20">        final ConfigurationSection section = config.getConfigurationSection(&quot;hearts&quot;);</span>
+<span class="fc bfc" id="L21" title="All 2 branches covered.">        if (section == null) {</span>
+<span class="fc" id="L22">            return;</span>
+        }
+<span class="fc bfc" id="L24" title="All 2 branches covered.">        for (String key : section.getKeys(false)) {</span>
+<span class="fc" id="L25">            final ConfigurationSection s = section.getConfigurationSection(key);</span>
+<span class="pc bpc" id="L26" title="1 of 2 branches missed.">            if (s == null) {</span>
+<span class="nc" id="L27">                continue;</span>
+            }
+<span class="fc" id="L29">            final String id = key;</span>
+<span class="fc" id="L30">            final String display = s.getString(&quot;display&quot;, &quot;&amp;cHeart&quot;);</span>
+<span class="fc" id="L31">            final int tier = s.getInt(&quot;tier&quot;, 1);</span>
+<span class="fc" id="L32">            final double hearts = s.getDouble(&quot;hearts&quot;, 1.0);</span>
+<span class="fc" id="L33">            final String materialName = s.getString(&quot;material&quot;, &quot;NETHER_STAR&quot;);</span>
+<span class="fc" id="L34">            Material material = Material.NETHER_STAR;</span>
+            try {
+<span class="fc" id="L36">                material = Material.valueOf(materialName.toUpperCase());</span>
+            }
+<span class="fc" id="L38">            catch (IllegalArgumentException ignored) {</span>
+<span class="fc" id="L39">            }</span>
+<span class="fc" id="L40">            final String texture = s.getString(&quot;texture&quot;, &quot;&quot;);</span>
+<span class="fc" id="L41">            final Map&lt;String, Object&gt; nbt = s.getValues(false);</span>
+<span class="fc" id="L42">            final Heart heart = new Heart(id, display, tier, hearts, material, texture, nbt);</span>
+<span class="fc" id="L43">            byId.put(id.toLowerCase(), heart);</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">            if (!byTier.containsKey(tier)) {</span>
+<span class="fc" id="L45">                byTier.put(tier, heart);</span>
+            }
+<span class="fc" id="L47">        }</span>
+<span class="fc" id="L48">    }</span>
+
+    public Heart getById(String id) {
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        if (id == null) {</span>
+<span class="fc" id="L52">            return null;</span>
+        }
+<span class="fc" id="L54">        return byId.get(id.toLowerCase());</span>
+    }
+
+    public Heart getByTier(int tier) {
+<span class="fc" id="L58">        return byTier.get(tier);</span>
+    }
+
+    public Map&lt;String, Heart&gt; getAll() {
+<span class="fc" id="L62">        return Collections.unmodifiableMap(byId);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

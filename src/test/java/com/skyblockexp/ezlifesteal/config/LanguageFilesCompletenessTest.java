@@ -16,21 +16,25 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LanguageFilesCompletenessTest {
 
-    private static final Path LANGUAGES_DIR = Path.of("src/main/resources/languages");
+    private static final Path[] LANGUAGE_DIR_CANDIDATES = new Path[] {
+            Path.of("src/main/resources/languages"),
+            Path.of("../src/main/resources/languages")
+    };
 
     private static final String BASE_LANGUAGE_FILE = "en.yml";
 
 
     @Test
     void everyLanguageFileContainsAllKeysFromEnglish() throws Exception {
-        assertTrue(Files.exists(LANGUAGES_DIR), "Missing languages directory: " + LANGUAGES_DIR);
+        Path languagesDir = resolveLanguagesDir();
+        assertTrue(Files.exists(languagesDir), "Missing languages directory: " + languagesDir);
 
-        File baseFile = LANGUAGES_DIR.resolve(BASE_LANGUAGE_FILE).toFile();
+        File baseFile = languagesDir.resolve(BASE_LANGUAGE_FILE).toFile();
         assertTrue(baseFile.isFile(), "Missing base language file: " + baseFile.getPath());
         Set<String> baseKeys = extractMessageKeys(baseFile);
 
         List<Path> languageFiles;
-        try (Stream<Path> stream = Files.list(LANGUAGES_DIR)) {
+        try (Stream<Path> stream = Files.list(languagesDir)) {
             languageFiles = stream
                     .filter(path -> path.toString().endsWith(".yml"))
                     .filter(path -> !BASE_LANGUAGE_FILE.equals(path.getFileName().toString()))
@@ -49,6 +53,15 @@ class LanguageFilesCompletenessTest {
         }
 
         assertTrue(errors.isEmpty(), String.join(System.lineSeparator(), errors));
+    }
+
+    private Path resolveLanguagesDir() {
+        for (Path candidate : LANGUAGE_DIR_CANDIDATES) {
+            if (Files.exists(candidate)) {
+                return candidate;
+            }
+        }
+        return LANGUAGE_DIR_CANDIDATES[0];
     }
 
     private Set<String> extractMessageKeys(File file) {

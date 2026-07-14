@@ -1,5 +1,6 @@
 package com.skyblockexp.ezlifesteal.service;
 
+import com.skyblockexp.ezlifesteal.compat.AdapterSupport;
 import com.skyblockexp.ezlifesteal.config.ReviveAnimationSettings;
 import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
 import com.skyblockexp.ezlifesteal.util.SchedulerAdapter;
@@ -124,15 +125,15 @@ public class ReviveAnimationService {
 
         private void spawnParticle(World world, Location location, ReviveAnimationSettings.ParticlePreset preset) {
             final Particle particle = parseParticle(preset.type(), Particle.END_ROD);
-            world.spawnParticle(
-                    particle,
-                    location,
-                    preset.count(),
-                    preset.offsetX(),
-                    preset.offsetY(),
-                    preset.offsetZ(),
-                    preset.speed()
-            );
+            AdapterSupport.runAtLocation(plugin.getPlugin(), location, () -> world.spawnParticle(
+                particle,
+                location,
+                preset.count(),
+                preset.offsetX(),
+                preset.offsetY(),
+                preset.offsetZ(),
+                preset.speed()
+            ));
         }
 
         private void playImpact(World world, Location centerPoint, Player source,
@@ -144,7 +145,8 @@ public class ReviveAnimationService {
 
         private void playSound(World world, Location location, ReviveAnimationSettings.SoundPreset preset) {
             final Sound sound = parseSound(preset.type(), Sound.BLOCK_BEACON_AMBIENT);
-            world.playSound(location, sound, preset.volume(), preset.pitch());
+            AdapterSupport.runAtLocation(plugin.getPlugin(), location,
+                    () -> world.playSound(location, sound, preset.volume(), preset.pitch()));
         }
 
         private Particle parseParticle(String raw, Particle fallback) {

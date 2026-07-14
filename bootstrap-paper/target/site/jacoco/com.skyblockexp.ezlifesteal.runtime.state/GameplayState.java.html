@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GameplayState.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.runtime.state</a> &gt; <span class="el_source">GameplayState.java</span></div><h1>GameplayState.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.runtime.state;
+
+import com.skyblockexp.ezlifesteal.killstreak.KillStreakSettings;
+
+public final class GameplayState {
+
+    private final HeartRulesState heartRulesState;
+
+    private final DropRulesState dropRulesState;
+
+    private final ReviveBeaconState reviveBeaconState;
+
+    private final WorldRulesState worldRulesState;
+
+    private final MobRulesState mobRulesState;
+
+    private KillStreakSettings killStreakSettings;
+
+    GameplayState(
+            HeartRulesState heartRulesState,
+            DropRulesState dropRulesState,
+            ReviveBeaconState reviveBeaconState,
+            WorldRulesState worldRulesState,
+            MobRulesState mobRulesState,
+            KillStreakSettings killStreakSettings
+<span class="fc" id="L26">    ) {</span>
+<span class="fc" id="L27">        this.heartRulesState = heartRulesState;</span>
+<span class="fc" id="L28">        this.dropRulesState = dropRulesState;</span>
+<span class="fc" id="L29">        this.reviveBeaconState = reviveBeaconState;</span>
+<span class="fc" id="L30">        this.worldRulesState = worldRulesState;</span>
+<span class="fc" id="L31">        this.mobRulesState = mobRulesState;</span>
+<span class="fc" id="L32">        this.killStreakSettings = killStreakSettings;</span>
+<span class="fc" id="L33">    }</span>
+
+    public static GameplayState defaults() {
+<span class="fc" id="L36">        return new GameplayState(</span>
+<span class="fc" id="L37">                HeartRulesState.defaults(),</span>
+<span class="fc" id="L38">                DropRulesState.defaults(),</span>
+<span class="fc" id="L39">                ReviveBeaconState.defaults(),</span>
+<span class="fc" id="L40">                WorldRulesState.defaults(),</span>
+<span class="fc" id="L41">                MobRulesState.defaults(),</span>
+<span class="fc" id="L42">                KillStreakSettings.disabled()</span>
+        );
+    }
+
+    public HeartRulesState getHeartRulesState() {
+<span class="fc" id="L47">        return heartRulesState;</span>
+    }
+
+    public DropRulesState getDropRulesState() {
+<span class="fc" id="L51">        return dropRulesState;</span>
+    }
+
+    public ReviveBeaconState getReviveBeaconState() {
+<span class="fc" id="L55">        return reviveBeaconState;</span>
+    }
+
+    public WorldRulesState getWorldRulesState() {
+<span class="fc" id="L59">        return worldRulesState;</span>
+    }
+
+    public MobRulesState getMobRulesState() {
+<span class="fc" id="L63">        return mobRulesState;</span>
+    }
+
+    public KillStreakSettings getKillStreakSettings() {
+<span class="fc" id="L67">        return killStreakSettings;</span>
+    }
+
+    public void setKillStreakSettings(KillStreakSettings killStreakSettings) {
+<span class="fc" id="L71">        this.killStreakSettings = killStreakSettings;</span>
+<span class="fc" id="L72">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

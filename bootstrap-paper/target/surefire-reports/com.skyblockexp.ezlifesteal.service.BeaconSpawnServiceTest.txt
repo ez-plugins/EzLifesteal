@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.skyblockexp.ezlifesteal.service.BeaconSpawnServiceTest
+-------------------------------------------------------------------------------
+Tests run: 30, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.429 s -- in com.skyblockexp.ezlifesteal.service.BeaconSpawnServiceTest

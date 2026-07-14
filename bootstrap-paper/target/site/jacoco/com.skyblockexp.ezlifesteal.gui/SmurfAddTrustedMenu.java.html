@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SmurfAddTrustedMenu.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.gui</a> &gt; <span class="el_source">SmurfAddTrustedMenu.java</span></div><h1>SmurfAddTrustedMenu.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.gui;
+
+import com.skyblockexp.ezlifesteal.EzLifestealPlugin;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.SkullMeta;
+
+public class SmurfAddTrustedMenu extends AbstractSmurfMenu {
+
+<span class="fc" id="L18">    private final List&lt;UUID&gt; candidates = new ArrayList&lt;&gt;();</span>
+
+    public SmurfAddTrustedMenu(EzLifestealPlugin plugin, Player viewer) {
+<span class="fc" id="L21">        super(plugin, viewer, 54, &quot;&amp;aAdd Trusted Player&quot;);</span>
+<span class="fc" id="L22">        build();</span>
+<span class="fc" id="L23">    }</span>
+
+    private void build() {
+<span class="fc" id="L26">        candidates.clear();</span>
+<span class="fc" id="L27">        int slot = 0;</span>
+<span class="fc bfc" id="L28" title="All 2 branches covered.">        for (Player online : Bukkit.getOnlinePlayers()) {</span>
+<span class="pc bpc" id="L29" title="1 of 4 branches missed.">            if (plugin.getSmurfDetector() != null &amp;&amp; plugin.getSmurfDetector().isExempt(online.getUniqueId())) {</span>
+<span class="nc" id="L30">                continue;</span>
+            }
+<span class="pc bpc" id="L32" title="1 of 2 branches missed.">            if (slot &gt;= 45) {</span>
+<span class="nc" id="L33">                break;</span>
+            }
+<span class="fc" id="L35">            candidates.add(online.getUniqueId());</span>
+<span class="fc" id="L36">            final ItemStack head = new ItemStack(Material.PLAYER_HEAD);</span>
+<span class="fc" id="L37">            final SkullMeta meta = (SkullMeta) head.getItemMeta();</span>
+<span class="pc bpc" id="L38" title="1 of 2 branches missed.">            if (meta != null) {</span>
+<span class="fc" id="L39">                meta.setDisplayName(&quot;§a&quot; + online.getName());</span>
+<span class="fc" id="L40">                meta.setOwningPlayer(online);</span>
+<span class="fc" id="L41">                meta.setLore(List.of(&quot;§7Click to trust this player.&quot;));</span>
+<span class="fc" id="L42">                head.setItemMeta(meta);</span>
+            }
+<span class="fc" id="L44">            setItem(slot++, head);</span>
+<span class="fc" id="L45">        }</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        if (candidates.isEmpty()) {</span>
+<span class="fc" id="L47">            setItem(22, createItem(Material.GRAY_DYE, &quot;&amp;7No eligible players&quot;, List.of(</span>
+                    &quot;&amp;7No online players can&quot;,
+                    &quot;&amp;7be added right now&quot;
+            )));
+        }
+<span class="fc" id="L52">        setItem(45, createItem(Material.ARROW, &quot;&amp;7Back&quot;, List.of(&quot;&amp;7Return to trusted list&quot;)));</span>
+<span class="fc" id="L53">        setItem(49, createItem(Material.BARRIER, &quot;&amp;cClose&quot;, List.of(&quot;&amp;7Click to close&quot;)));</span>
+<span class="fc" id="L54">    }</span>
+
+    @Override
+    public void handleClick(InventoryClickEvent event) {
+<span class="fc" id="L58">        event.setCancelled(true);</span>
+<span class="fc" id="L59">        final int slot = event.getRawSlot();</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        if (slot == 45) {</span>
+<span class="fc" id="L61">            SmurfGuiManager.openTrusted(plugin, viewer);</span>
+<span class="fc" id="L62">            return;</span>
+        }
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        if (slot == 49) {</span>
+<span class="fc" id="L65">            viewer.closeInventory();</span>
+<span class="fc" id="L66">            return;</span>
+        }
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">        if (slot &lt; candidates.size()) {</span>
+<span class="fc" id="L69">            final UUID uuid = candidates.get(slot);</span>
+<span class="fc" id="L70">            final OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">            final String name = offlinePlayer.getName() == null ? uuid.toString() : offlinePlayer.getName();</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">            if (plugin.addSmurfExemption(uuid)) {</span>
+<span class="fc" id="L73">                plugin.getMessageService().sendMessage(viewer, &quot;smurf-gui-added&quot;, Map.of(</span>
+                        &quot;player&quot;, name
+                ));
+            }
+<span class="fc" id="L77">            SmurfGuiManager.openTrusted(plugin, viewer);</span>
+        }
+<span class="fc" id="L79">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,6 +1,7 @@
 package com.skyblockexp.ezlifesteal.command.subcommand;
 
 import com.skyblockexp.ezlifesteal.command.LifestealCommand;
+import com.skyblockexp.ezlifesteal.compat.AdapterSupport;
 import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
 import com.skyblockexp.ezlifesteal.service.LifestealManager;
 import com.skyblockexp.ezlifesteal.storage.StorageException;
@@ -46,8 +47,10 @@ public class ReviveSubcommand implements Subcommand {
                             if (reviveTarget.isOnline()) {
                                 final Player online = reviveTarget.getPlayer();
                                 if (online != null) {
-                                    reviveManager.applyHearts(online, profile);
-                                    plugin.sendHeartStatus(online, profile.getHearts());
+                                    AdapterSupport.runForPlayer(plugin.getPlugin(), online, () -> {
+                                        reviveManager.applyHearts(online, profile);
+                                        plugin.sendHeartStatus(online, profile.getHearts());
+                                    });
                                 }
                             }
                             final String resolvedName = context.resolvePlayerNamePublic(reviveTarget, lookupTarget);

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BukkitHealthAttributeResolver.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.util</a> &gt; <span class="el_source">BukkitHealthAttributeResolver.java</span></div><h1>BukkitHealthAttributeResolver.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.util;
+
+import com.skyblockexp.ezlifesteal.service.HealthAttributeResolver;
+import java.lang.reflect.Field;
+import org.bukkit.attribute.Attribute;
+
+/**
+ * Resolves max-health attribute constants across Bukkit/Paper versions.
+ */
+<span class="fc" id="L10">public class BukkitHealthAttributeResolver implements HealthAttributeResolver {</span>
+
+    @Override
+    public Attribute resolveMaxHealthAttribute() {
+        try {
+<span class="nc" id="L15">            final Object value = readGenericMaxHealthField();</span>
+<span class="nc bnc" id="L16" title="All 2 branches missed.">            if (value instanceof Attribute attribute) {</span>
+<span class="nc" id="L17">                return attribute;</span>
+            }
+        }
+<span class="nc" id="L20">        catch (NoSuchFieldException | IllegalAccessException | RuntimeException ignored) {</span>
+            // Fall back to legacy field names across server variants.
+<span class="nc" id="L22">        }</span>
+<span class="nc" id="L23">        final Object fallbackValue = findAttributeByFieldNames(&quot;MAX_HEALTH&quot;, &quot;GENERIC_MAX_HEALTH&quot;);</span>
+<span class="nc bnc" id="L24" title="All 2 branches missed.">        if (fallbackValue instanceof Attribute attribute) {</span>
+<span class="nc" id="L25">            return attribute;</span>
+        }
+<span class="nc" id="L27">        throw new IllegalStateException(&quot;Unable to resolve max-health attribute from Bukkit API.&quot;);</span>
+    }
+
+    Object readGenericMaxHealthField() throws NoSuchFieldException, IllegalAccessException {
+<span class="nc" id="L31">        return readMaxHealthField(Attribute.class);</span>
+    }
+
+    Object readMaxHealthField(Class&lt;?&gt; attributeClass) throws NoSuchFieldException, IllegalAccessException {
+<span class="fc bfc" id="L35" title="All 2 branches covered.">        for (Field field : attributeClass.getFields()) {</span>
+<span class="fc bfc" id="L36" title="All 2 branches covered.">            if (&quot;GENERIC_MAX_HEALTH&quot;.equals(field.getName())) {</span>
+<span class="fc" id="L37">                return field.get(null);</span>
+            }
+        }
+<span class="fc" id="L40">        return attributeClass.getField(&quot;MAX_HEALTH&quot;).get(null);</span>
+    }
+
+    Object findAttributeByFieldNames(String... fieldNames) {
+<span class="nc bnc" id="L44" title="All 2 branches missed.">        for (String fieldName : fieldNames) {</span>
+            try {
+<span class="nc" id="L46">                return Attribute.class.getField(fieldName).get(null);</span>
+            }
+<span class="nc" id="L48">            catch (NoSuchFieldException | IllegalAccessException ignored) {</span>
+            }
+        }
+<span class="nc" id="L51">        return null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

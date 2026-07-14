@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WithdrawSubcommand.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.command.subcommand</a> &gt; <span class="el_source">WithdrawSubcommand.java</span></div><h1>WithdrawSubcommand.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.command.subcommand;
+
+import com.skyblockexp.ezlifesteal.command.LifestealCommand;
+import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
+import com.skyblockexp.ezlifesteal.service.HeartWithdrawService;
+import com.skyblockexp.ezlifesteal.service.LifestealManager;
+import org.bukkit.ChatColor;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+
+public class WithdrawSubcommand implements Subcommand {
+
+    private final HeartWithdrawService heartWithdrawService;
+
+    public WithdrawSubcommand() {
+<span class="fc" id="L17">        this(new HeartWithdrawService());</span>
+<span class="fc" id="L18">    }</span>
+
+<span class="fc" id="L20">    public WithdrawSubcommand(HeartWithdrawService heartWithdrawService) {</span>
+<span class="fc" id="L21">        this.heartWithdrawService = heartWithdrawService;</span>
+<span class="fc" id="L22">    }</span>
+
+    @Override
+    public boolean execute(CommandSender sender, Command command, String label, String[] args,
+            LifestealCommand context) {
+<span class="pc bpc" id="L27" title="1 of 2 branches missed.">        if (!(sender instanceof Player player)) {</span>
+<span class="nc" id="L28">            sender.sendMessage(ChatColor.RED + &quot;This command can only be used by players.&quot;);</span>
+<span class="nc" id="L29">            return true;</span>
+        }
+<span class="pc bpc" id="L31" title="1 of 2 branches missed.">        if (!context.requirePermissionPublic(sender, &quot;lifesteal.withdraw&quot;, &quot;lifesteal.admin&quot;)) {</span>
+<span class="nc" id="L32">            return true;</span>
+        }
+
+<span class="fc" id="L35">        final PluginAccessor plugin = context.getPluginAccessorPublic();</span>
+<span class="fc" id="L36">        final LifestealManager manager = plugin.getLifestealManager();</span>
+
+<span class="fc" id="L38">        final HeartWithdrawService.WithdrawResult result = heartWithdrawService.withdraw(player, manager,</span>
+<span class="fc" id="L39">                plugin.getHeartRegistry());</span>
+<span class="pc bpc" id="L40" title="4 of 5 branches missed.">        switch (result.status()) {</span>
+            case SUCCESS -&gt; {
+<span class="fc" id="L42">                plugin.sendHeartStatus(player, result.remainingHearts());</span>
+<span class="fc" id="L43">                player.sendMessage(ChatColor.GRAY + &quot;Withdrew &quot; + ChatColor.RED + &quot;1x &quot; + result.heartId()</span>
+                        + ChatColor.GRAY + &quot; voucher. Remaining hearts: &quot; + ChatColor.RED
+<span class="fc" id="L45">                        + context.formatPublic(result.remainingHearts()));</span>
+<span class="fc" id="L46">            }</span>
+<span class="nc" id="L47">            case INSUFFICIENT_HEARTS -&gt; plugin.getMessageService().sendMessage(player, &quot;transfer-insufficient-hearts&quot;);</span>
+<span class="nc" id="L48">            case PROFILE_NOT_LOADED -&gt; manager.loadProfileAsync(player.getUniqueId())</span>
+<span class="nc" id="L49">                    .thenAccept(profile -&gt; context.getMainThreadExecutorPublic().execute(() -&gt;</span>
+<span class="nc" id="L50">                            execute(player, command, label, args, context)))</span>
+<span class="nc" id="L51">                    .exceptionally(throwable -&gt; {</span>
+<span class="nc" id="L52">                        context.getMainThreadExecutorPublic().execute(() -&gt;</span>
+<span class="nc" id="L53">                                context.handleAsyncFailure(player, throwable, &quot;loading withdraw profile&quot;));</span>
+<span class="nc" id="L54">                        return null;</span>
+                    });
+<span class="nc" id="L56">            case UNAVAILABLE -&gt; player.sendMessage(ChatColor.RED + &quot;Withdraw voucher is currently unavailable.&quot;);</span>
+            default -&gt; {
+            }
+        }
+<span class="fc" id="L60">        return true;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

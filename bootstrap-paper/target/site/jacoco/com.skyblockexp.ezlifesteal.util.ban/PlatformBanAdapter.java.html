@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PlatformBanAdapter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.util.ban</a> &gt; <span class="el_source">PlatformBanAdapter.java</span></div><h1>PlatformBanAdapter.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.util.ban;
+
+import java.time.Instant;
+import java.util.Set;
+import java.util.UUID;
+
+/**
+ * Platform-safe abstraction over Bukkit's ban list.
+ *
+ * &lt;p&gt;Use {@link #create()} to obtain the correct implementation at runtime:
+ * {@link PaperBanAdapter} on Paper/Folia and {@link SpigotBanAdapter} on Spigot.&lt;/p&gt;
+ *
+ * &lt;p&gt;Spigot limitation: the name-based fallback cannot reliably associate UUIDs with ban
+ * entries, so {@link BanEntryView#getPlayerId()} may be {@code null} on Spigot.&lt;/p&gt;
+ */
+public interface PlatformBanAdapter {
+
+    /**
+     * Adds a ban for the given player if one does not already exist.
+     *
+     * @param playerId   the player's UUID
+     * @param playerName the player's current name
+     * @param reason     ban reason, or {@code null}
+     * @param source     ban source / issuer name, or {@code null}
+     * @param expiry     ban expiry instant, or {@code null} for permanent
+     */
+    void addBan(UUID playerId, String playerName, String reason, String source, Instant expiry);
+
+    /**
+     * Removes any active ban for the given player.
+     *
+     * @param playerId   the player's UUID (used on Paper/Folia)
+     * @param playerName the player's name (used on Spigot as fallback)
+     */
+    void removeBan(UUID playerId, String playerName);
+
+    /**
+     * Returns {@code true} when the player currently has an active ban.
+     *
+     * @param playerId   the player's UUID (may be {@code null} on Spigot)
+     * @param playerName the player's name; used as fallback on Spigot
+     */
+    boolean isBanned(UUID playerId, String playerName);
+
+    /**
+     * Returns a snapshot of all active ban entries from Bukkit's ban list.
+     */
+    Set&lt;BanEntryView&gt; getBanEntries();
+
+    /**
+     * Factory method — picks the appropriate implementation based on class availability.
+     *
+     * &lt;p&gt;{@link PaperBanAdapter} is selected when {@code com.destroystokyo.paper.profile.PlayerProfile}
+     * is on the classpath (Paper/Folia). {@link SpigotBanAdapter} is used otherwise.&lt;/p&gt;
+     */
+    static PlatformBanAdapter create() {
+        try {
+<span class="fc" id="L58">            Class.forName(&quot;com.destroystokyo.paper.profile.PlayerProfile&quot;);</span>
+<span class="fc" id="L59">            return new PaperBanAdapter();</span>
+<span class="nc" id="L60">        } catch (ClassNotFoundException ignored) {</span>
+<span class="nc" id="L61">            return new SpigotBanAdapter();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

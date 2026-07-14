@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StorageService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.service</a> &gt; <span class="el_source">StorageService.java</span></div><h1>StorageService.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.service;
+
+import com.skyblockexp.ezlifesteal.EzLifestealPlugin;
+import com.skyblockexp.ezlifesteal.config.ConfigLoader;
+import com.skyblockexp.ezlifesteal.storage.BanRecord;
+import com.skyblockexp.ezlifesteal.storage.RepositoryBackedStorageBridge;
+import com.skyblockexp.ezlifesteal.storage.Storage;
+import com.skyblockexp.ezlifesteal.storage.StorageException;
+import com.skyblockexp.ezlifesteal.storage.mysql.MySqlStorageProvider;
+import com.skyblockexp.ezlifesteal.storage.provider.StorageProvider;
+import com.skyblockexp.ezlifesteal.storage.repository.BanRepository;
+import com.skyblockexp.ezlifesteal.storage.repository.ProfileRepository;
+import com.skyblockexp.ezlifesteal.storage.repository.TeamBankRepository;
+import com.skyblockexp.ezlifesteal.storage.yaml.YamlStorageProvider;
+import com.skyblockexp.ezlifesteal.util.PluginLifecycleSupport;
+import java.io.File;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import com.skyblockexp.ezlifesteal.util.ban.BanEntryView;
+import com.skyblockexp.ezlifesteal.util.ban.PlatformBanAdapter;
+import org.bukkit.Bukkit;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
+
+public class StorageService {
+
+    private final EzLifestealPlugin plugin;
+
+    private final com.skyblockexp.ezlifesteal.runtime.Registry registry;
+
+    private final ConfigLoader configLoader;
+
+
+    private Storage storage;
+
+    private StorageProvider storageProvider;
+
+    private ProfileRepository profileRepository;
+
+    private BanRepository banRepository;
+
+    private TeamBankRepository teamBankRepository;
+
+    private ExecutorService storageExecutor;
+
+<span class="fc" id="L52">    private String storageSummary = &quot;Unknown storage&quot;;</span>
+
+    private YamlConfiguration storageConfig;
+
+    private File storageConfigFile;
+
+
+    public StorageService(EzLifestealPlugin plugin, com.skyblockexp.ezlifesteal.runtime.Registry registry,
+<span class="fc" id="L60">            ConfigLoader configLoader) {</span>
+<span class="fc" id="L61">        this.plugin = plugin;</span>
+<span class="fc" id="L62">        this.registry = registry;</span>
+<span class="fc" id="L63">        this.configLoader = configLoader;</span>
+<span class="fc" id="L64">    }</span>
+
+    public void initializeStorageExecutor() {
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        if (storageExecutor != null) {</span>
+<span class="fc" id="L68">            storageExecutor.shutdownNow();</span>
+        }
+<span class="fc" id="L70">        storageExecutor = Executors.newSingleThreadExecutor(r -&gt; {</span>
+<span class="fc" id="L71">            final Thread thread = new Thread(r, &quot;EzLifesteal-Storage&quot;);</span>
+<span class="fc" id="L72">            thread.setDaemon(true);</span>
+<span class="fc" id="L73">            return thread;</span>
+        });
+<span class="fc" id="L75">    }</span>
+
+    public void shutdownStorageExecutor() {
+<span class="fc" id="L78">        PluginLifecycleSupport.shutdownExecutor(storageExecutor, 5, TimeUnit.SECONDS);</span>
+<span class="fc" id="L79">    }</span>
+
+    public void setupStorage() {
+<span class="fc" id="L82">        storageConfigFile = configLoader.resolveFile(&quot;storage.yml&quot;);</span>
+<span class="fc" id="L83">        storageConfig = configLoader.load(&quot;storage.yml&quot;);</span>
+
+<span class="fc" id="L85">        final String configuredType = resolveConfiguredStorageType();</span>
+<span class="fc" id="L86">        final String normalizedType = normalizeStorageType(configuredType);</span>
+
+<span class="fc" id="L88">        closeStorage();</span>
+<span class="fc" id="L89">        storageSummary = &quot;Unknown storage&quot;;</span>
+<span class="fc" id="L90">        storageProvider = createStorageProvider(normalizedType, configuredType);</span>
+<span class="fc" id="L91">        initializeStorageBridge();</span>
+<span class="fc" id="L92">    }</span>
+
+    private String resolveConfiguredStorageType() {
+<span class="fc" id="L95">        String configuredType = Optional.ofNullable(storageConfig)</span>
+<span class="fc" id="L96">                .filter(config -&gt; config.contains(&quot;type&quot;))</span>
+<span class="fc" id="L97">                .map(config -&gt; config.getString(&quot;type&quot;))</span>
+<span class="fc" id="L98">                .orElse(null);</span>
+
+<span class="pc bpc" id="L100" title="2 of 6 branches missed.">        if ((configuredType == null || configuredType.isBlank()) &amp;&amp; plugin.getConfig().contains(&quot;storage.type&quot;)) {</span>
+<span class="nc" id="L101">            configuredType = plugin.getConfig().getString(&quot;storage.type&quot;);</span>
+        }
+<span class="fc" id="L103">        return configuredType;</span>
+    }
+
+    private String normalizeStorageType(String configuredType) {
+<span class="pc bpc" id="L107" title="1 of 4 branches missed.">        if (configuredType != null &amp;&amp; !configuredType.isBlank()) {</span>
+<span class="fc" id="L108">            return configuredType.toUpperCase(Locale.ROOT);</span>
+        }
+
+<span class="fc" id="L111">        plugin.getLogger().warning(&quot;No storage type configured; defaulting to YAML storage.&quot;);</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">        if (storageConfig != null) {</span>
+<span class="fc" id="L113">            storageConfig.set(&quot;type&quot;, &quot;YAML&quot;);</span>
+            try {
+<span class="fc" id="L115">                storageConfig.save(storageConfigFile);</span>
+            }
+<span class="nc" id="L117">            catch (Exception ignored) {</span>
+                // best-effort persistence only
+<span class="fc" id="L119">            }</span>
+        }
+<span class="fc" id="L121">        return &quot;YAML&quot;;</span>
+    }
+
+    private StorageProvider createStorageProvider(String normalizedType, String configuredType) {
+<span class="fc bfc" id="L125" title="All 3 branches covered.">        return switch (normalizedType) {</span>
+<span class="fc" id="L126">            case &quot;MYSQL&quot; -&gt; createMySqlProviderOrFallback();</span>
+<span class="fc" id="L127">            case &quot;YML&quot;, &quot;YAML&quot; -&gt; createYamlProvider(&quot;players.yml&quot;, null);</span>
+            default -&gt; {
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">                final String reportedType = configuredType == null ? normalizedType : configuredType;</span>
+<span class="fc" id="L130">                plugin.getLogger().warning(&quot;Unknown storage type '&quot; + reportedType + &quot;', defaulting to YAML storage.&quot;);</span>
+<span class="fc" id="L131">                yield createYamlProvider(&quot;players.yml&quot;, &quot;fallback for unknown type '&quot; + reportedType + &quot;'&quot;);</span>
+            }
+        };
+    }
+
+    private StorageProvider createMySqlProviderOrFallback() {
+<span class="fc" id="L137">        final ConfigurationSection mysql = getStorageSection(&quot;mysql&quot;);</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">        if (mysql == null) {</span>
+<span class="fc" id="L139">            plugin.getLogger().warning(&quot;No MySQL configuration section found; defaulting to YAML storage.&quot;);</span>
+<span class="fc" id="L140">            return createYamlProvider(&quot;players.yml&quot;, null);</span>
+        }
+
+<span class="nc" id="L143">        final String host = mysql.getString(&quot;host&quot;, &quot;localhost&quot;);</span>
+<span class="nc" id="L144">        final int port = mysql.getInt(&quot;port&quot;, 3306);</span>
+<span class="nc" id="L145">        final String database = mysql.getString(&quot;database&quot;, &quot;lifesteal&quot;);</span>
+<span class="nc" id="L146">        final String username = mysql.getString(&quot;username&quot;, &quot;root&quot;);</span>
+<span class="nc" id="L147">        final String password = mysql.getString(&quot;password&quot;, &quot;password&quot;);</span>
+<span class="nc" id="L148">        final boolean useSsl = mysql.getBoolean(&quot;use-ssl&quot;, false);</span>
+<span class="nc" id="L149">        final String table = mysql.getString(&quot;table&quot;, &quot;lifesteal_players&quot;);</span>
+
+<span class="nc" id="L151">        storageSummary = String.format(</span>
+                Locale.US,
+                &quot;MySQL storage (%s:%d/%s, user=%s, table=%s, SSL=%s)&quot;,
+                host,
+<span class="nc" id="L155">                port,</span>
+                database,
+                username,
+                table,
+<span class="nc bnc" id="L159" title="All 2 branches missed.">                useSsl ? &quot;on&quot; : &quot;off&quot;</span>
+        );
+<span class="nc" id="L161">        return new MySqlStorageProvider(host, port, database, username, password, useSsl, table);</span>
+    }
+
+    private StorageProvider createYamlProvider(String fileName, String reason) {
+<span class="fc" id="L165">        final File dataFolder = new File(plugin.getDataFolder(), &quot;data&quot;);</span>
+<span class="fc" id="L166">        final File dataFile = new File(dataFolder, fileName);</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">        storageSummary = reason == null</span>
+<span class="fc" id="L168">                ? &quot;YAML storage (&quot; + dataFile.getPath() + &quot;)&quot;</span>
+<span class="fc" id="L169">                : &quot;YAML storage (&quot; + reason + &quot;)&quot;;</span>
+<span class="fc" id="L170">        return new YamlStorageProvider(dataFolder, fileName);</span>
+    }
+
+    private void initializeStorageBridge() {
+        try {
+<span class="fc" id="L175">            storage = new RepositoryBackedStorageBridge(storageProvider);</span>
+<span class="fc" id="L176">            profileRepository = storageProvider.profiles();</span>
+<span class="fc" id="L177">            banRepository = storageProvider.bans();</span>
+<span class="fc" id="L178">            teamBankRepository = storageProvider.teamBanks();</span>
+<span class="fc" id="L179">            storage.init();</span>
+<span class="fc" id="L180">            reconcileRuntimeBans();</span>
+        }
+<span class="nc" id="L182">        catch (StorageException exception) {</span>
+<span class="nc" id="L183">            plugin.getLogger().severe(&quot;Failed to initialise storage: &quot; + exception.getMessage());</span>
+<span class="nc" id="L184">            storage = null;</span>
+<span class="nc" id="L185">            storageProvider = null;</span>
+<span class="nc" id="L186">            profileRepository = null;</span>
+<span class="nc" id="L187">            banRepository = null;</span>
+<span class="nc" id="L188">            teamBankRepository = null;</span>
+<span class="fc" id="L189">        }</span>
+<span class="fc" id="L190">    }</span>
+
+    public void reconcileRuntimeBans() {
+<span class="fc" id="L193">        importRuntimeBansIntoStorage();</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">        if (getBanRepository() == null) {</span>
+<span class="fc" id="L195">            return;</span>
+        }
+        final List&lt;BanRecord&gt; activeBans;
+        try {
+<span class="fc" id="L199">            activeBans = getBanRepository().loadActiveBans();</span>
+        }
+<span class="fc" id="L201">        catch (StorageException exception) {</span>
+<span class="fc" id="L202">            plugin.getLogger().warning(&quot;Failed to load active bans from storage: &quot; + exception.getMessage());</span>
+<span class="fc" id="L203">            return;</span>
+<span class="fc" id="L204">        }</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">        if (activeBans.isEmpty()) {</span>
+<span class="fc" id="L206">            return;</span>
+        }
+<span class="fc" id="L208">        final PlatformBanAdapter banAdapter = PlatformBanAdapter.create();</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">        for (BanRecord record : activeBans) {</span>
+<span class="fc" id="L210">            final String playerName = record.getPlayerName();</span>
+<span class="fc" id="L211">            final UUID playerUuid = record.getUniqueId();</span>
+<span class="pc bpc" id="L212" title="1 of 6 branches missed.">            if (playerName == null || playerName.isBlank() || playerUuid == null) {</span>
+<span class="nc" id="L213">                continue;</span>
+            }
+<span class="fc bfc" id="L215" title="All 2 branches covered.">            if (!banAdapter.isBanned(playerUuid, playerName)) {</span>
+                // The ban is active in storage but absent from Bukkit's ban list.
+                // This indicates the player was manually pardoned (e.g. /pardon). Sync the
+                // removal to storage so the player is not re-banned on the next restart.
+                try {
+<span class="fc" id="L220">                    getBanRepository().removeBan(playerUuid);</span>
+                }
+<span class="fc" id="L222">                catch (StorageException exception) {</span>
+<span class="fc" id="L223">                    plugin.getLogger().warning(&quot;Failed to sync pardon for &quot; + playerName</span>
+<span class="fc" id="L224">                            + &quot; into storage: &quot; + exception.getMessage());</span>
+<span class="fc" id="L225">                }</span>
+            }
+<span class="fc" id="L227">        }</span>
+<span class="fc" id="L228">    }</span>
+
+    public void importRuntimeBansIntoStorage() {
+<span class="fc" id="L231">        final BanRepository repository = getBanRepository();</span>
+<span class="fc bfc" id="L232" title="All 2 branches covered.">        if (repository == null) {</span>
+<span class="fc" id="L233">            return;</span>
+        }
+<span class="fc bfc" id="L235" title="All 2 branches covered.">        for (BanEntryView entry : PlatformBanAdapter.create().getBanEntries()) {</span>
+<span class="fc" id="L236">            persistBanEntry(repository, entry);</span>
+<span class="fc" id="L237">        }</span>
+<span class="fc" id="L238">    }</span>
+
+    private void persistBanEntry(BanRepository repository, BanEntryView entry) {
+<span class="fc" id="L241">        final UUID uniqueId = entry.getPlayerId();</span>
+<span class="pc bpc" id="L242" title="1 of 2 branches missed.">        if (uniqueId == null) {</span>
+<span class="nc" id="L243">            return;</span>
+        }
+<span class="fc" id="L245">        final String playerName = entry.getPlayerName();</span>
+<span class="pc bpc" id="L246" title="1 of 4 branches missed.">        if (playerName == null || playerName.isBlank()) {</span>
+<span class="fc" id="L247">            return;</span>
+        }
+        try {
+<span class="fc" id="L250">            final Date created = entry.getCreated();</span>
+<span class="fc" id="L251">            final Date expiresAt = entry.getExpiration();</span>
+<span class="fc" id="L252">            final BanRecord imported = new BanRecord(</span>
+                    uniqueId,
+                    playerName,
+<span class="fc" id="L255">                    entry.getReason(),</span>
+<span class="fc" id="L256">                    entry.getSource(),</span>
+<span class="pc bpc" id="L257" title="1 of 2 branches missed.">                    created == null ? java.time.Instant.now() : created.toInstant(),</span>
+<span class="pc bpc" id="L258" title="1 of 2 branches missed.">                    expiresAt == null ? null : expiresAt.toInstant(),</span>
+                    true
+            );
+<span class="fc" id="L261">            repository.saveBan(imported);</span>
+        }
+<span class="nc" id="L263">        catch (StorageException exception) {</span>
+<span class="nc" id="L264">            plugin.getLogger()</span>
+<span class="nc" id="L265">                    .warning(&quot;Failed to import ban for &quot; + playerName + &quot; into storage: &quot; + exception.getMessage());</span>
+<span class="fc" id="L266">        }</span>
+<span class="fc" id="L267">    }</span>
+
+    public void closeStorage() {
+<span class="fc" id="L270">        PluginLifecycleSupport.closeStorage(storage, plugin.getLogger());</span>
+<span class="fc" id="L271">        storage = null;</span>
+<span class="fc" id="L272">        storageProvider = null;</span>
+<span class="fc" id="L273">        profileRepository = null;</span>
+<span class="fc" id="L274">        banRepository = null;</span>
+<span class="fc" id="L275">        teamBankRepository = null;</span>
+<span class="fc" id="L276">    }</span>
+
+    public Storage getStorage() {
+<span class="fc" id="L279">        return storage;</span>
+    }
+
+    public ProfileRepository getProfileRepository() {
+<span class="fc bfc" id="L283" title="All 2 branches covered.">        return profileRepository == null ? storage : profileRepository;</span>
+    }
+
+    public BanRepository getBanRepository() {
+<span class="fc bfc" id="L287" title="All 2 branches covered.">        return banRepository == null ? storage : banRepository;</span>
+    }
+
+    public ExecutorService getStorageExecutor() {
+<span class="fc" id="L291">        return storageExecutor;</span>
+    }
+
+    public TeamBankRepository getTeamBankRepository() {
+<span class="fc" id="L295">        return teamBankRepository;</span>
+    }
+
+    public String getStorageSummary() {
+<span class="fc" id="L299">        return storageSummary;</span>
+    }
+
+    private ConfigurationSection getStorageSection(String path) {
+<span class="fc" id="L303">        ConfigurationSection section = null;</span>
+<span class="pc bpc" id="L304" title="1 of 2 branches missed.">        if (storageConfig != null) {</span>
+<span class="fc" id="L305">            section = storageConfig.getConfigurationSection(path);</span>
+        }
+<span class="pc bpc" id="L307" title="1 of 2 branches missed.">        if (section == null) {</span>
+<span class="fc" id="L308">            final ConfigurationSection legacy = plugin.getConfig().getConfigurationSection(&quot;storage&quot;);</span>
+<span class="pc bpc" id="L309" title="1 of 2 branches missed.">            if (legacy != null) {</span>
+<span class="nc" id="L310">                section = legacy.getConfigurationSection(path);</span>
+            }
+        }
+<span class="fc" id="L313">        return section;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

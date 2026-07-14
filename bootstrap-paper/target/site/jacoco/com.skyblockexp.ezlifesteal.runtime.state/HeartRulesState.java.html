@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HeartRulesState.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.runtime.state</a> &gt; <span class="el_source">HeartRulesState.java</span></div><h1>HeartRulesState.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.runtime.state;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+public final class HeartRulesState {
+
+    private double heartsPerKill;
+
+    private double heartsLostOnDeath;
+
+    private boolean banWhenZeroHearts;
+
+    private boolean adminBypassHeartLoss;
+
+    private boolean adminBypassHeartGain;
+
+    private boolean globalLifestealEnabled;
+
+    private boolean teamKillBypassWithTeamsApi;
+
+<span class="fc" id="L23">    private List&lt;String&gt; teamKillBypassExemptWorlds = Collections.emptyList();</span>
+
+<span class="fc" id="L25">    private int teamKillBypassMinTeamSize = 1;</span>
+
+    private boolean teamBankEnabled;
+
+    private double teamBankMaxHearts;
+
+<span class="fc" id="L31">    private Map&lt;String, Double&gt; teamBankPerTeamMaxHearts = Map.of();</span>
+
+<span class="fc" id="L33">    HeartRulesState() {</span>
+<span class="fc" id="L34">    }</span>
+
+    public static HeartRulesState defaults() {
+<span class="fc" id="L37">        return new HeartRulesState();</span>
+    }
+
+    public double getHeartsPerKill() {
+<span class="fc" id="L41">        return heartsPerKill;</span>
+    }
+
+    public void setHeartsPerKill(double heartsPerKill) {
+<span class="fc" id="L45">        this.heartsPerKill = heartsPerKill;</span>
+<span class="fc" id="L46">    }</span>
+
+    public double getHeartsLostOnDeath() {
+<span class="fc" id="L49">        return heartsLostOnDeath;</span>
+    }
+
+    public void setHeartsLostOnDeath(double heartsLostOnDeath) {
+<span class="fc" id="L53">        this.heartsLostOnDeath = heartsLostOnDeath;</span>
+<span class="fc" id="L54">    }</span>
+
+    public boolean isBanWhenZeroHearts() {
+<span class="fc" id="L57">        return banWhenZeroHearts;</span>
+    }
+
+    public void setBanWhenZeroHearts(boolean banWhenZeroHearts) {
+<span class="fc" id="L61">        this.banWhenZeroHearts = banWhenZeroHearts;</span>
+<span class="fc" id="L62">    }</span>
+
+    public boolean isAdminBypassHeartLoss() {
+<span class="fc" id="L65">        return adminBypassHeartLoss;</span>
+    }
+
+    public void setAdminBypassHeartLoss(boolean adminBypassHeartLoss) {
+<span class="fc" id="L69">        this.adminBypassHeartLoss = adminBypassHeartLoss;</span>
+<span class="fc" id="L70">    }</span>
+
+    public boolean isAdminBypassHeartGain() {
+<span class="fc" id="L73">        return adminBypassHeartGain;</span>
+    }
+
+    public void setAdminBypassHeartGain(boolean adminBypassHeartGain) {
+<span class="fc" id="L77">        this.adminBypassHeartGain = adminBypassHeartGain;</span>
+<span class="fc" id="L78">    }</span>
+
+    public boolean isGlobalLifestealEnabled() {
+<span class="fc" id="L81">        return globalLifestealEnabled;</span>
+    }
+
+    public void setGlobalLifestealEnabled(boolean globalLifestealEnabled) {
+<span class="fc" id="L85">        this.globalLifestealEnabled = globalLifestealEnabled;</span>
+<span class="fc" id="L86">    }</span>
+
+    public boolean isTeamKillBypassWithTeamsApi() {
+<span class="fc" id="L89">        return teamKillBypassWithTeamsApi;</span>
+    }
+
+    public void setTeamKillBypassWithTeamsApi(boolean teamKillBypassWithTeamsApi) {
+<span class="fc" id="L93">        this.teamKillBypassWithTeamsApi = teamKillBypassWithTeamsApi;</span>
+<span class="fc" id="L94">    }</span>
+
+    public List&lt;String&gt; getTeamKillBypassExemptWorlds() {
+<span class="fc" id="L97">        return teamKillBypassExemptWorlds;</span>
+    }
+
+    public void setTeamKillBypassExemptWorlds(List&lt;String&gt; teamKillBypassExemptWorlds) {
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">        this.teamKillBypassExemptWorlds = teamKillBypassExemptWorlds == null ? Collections.emptyList() : teamKillBypassExemptWorlds;</span>
+<span class="fc" id="L102">    }</span>
+
+    public int getTeamKillBypassMinTeamSize() {
+<span class="fc" id="L105">        return teamKillBypassMinTeamSize;</span>
+    }
+
+    public void setTeamKillBypassMinTeamSize(int teamKillBypassMinTeamSize) {
+<span class="fc" id="L109">        this.teamKillBypassMinTeamSize = Math.max(1, teamKillBypassMinTeamSize);</span>
+<span class="fc" id="L110">    }</span>
+
+    public boolean isTeamBankEnabled() {
+<span class="fc" id="L113">        return teamBankEnabled;</span>
+    }
+
+    public void setTeamBankEnabled(boolean teamBankEnabled) {
+<span class="fc" id="L117">        this.teamBankEnabled = teamBankEnabled;</span>
+<span class="fc" id="L118">    }</span>
+
+    public double getTeamBankMaxHearts() {
+<span class="fc" id="L121">        return teamBankMaxHearts;</span>
+    }
+
+    public void setTeamBankMaxHearts(double teamBankMaxHearts) {
+<span class="fc" id="L125">        this.teamBankMaxHearts = teamBankMaxHearts;</span>
+<span class="fc" id="L126">    }</span>
+
+    public Map&lt;String, Double&gt; getTeamBankPerTeamMaxHearts() {
+<span class="fc" id="L129">        return teamBankPerTeamMaxHearts;</span>
+    }
+
+    public void setTeamBankPerTeamMaxHearts(Map&lt;String, Double&gt; teamBankPerTeamMaxHearts) {
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">        this.teamBankPerTeamMaxHearts = teamBankPerTeamMaxHearts == null ? Map.of() : teamBankPerTeamMaxHearts;</span>
+<span class="fc" id="L134">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

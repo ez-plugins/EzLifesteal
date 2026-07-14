@@ -14,9 +14,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeInstance;
-import org.bukkit.entity.Player;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -26,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.contains;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -41,7 +37,6 @@ class LifestealManagerTest {
 
             ProfileRepository profileRepository = mock(ProfileRepository.class);
             HealthAttributeResolver healthAttributeResolver = mock(HealthAttributeResolver.class);
-            when(healthAttributeResolver.resolveMaxHealthAttribute()).thenReturn(Attribute.MAX_HEALTH);
 
             LifestealManager manager = new LifestealManager(
                     plugin,
@@ -76,7 +71,6 @@ class LifestealManagerTest {
 
             ProfileRepository profileRepository = mock(ProfileRepository.class);
             HealthAttributeResolver healthAttributeResolver = mock(HealthAttributeResolver.class);
-            when(healthAttributeResolver.resolveMaxHealthAttribute()).thenReturn(Attribute.MAX_HEALTH);
             doAnswer(invocation -> {
                 throw new StorageException("save failed");
             }).when(profileRepository).saveProfile(org.mockito.ArgumentMatchers.any(LifestealProfile.class));
@@ -112,7 +106,6 @@ class LifestealManagerTest {
 
             ProfileRepository profileRepository = mock(ProfileRepository.class);
             HealthAttributeResolver healthAttributeResolver = mock(HealthAttributeResolver.class);
-            when(healthAttributeResolver.resolveMaxHealthAttribute()).thenReturn(Attribute.MAX_HEALTH);
 
             CountDownLatch saveInvoked = new CountDownLatch(1);
             CountDownLatch allowSaveToFinish = new CountDownLatch(1);
@@ -163,7 +156,6 @@ class LifestealManagerTest {
 
             ProfileRepository profileRepository = mock(ProfileRepository.class);
             HealthAttributeResolver healthAttributeResolver = mock(HealthAttributeResolver.class);
-            when(healthAttributeResolver.resolveMaxHealthAttribute()).thenReturn(Attribute.MAX_HEALTH);
             UUID uniqueId = UUID.randomUUID();
             double defaultHearts = 10.0;
             double minHearts = 1.0;
@@ -219,72 +211,6 @@ class LifestealManagerTest {
     }
 
     @Test
-    void applyHeartsUsesResolvedMaxHealthAttribute() {
-        EzLifestealPlugin plugin = mock(EzLifestealPlugin.class);
-        ProfileRepository profileRepository = mock(ProfileRepository.class);
-        HealthAttributeResolver healthAttributeResolver = mock(HealthAttributeResolver.class);
-        Attribute resolvedAttribute = mock(Attribute.class);
-        when(healthAttributeResolver.resolveMaxHealthAttribute()).thenReturn(resolvedAttribute);
-        LifestealManager manager = new LifestealManager(
-                plugin,
-                profileRepository,
-                healthAttributeResolver,
-                10.0,
-                1.0,
-                40.0,
-                false,
-                0.0
-        );
-
-        Player player = mock(Player.class);
-        AttributeInstance generic = mock(AttributeInstance.class);
-        when(player.getAttribute(resolvedAttribute)).thenReturn(generic);
-        when(player.getHealth()).thenReturn(30.0);
-
-        LifestealProfile profile = new LifestealProfile(UUID.randomUUID(), 12.0);
-
-        manager.applyHearts(player, profile);
-
-        verify(generic).setBaseValue(24.0);
-        verify(player, never()).getAttribute(Attribute.MAX_HEALTH);
-        verify(player).setHealth(24.0);
-        verify(player).setHealthScaled(false);
-    }
-
-    @Test
-    void applyHeartsFallsBackToMaxHealthWhenResolvedAttributeMissingOnPlayer() {
-        EzLifestealPlugin plugin = mock(EzLifestealPlugin.class);
-        ProfileRepository profileRepository = mock(ProfileRepository.class);
-        HealthAttributeResolver healthAttributeResolver = mock(HealthAttributeResolver.class);
-        Attribute resolvedAttribute = mock(Attribute.class);
-        when(healthAttributeResolver.resolveMaxHealthAttribute()).thenReturn(resolvedAttribute);
-        LifestealManager manager = new LifestealManager(
-                plugin,
-                profileRepository,
-                healthAttributeResolver,
-                10.0,
-                1.0,
-                40.0,
-                false,
-                0.0
-        );
-
-        Player player = mock(Player.class);
-        AttributeInstance legacy = mock(AttributeInstance.class);
-        when(player.getAttribute(resolvedAttribute)).thenReturn(null);
-        when(player.getAttribute(Attribute.MAX_HEALTH)).thenReturn(legacy);
-        when(player.getHealth()).thenReturn(10.0);
-
-        LifestealProfile profile = new LifestealProfile(UUID.randomUUID(), 3.0);
-
-        manager.applyHearts(player, profile);
-
-        verify(legacy).setBaseValue(6.0);
-        verify(player).setHealth(6.0);
-        verify(player).setHealthScaled(false);
-    }
-
-    @Test
     void loadProfileAsyncSanitizesInvalidStoredHeartsBeforeCaching() throws Exception {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         try {
@@ -295,7 +221,6 @@ class LifestealManagerTest {
 
             ProfileRepository profileRepository = mock(ProfileRepository.class);
             HealthAttributeResolver healthAttributeResolver = mock(HealthAttributeResolver.class);
-            when(healthAttributeResolver.resolveMaxHealthAttribute()).thenReturn(Attribute.MAX_HEALTH);
 
             UUID uniqueId = UUID.randomUUID();
             when(profileRepository.loadProfile(uniqueId))

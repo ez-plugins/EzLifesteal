@@ -1,0 +1,25 @@
+# ==============================================================
+# EzLifesteal - Admin detection & bypass settings
+# ==============================================================
+
+enabled: true # Disable to ignore all rules in this file.
+
+# If true, server operators are always considered admins.
+treat-ops-as-admin: true
+
+# Permission-based admin detection.
+# Leave blank to disable permission checks.
+permission-node: lifesteal.admin
+
+# Manual allow lists (extra admin identities).
+allowed-uuids: [] # UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+allowed-names: [] # Case-insensitive player names.
+
+# Heart gain/loss bypasses for detected admins.
+bypass-heart-loss: true
+bypass-heart-gain: true
+
+# Smurf alert visibility:
+# true  = only admins (with notify permission) receive smurf alerts
+# false = normal notify rules apply
+restrict-smurf-alerts-to-admins: false

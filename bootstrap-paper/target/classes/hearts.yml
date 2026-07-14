@@ -1,0 +1,49 @@
+# Default heart objects
+hearts:
+  basic:
+    display: "&cBasic Heart"
+    tier: 1
+    hearts: 1.0
+    material: NETHER_STAR
+    texture: ""
+  silver:
+    display: "&fSilver Heart"
+    tier: 2
+    hearts: 2.0
+    material: NETHER_STAR
+    texture: ""
+  gold:
+    display: "&6Golden Heart"
+    tier: 3
+    hearts: 4.0
+    material: NETHER_STAR
+    texture: ""
+  revive:
+    display: "&aRevive Voucher"
+    tier: 4
+    hearts: 1.0
+    material: EMERALD
+    texture: ""
+
+# Optional craftable recipes. Define recipes under the `recipes` section using the heart id as the key.
+# Supported types: "shaped" and "shapeless".
+# Shaped recipe example:
+# recipes:
+#   gold:
+#     type: shaped
+#     amount: 1
+#     pattern:
+#       - "ABA"
+#       - "BCB"
+#       - "ABA"
+#     ingredients:
+#       A: GOLD_INGOT
+#       B: NETHER_STAR
+#       C: DIAMOND
+# Shapeless recipe example:
+#   basic:
+#     type: shapeless
+#     amount: 1
+#     ingredients:
+#       - IRON_INGOT
+#       - NETHER_STAR

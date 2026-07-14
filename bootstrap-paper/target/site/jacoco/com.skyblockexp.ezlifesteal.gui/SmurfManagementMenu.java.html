@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SmurfManagementMenu.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.gui</a> &gt; <span class="el_source">SmurfManagementMenu.java</span></div><h1>SmurfManagementMenu.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.gui;
+
+import com.skyblockexp.ezlifesteal.EzLifestealPlugin;
+import java.util.List;
+import org.bukkit.Material;
+import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryClickEvent;
+
+public class SmurfManagementMenu extends AbstractSmurfMenu {
+
+    public SmurfManagementMenu(EzLifestealPlugin plugin, Player viewer) {
+<span class="fc" id="L12">        super(plugin, viewer, 27, &quot;&amp;cSmurf Management&quot;);</span>
+<span class="fc" id="L13">        build();</span>
+<span class="fc" id="L14">    }</span>
+
+    private void build() {
+<span class="fc" id="L17">        setItem(11, createItem(Material.EMERALD, &quot;&amp;aTrusted Players&quot;, List.of(</span>
+                &quot;&amp;7Add or remove trusted players&quot;,
+                &quot;&amp;7who bypass smurf detection&quot;
+        )));
+<span class="fc" id="L21">        setItem(13, createItem(Material.BOOK, &quot;&amp;6Alert History&quot;, List.of(</span>
+                &quot;&amp;7Review recent smurf alerts&quot;
+        )));
+<span class="fc" id="L24">        setItem(15, createItem(Material.PAPER, &quot;&amp;bKill Log&quot;, List.of(</span>
+                &quot;&amp;7Browse recent kill events&quot;,
+                &quot;&amp;7tracked by the detector&quot;
+        )));
+<span class="fc" id="L28">        setItem(22, createItem(Material.BARRIER, &quot;&amp;cClose&quot;, List.of(&quot;&amp;7Click to close&quot;)));</span>
+<span class="fc" id="L29">    }</span>
+
+    @Override
+    public void handleClick(InventoryClickEvent event) {
+<span class="fc" id="L33">        event.setCancelled(true);</span>
+<span class="fc" id="L34">        final int slot = event.getRawSlot();</span>
+<span class="fc bfc" id="L35" title="All 5 branches covered.">        switch (slot) {</span>
+<span class="fc" id="L36">            case 11 -&gt; SmurfGuiManager.openTrusted(plugin, viewer);</span>
+<span class="fc" id="L37">            case 13 -&gt; SmurfGuiManager.openAlertHistory(plugin, viewer);</span>
+<span class="fc" id="L38">            case 15 -&gt; SmurfGuiManager.openKillHistory(plugin, viewer);</span>
+<span class="fc" id="L39">            case 22 -&gt; viewer.closeInventory();</span>
+            default -&gt; {
+            }
+        }
+<span class="fc" id="L43">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

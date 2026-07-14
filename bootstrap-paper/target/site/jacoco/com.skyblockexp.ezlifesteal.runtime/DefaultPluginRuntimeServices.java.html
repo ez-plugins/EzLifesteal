@@ -1,0 +1,2089 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DefaultPluginRuntimeServices.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.runtime</a> &gt; <span class="el_source">DefaultPluginRuntimeServices.java</span></div><h1>DefaultPluginRuntimeServices.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.runtime;
+
+import com.skyblockexp.ezlifesteal.EzLifestealPlugin;
+import com.skyblockexp.ezlifesteal.config.AdminConfigAdapter;
+import com.skyblockexp.ezlifesteal.config.ConfigLoader;
+import com.skyblockexp.ezlifesteal.config.LegacyConfigResolver;
+import com.skyblockexp.ezlifesteal.config.LifestealConfigAdapter;
+import com.skyblockexp.ezlifesteal.config.MessageService;
+import com.skyblockexp.ezlifesteal.config.SmurfConfigAdapter;
+import com.skyblockexp.ezlifesteal.compat.AdapterSupport;
+import com.skyblockexp.ezlifesteal.detector.AdminDetector;
+import com.skyblockexp.ezlifesteal.detector.SmurfDetector;
+import com.skyblockexp.ezlifesteal.hologram.TopHologramManager;
+import com.skyblockexp.ezlifesteal.killstreak.KillStreakManager;
+import com.skyblockexp.ezlifesteal.killstreak.KillStreakReward;
+import com.skyblockexp.ezlifesteal.killstreak.KillStreakSettings;
+import com.skyblockexp.ezlifesteal.gui.BeaconGuiListener;
+import com.skyblockexp.ezlifesteal.integration.BeaconAreaProtection;
+import com.skyblockexp.ezlifesteal.integration.BeaconCountdownProvider;
+import com.skyblockexp.ezlifesteal.integration.EzCountdownBeaconHook;
+import com.skyblockexp.ezlifesteal.integration.TeamKillBypassService;
+import com.skyblockexp.ezlifesteal.integration.TeamsApiTeamResolver;
+import com.skyblockexp.ezlifesteal.integration.WorldGuardBeaconHook;
+import com.skyblockexp.ezlifesteal.listener.PlayerListener;
+import com.skyblockexp.ezlifesteal.listener.SpawnedBeaconListener;
+import com.skyblockexp.ezlifesteal.model.LifestealProfile;
+import com.skyblockexp.ezlifesteal.model.MobReward;
+import com.skyblockexp.ezlifesteal.overlay.HeartOverlayManager;
+import com.skyblockexp.ezlifesteal.placeholder.PlaceholderHook;
+import com.skyblockexp.ezlifesteal.service.BeaconAvailabilityService;
+import com.skyblockexp.ezlifesteal.service.BeaconScheduleService;
+import com.skyblockexp.ezlifesteal.service.BeaconSpawnService;
+import com.skyblockexp.ezlifesteal.storage.SpawnedBeaconRepository;
+import com.skyblockexp.ezlifesteal.runtime.state.GameplayState;
+import com.skyblockexp.ezlifesteal.service.AdminSettingsFactory;
+import com.skyblockexp.ezlifesteal.service.ConfigService;
+import com.skyblockexp.ezlifesteal.service.GameplayParsingService;
+import com.skyblockexp.ezlifesteal.service.GameplayStateApplier;
+import com.skyblockexp.ezlifesteal.service.HologramService;
+import com.skyblockexp.ezlifesteal.service.IntegrationService;
+import com.skyblockexp.ezlifesteal.service.KillStreakParsingService;
+import com.skyblockexp.ezlifesteal.service.LifestealManager;
+import com.skyblockexp.ezlifesteal.service.LifestealSettingsFactory;
+import com.skyblockexp.ezlifesteal.service.ListenerService;
+import com.skyblockexp.ezlifesteal.service.ManagerService;
+import com.skyblockexp.ezlifesteal.service.ManagerStateInitializer;
+import com.skyblockexp.ezlifesteal.service.OverlayService;
+import com.skyblockexp.ezlifesteal.service.PlaceholderService;
+import com.skyblockexp.ezlifesteal.service.RecipeService;
+import com.skyblockexp.ezlifesteal.service.SmurfSettingsFactory;
+import com.skyblockexp.ezlifesteal.service.StorageService;
+import com.skyblockexp.ezlifesteal.service.TeamBankService;
+import com.skyblockexp.ezlifesteal.storage.BanRecord;
+import com.skyblockexp.ezlifesteal.storage.RepositoryBackedStorageBridge;
+import com.skyblockexp.ezlifesteal.storage.Storage;
+import com.skyblockexp.ezlifesteal.storage.StorageException;
+import com.skyblockexp.ezlifesteal.storage.mysql.MySqlStorageProvider;
+import com.skyblockexp.ezlifesteal.storage.provider.StorageProvider;
+import com.skyblockexp.ezlifesteal.storage.repository.BanRepository;
+import com.skyblockexp.ezlifesteal.storage.repository.ProfileRepository;
+import com.skyblockexp.ezlifesteal.storage.repository.TeamBankRepository;
+import com.skyblockexp.ezlifesteal.storage.yaml.YamlStorageProvider;
+import com.skyblockexp.ezlifesteal.util.PlayerLookupService;
+import com.skyblockexp.ezlifesteal.util.PluginLifecycleSupport;
+import com.skyblockexp.ezlifesteal.util.SchedulerAdapter;
+import com.skyblockexp.ezlifesteal.util.ban.BanEntryView;
+import com.skyblockexp.ezlifesteal.util.ban.PlatformBanAdapter;
+import java.io.File;
+import java.io.IOException;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import net.milkbowl.vault.economy.Economy;
+import org.bukkit.BanList;
+import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.RegisteredServiceProvider;
+
+public final class DefaultPluginRuntimeServices {
+
+    private final EzLifestealPlugin plugin;
+
+    private final Registry registry;
+
+    private final com.skyblockexp.ezlifesteal.runtime.PluginContext pluginContext;
+
+    private final Registry.ConfigState configState;
+
+    private final Registry.ManagerState managerState;
+
+    private final GameplayState gameplayState;
+
+    private final RuntimeCompatibilityAdapter compatibilityAdapter;
+
+    private final PlatformBanAdapter banAdapter;
+
+<span class="fc" id="L118">    public DefaultPluginRuntimeServices(EzLifestealPlugin plugin, Registry registry) {</span>
+<span class="fc" id="L119">        this.plugin = plugin;</span>
+<span class="fc" id="L120">        this.registry = registry;</span>
+<span class="fc" id="L121">        this.pluginContext = new com.skyblockexp.ezlifesteal.runtime.PluginContext(registry);</span>
+<span class="fc" id="L122">        this.configState = registry.getConfigState();</span>
+<span class="fc" id="L123">        this.managerState = registry.getManagerState();</span>
+<span class="fc" id="L124">        this.gameplayState = registry.getGameplayState();</span>
+<span class="fc" id="L125">        this.compatibilityAdapter = new RuntimeCompatibilityAdapter(this, registry);</span>
+<span class="fc" id="L126">        this.banAdapter = PlatformBanAdapter.create();</span>
+<span class="fc" id="L127">    }</span>
+
+    // Seasons integration candidate names (compatibility constants)
+    private static final String SEASONS_PLUGIN_NAME = &quot;EzSeasons&quot;;
+
+    private static final String SEASONS_API_CLASS_NAME = &quot;com.skyblockexp.lifesteal.seasons.api.SeasonsApi&quot;;
+
+    private static final String LEGACY_SEASONS_API_CLASS_NAME = &quot;com.ezlifesteal.seasons.api.SeasonsApi&quot;;
+
+    private static final String SEASONS_INTEGRATION_CLASS_NAME =
+            &quot;com.skyblockexp.lifesteal.seasons.integration.LifestealIntegration&quot;;
+
+    private static final String LEGACY_SEASONS_INTEGRATION_CLASS_NAME =
+            &quot;com.skyblockexp.lifesteal.seasons.api.SeasonsIntegration&quot;;
+
+
+    public java.util.logging.Logger getLogger() {
+<span class="fc" id="L144">        return plugin.getLogger();</span>
+    }
+
+    public EzLifestealPlugin getPlugin() {
+<span class="fc" id="L148">        return plugin;</span>
+    }
+
+    public PlatformBanAdapter getBanAdapter() {
+<span class="nc" id="L152">        return banAdapter;</span>
+    }
+
+    public java.io.File getDataFolder() {
+<span class="fc" id="L156">        return plugin.getDataFolder();</span>
+    }
+
+    public org.bukkit.Server getServer() {
+<span class="fc" id="L160">        return plugin.getServer();</span>
+    }
+
+    public FileConfiguration getConfig() {
+<span class="fc" id="L164">        return plugin.getConfig();</span>
+    }
+
+    public ClassLoader getClassLoader() {
+<span class="fc" id="L168">        return plugin.getClass().getClassLoader();</span>
+    }
+
+    private YamlConfiguration heartsConfig;
+
+    private File heartsConfigFile;
+
+    private YamlConfiguration shopConfig;
+
+    private File shopConfigFile;
+
+    private YamlConfiguration featureConfig;
+
+    private File featureConfigFile;
+
+    private AdminConfigAdapter adminConfigAdapter;
+
+    private LifestealConfigAdapter lifestealConfigAdapter;
+
+    private SmurfConfigAdapter smurfConfigAdapter;
+
+    private com.skyblockexp.ezlifesteal.heart.HeartRegistry heartRegistry;
+
+<span class="fc" id="L191">    private final java.util.Set&lt;NamespacedKey&gt; registeredHeartRecipes = new java.util.HashSet&lt;&gt;();</span>
+
+<span class="fc" id="L193">    private String activeLanguage = &quot;en&quot;;</span>
+
+    private ConfigLoader configLoader;
+
+    private ConfigService configService;
+
+    private StorageService storageService;
+
+    private IntegrationService integrationService;
+
+    private RecipeService recipeService;
+
+    private ManagerService managerService;
+
+    private HologramService hologramService;
+
+    private OverlayService overlayService;
+
+    private ListenerService listenerService;
+
+    private KillStreakParsingService killStreakParsingService;
+
+    private GameplayParsingService gameplayParsingService;
+
+    private PlaceholderService placeholderService;
+
+    private AdminDetector adminDetector;
+
+    private SmurfDetector smurfDetector;
+
+    // Legacy runtime fields (kept for compatibility during refactor)
+
+    private MessageService messageService;
+
+    private File adminConfigFile;
+
+    private File smurfConfigFile;
+
+    private File storageConfigFile;
+
+    private File lifestealCoreConfigFile;
+
+    private File reviveBeaconConfigFile;
+
+    private File lifestealDropsConfigFile;
+
+    private File lifestealWorldsConfigFile;
+
+    private File lifestealMobsConfigFile;
+
+    private File lifestealKillStreaksConfigFile;
+
+    private YamlConfiguration adminConfig;
+
+    private YamlConfiguration smurfConfig;
+
+    private YamlConfiguration storageConfig;
+
+    private YamlConfiguration lifestealCoreConfig;
+
+    private YamlConfiguration reviveBeaconConfig;
+
+    private YamlConfiguration lifestealDropsConfig;
+
+    private YamlConfiguration lifestealWorldsConfig;
+
+    private YamlConfiguration lifestealMobsConfig;
+
+    private YamlConfiguration lifestealKillStreaksConfig;
+
+    private Storage storage;
+
+    private StorageProvider storageProvider;
+
+    private ProfileRepository profileRepository;
+
+    private BanRepository banRepository;
+
+    private TeamBankRepository teamBankRepository;
+
+    private String storageSummary;
+
+    private ExecutorService storageExecutor;
+
+    private PlayerLookupService playerLookupService;
+
+    private LifestealManager lifestealManager;
+
+    private HeartOverlayManager heartOverlayManager;
+
+    private TopHologramManager topHologramManager;
+
+    private PlaceholderHook placeholderExpansion;
+
+    private KillStreakManager killStreakManager;
+
+    private List&lt;String&gt; zeroHeartCommands;
+
+    private double heartsPerKill;
+
+    private double heartsLostOnDeath;
+
+    private double mobRemoveHeartsGreaterThan;
+
+    private boolean dropHeartOnDeath;
+
+    private boolean dropHeartOnlyWhenKilledByPlayer;
+
+    private boolean dropHeartOnKill;
+
+    private boolean banWhenZeroHearts;
+
+    private boolean globalLifestealEnabled;
+
+    private boolean applyHealthScale;
+
+    private boolean dontRemoveHeartsFromMobs;
+
+    private boolean combatLogoutProtectionEnabled;
+
+    private long combatLogoutTagDurationMillis;
+
+    private boolean smurfDetectionEnabled;
+
+    private boolean restrictSmurfAlertsToAdmins;
+
+    private boolean adminBypassHeartLoss;
+
+    private boolean adminBypassHeartGain;
+
+    private String dropHeartId;
+
+    private String zeroHeartBanMessage;
+
+    private String zeroHeartKickMessage;
+
+    private Map&lt;String, Double&gt; heartsPerKillOverrides;
+
+    private Map&lt;String, Double&gt; heartsLostOnDeathOverrides;
+
+    private Map&lt;String, Boolean&gt; banWhenZeroOverrides;
+
+    private Map&lt;EntityType, MobReward&gt; mobRewards;
+
+<span class="fc" id="L337">    private Set&lt;String&gt; enabledWorlds = Collections.emptySet();</span>
+
+<span class="fc" id="L339">    private Set&lt;String&gt; disabledWorlds = Collections.emptySet();</span>
+
+    private KillStreakSettings killStreakSettings;
+
+    private int dropHeartAmount;
+
+    private PlayerListener playerListener;
+
+    private BeaconSpawnService beaconSpawnService;
+
+    private BeaconScheduleService beaconScheduleService;
+
+    private PluginAccessor beaconPluginAccessor;
+
+    private TeamKillBypassService teamKillBypassService;
+
+    private TeamsApiTeamResolver teamsApiTeamResolver;
+
+    private TeamBankService teamBankService;
+
+    private com.skyblockexp.ezlifesteal.service.TeamBankAdminService teamBankAdminService;
+
+
+    public void initializeCoreState() {
+
+<span class="fc" id="L364">        EzLifestealPlugin.HEART_KEY = new NamespacedKey(plugin, &quot;heart_id&quot;);</span>
+
+<span class="fc" id="L366">        configLoader = new ConfigLoader(plugin);</span>
+
+<span class="fc" id="L368">        configService = new ConfigService(plugin, configLoader);</span>
+
+<span class="fc" id="L370">        configState.setConfigLoader(configLoader);</span>
+
+<span class="fc" id="L372">        storageService = new StorageService(plugin, registry, configLoader);</span>
+
+<span class="fc" id="L374">        integrationService = new IntegrationService(this, registry);</span>
+
+<span class="fc" id="L376">        recipeService = new RecipeService(this);</span>
+
+<span class="fc" id="L378">        managerService = new ManagerService(</span>
+
+                this,
+
+                new AdminSettingsFactory(),
+
+                new LifestealSettingsFactory(),
+
+                new SmurfSettingsFactory(),
+
+                new GameplayStateApplier(),
+
+                new ManagerStateInitializer(plugin)
+
+        );
+
+<span class="fc" id="L394">        hologramService = new HologramService(this, plugin);</span>
+
+<span class="fc" id="L396">        overlayService = new OverlayService(this, plugin);</span>
+
+<span class="fc" id="L398">        listenerService = new ListenerService(this, plugin);</span>
+<span class="fc" id="L399">        placeholderService = new PlaceholderService(this, plugin);</span>
+<span class="fc" id="L400">        killStreakParsingService = new KillStreakParsingService(this);</span>
+<span class="fc" id="L401">        gameplayParsingService = new GameplayParsingService(this);</span>
+<span class="fc" id="L402">        playerLookupService = new PlayerLookupService(plugin);</span>
+<span class="fc" id="L403">        teamKillBypassService = new TeamKillBypassService(this);</span>
+<span class="fc" id="L404">        teamsApiTeamResolver = new TeamsApiTeamResolver(this);</span>
+<span class="fc" id="L405">        teamBankService = new TeamBankService(new RuntimePluginFacade(plugin, this), teamsApiTeamResolver);</span>
+<span class="fc" id="L406">        teamBankAdminService = new com.skyblockexp.ezlifesteal.service.TeamBankAdminService(</span>
+<span class="fc" id="L407">                new RuntimePluginFacade(plugin, this), teamsApiTeamResolver, getStorageExecutor());</span>
+<span class="fc" id="L408">        managerState.setPlayerLookupService(playerLookupService);</span>
+<span class="fc" id="L409">        registry.setPlayerLookupService(playerLookupService);</span>
+<span class="fc" id="L410">    }</span>
+
+    public void setupCoreListeners(PluginAccessor pluginAccessor) {
+<span class="pc bpc" id="L413" title="1 of 2 branches missed.">        if (listenerService != null) {</span>
+<span class="fc" id="L414">            listenerService.setupCoreListeners(pluginAccessor);</span>
+        }
+<span class="fc" id="L416">    }</span>
+
+    public void clearHeartRecipesSafely() {
+        try {
+<span class="nc" id="L420">            clearRegisteredHeartRecipes();</span>
+        }
+<span class="nc" id="L422">        catch (Throwable ignored) {</span>
+<span class="nc" id="L423">        }</span>
+<span class="nc" id="L424">    }</span>
+
+    public void shutdownManagers() {
+<span class="fc" id="L427">        requireManagerService().shutdownManagers();</span>
+<span class="fc" id="L428">        compatibilityAdapter.syncManagerFields();</span>
+<span class="fc" id="L429">        compatibilityAdapter.clearPlaceholderField();</span>
+<span class="fc" id="L430">    }</span>
+
+    public void closeStorage() {
+<span class="fc bfc" id="L433" title="All 2 branches covered.">        if (storageService != null) {</span>
+<span class="fc" id="L434">            storageService.closeStorage();</span>
+        }
+        else {
+<span class="fc" id="L437">            PluginLifecycleSupport.closeStorage(storage, getLogger());</span>
+        }
+<span class="fc" id="L439">        storage = null;</span>
+<span class="fc" id="L440">        storageProvider = null;</span>
+<span class="fc" id="L441">        profileRepository = null;</span>
+<span class="fc" id="L442">        banRepository = null;</span>
+<span class="fc" id="L443">        teamBankRepository = null;</span>
+<span class="fc" id="L444">    }</span>
+
+    public void shutdownStorageExecutor() {
+<span class="pc bpc" id="L447" title="1 of 2 branches missed.">        if (storageService != null) {</span>
+<span class="fc" id="L448">            storageService.shutdownStorageExecutor();</span>
+        }
+        else {
+<span class="nc" id="L451">            PluginLifecycleSupport.shutdownExecutor(storageExecutor, 5, TimeUnit.SECONDS);</span>
+        }
+<span class="fc" id="L453">    }</span>
+
+    public void initializeStorageExecutor() {
+<span class="fc bfc" id="L456" title="All 2 branches covered.">        if (storageService != null) {</span>
+<span class="fc" id="L457">            storageService.initializeStorageExecutor();</span>
+<span class="fc" id="L458">            storageExecutor = storageService.getStorageExecutor();</span>
+        }
+        else {
+<span class="pc bpc" id="L461" title="1 of 2 branches missed.">            if (storageExecutor != null) {</span>
+<span class="fc" id="L462">                storageExecutor.shutdownNow();</span>
+            }
+<span class="fc" id="L464">            storageExecutor = Executors.newSingleThreadExecutor(r -&gt; {</span>
+<span class="fc" id="L465">                final Thread thread = new Thread(r, &quot;EzLifesteal-Storage&quot;);</span>
+<span class="fc" id="L466">                thread.setDaemon(true);</span>
+<span class="fc" id="L467">                return thread;</span>
+            });
+        }
+<span class="fc" id="L470">    }</span>
+
+    public void reloadManagerState() {
+<span class="fc bfc" id="L473" title="All 2 branches covered.">        if (lifestealManager != null) {</span>
+<span class="fc" id="L474">            lifestealManager.saveAllSync();</span>
+        }
+<span class="fc" id="L476">        heartRegistry = new com.skyblockexp.ezlifesteal.heart.HeartRegistry(heartsConfig);</span>
+<span class="fc" id="L477">        setupManagers();</span>
+<span class="fc" id="L478">        setupOverlay();</span>
+<span class="fc" id="L479">        setupHologram();</span>
+<span class="fc bfc" id="L480" title="All 2 branches covered.">        if (placeholderExpansion != null) {</span>
+<span class="fc" id="L481">            placeholderExpansion.clearCache();</span>
+        }
+<span class="fc" id="L483">    }</span>
+
+    public void reloadServices() {
+<span class="nc" id="L486">        initializeStorageExecutor();</span>
+<span class="nc" id="L487">        reloadAdditionalConfigs();</span>
+<span class="nc" id="L488">        setupMessages();</span>
+<span class="nc" id="L489">        reloadManagerState();</span>
+<span class="nc" id="L490">        registerHeartRecipes();</span>
+<span class="nc" id="L491">        setupVault();</span>
+<span class="nc" id="L492">    }</span>
+
+    public PlayerLookupService getPlayerLookupService() {
+<span class="nc" id="L495">        return playerLookupService;</span>
+    }
+
+    public com.skyblockexp.ezlifesteal.heart.HeartRegistry getHeartRegistry() {
+<span class="nc" id="L499">        return heartRegistry;</span>
+    }
+
+    public Storage getStorage() {
+<span class="nc bnc" id="L503" title="All 2 branches missed.">        return storageService != null ? storageService.getStorage() : storage;</span>
+    }
+
+    public ProfileRepository getProfileRepository() {
+<span class="fc bfc" id="L507" title="All 2 branches covered.">        return storageService != null ? storageService</span>
+<span class="pc bpc" id="L508" title="1 of 2 branches missed.">                .getProfileRepository() : (profileRepository == null ? storage : profileRepository);</span>
+    }
+
+    public BanRepository getBanRepository() {
+<span class="pc bpc" id="L512" title="1 of 2 branches missed.">        return storageService != null ? storageService</span>
+<span class="pc bpc" id="L513" title="1 of 2 branches missed.">                .getBanRepository() : (banRepository == null ? storage : banRepository);</span>
+    }
+
+    public TeamBankRepository getTeamBankRepository() {
+<span class="nc bnc" id="L517" title="All 2 branches missed.">        return storageService != null ? storageService.getTeamBankRepository() : teamBankRepository;</span>
+    }
+
+    public TeamBankService getTeamBankService() {
+<span class="nc" id="L521">        return teamBankService;</span>
+    }
+
+    public TeamsApiTeamResolver getTeamsApiTeamResolver() {
+<span class="fc" id="L525">        return teamsApiTeamResolver;</span>
+    }
+
+    public PluginContext getPluginContext() {
+<span class="fc" id="L529">        return pluginContext;</span>
+    }
+
+    public YamlConfiguration getShopConfig() {
+<span class="pc bpc" id="L533" title="1 of 2 branches missed.">        return configState.getShopConfig() != null ? configState.getShopConfig() : shopConfig;</span>
+    }
+
+    public void executeZeroHeartCommands(Player victim, Player killer, double remainingHearts) {
+<span class="fc bfc" id="L537" title="All 4 branches covered.">        if (zeroHeartCommands == null || zeroHeartCommands.isEmpty()) {</span>
+<span class="fc" id="L538">            return;</span>
+        }
+<span class="pc bpc" id="L540" title="1 of 2 branches missed.">        final String victimName = victim.getName() == null ? victim.getUniqueId().toString() : victim.getName();</span>
+<span class="fc" id="L541">        final String victimUuid = victim.getUniqueId().toString();</span>
+        final String killerName =
+<span class="pc bpc" id="L543" title="1 of 4 branches missed.">                killer == null ? &quot;&quot; : (killer.getName() == null ? killer.getUniqueId().toString() : killer.getName());</span>
+<span class="fc bfc" id="L544" title="All 2 branches covered.">        final String killerUuid = killer == null ? &quot;&quot; : killer.getUniqueId().toString();</span>
+        final String heartsStr =
+<span class="fc bfc" id="L546" title="All 2 branches covered.">                remainingHearts % 1 == 0 ? Integer.toString((int) remainingHearts) : String.format(Locale.US,</span>
+<span class="fc" id="L547">                &quot;%.1f&quot;, remainingHearts);</span>
+<span class="fc bfc" id="L548" title="All 2 branches covered.">        for (String raw : zeroHeartCommands) {</span>
+<span class="fc bfc" id="L549" title="All 4 branches covered.">            if (raw == null || raw.isBlank()) {</span>
+<span class="fc" id="L550">                continue;</span>
+            }
+<span class="fc" id="L552">            String cmd = raw;</span>
+<span class="fc" id="L553">            cmd = cmd.replace(&quot;%victim%&quot;, victimName);</span>
+<span class="fc" id="L554">            cmd = cmd.replace(&quot;%player%&quot;, victimName);</span>
+<span class="fc" id="L555">            cmd = cmd.replace(&quot;%victim_uuid%&quot;, victimUuid);</span>
+<span class="fc" id="L556">            cmd = cmd.replace(&quot;%player_uuid%&quot;, victimUuid);</span>
+
+<span class="fc" id="L558">            cmd = cmd.replace(&quot;%killer%&quot;, killerName);</span>
+<span class="fc" id="L559">            cmd = cmd.replace(&quot;%killer_uuid%&quot;, killerUuid);</span>
+<span class="fc" id="L560">            cmd = cmd.replace(&quot;%remaining_hearts%&quot;, heartsStr);</span>
+<span class="fc" id="L561">            cmd = cmd.replace(&quot;%hearts%&quot;, heartsStr);</span>
+<span class="fc" id="L562">            final String toDispatch = cmd;</span>
+<span class="fc" id="L563">            SchedulerAdapter.run(plugin, () -&gt; Bukkit.dispatchCommand(Bukkit.getConsoleSender(), toDispatch));</span>
+<span class="fc" id="L564">        }</span>
+<span class="fc" id="L565">    }</span>
+
+    public void ensureAdditionalConfigFiles() {
+<span class="fc bfc" id="L568" title="All 2 branches covered.">        if (configService != null) {</span>
+<span class="fc" id="L569">            configService.ensureAdditionalConfigFiles();</span>
+<span class="fc" id="L570">            return;</span>
+        }
+<span class="fc" id="L572">        configLoader.ensureResources(List.of(</span>
+                &quot;admin.yml&quot;,
+                &quot;smurf.yml&quot;,
+                &quot;storage.yml&quot;,
+                &quot;lifesteal-core.yml&quot;,
+                &quot;lifesteal-drops.yml&quot;,
+                &quot;lifesteal-worlds.yml&quot;,
+                &quot;lifesteal-mobs.yml&quot;,
+                &quot;lifesteal-killstreaks.yml&quot;,
+                &quot;hearts.yml&quot;,
+                &quot;shop.yml&quot;,
+                &quot;features.yml&quot;,
+                &quot;revive-beacon.yml&quot;
+        ));
+        // fallback language resources
+<span class="fc" id="L587">        configLoader.ensureResources(List.of(</span>
+                &quot;languages/en.yml&quot;,
+                &quot;languages/nl.yml&quot;,
+                &quot;languages/es.yml&quot;,
+                &quot;languages/fr.yml&quot;,
+                &quot;languages/de.yml&quot;,
+                &quot;languages/pt.yml&quot;
+        ));
+<span class="fc" id="L595">    }</span>
+
+    private void ensureLanguageResources() {
+<span class="nc" id="L598">        configLoader.ensureResources(List.of(</span>
+                &quot;languages/en.yml&quot;,
+                &quot;languages/nl.yml&quot;,
+                &quot;languages/es.yml&quot;,
+                &quot;languages/fr.yml&quot;,
+                &quot;languages/de.yml&quot;,
+                &quot;languages/pt.yml&quot;
+        ));
+<span class="nc" id="L606">    }</span>
+
+    public void reloadAdditionalConfigs() {
+<span class="fc" id="L609">        adminConfigFile = configLoader.resolveFile(&quot;admin.yml&quot;);</span>
+<span class="fc" id="L610">        smurfConfigFile = configLoader.resolveFile(&quot;smurf.yml&quot;);</span>
+<span class="fc" id="L611">        storageConfigFile = configLoader.resolveFile(&quot;storage.yml&quot;);</span>
+<span class="fc" id="L612">        lifestealCoreConfigFile = configLoader.resolveFile(&quot;lifesteal-core.yml&quot;);</span>
+<span class="fc" id="L613">        lifestealDropsConfigFile = configLoader.resolveFile(&quot;lifesteal-drops.yml&quot;);</span>
+<span class="fc" id="L614">        lifestealWorldsConfigFile = configLoader.resolveFile(&quot;lifesteal-worlds.yml&quot;);</span>
+<span class="fc" id="L615">        lifestealMobsConfigFile = configLoader.resolveFile(&quot;lifesteal-mobs.yml&quot;);</span>
+<span class="fc" id="L616">        lifestealKillStreaksConfigFile = configLoader.resolveFile(&quot;lifesteal-killstreaks.yml&quot;);</span>
+<span class="fc" id="L617">        heartsConfigFile = configLoader.resolveFile(&quot;hearts.yml&quot;);</span>
+<span class="fc" id="L618">        shopConfigFile = configLoader.resolveFile(&quot;shop.yml&quot;);</span>
+<span class="fc" id="L619">        featureConfigFile = configLoader.resolveFile(&quot;features.yml&quot;);</span>
+<span class="fc" id="L620">        reviveBeaconConfigFile = configLoader.resolveFile(&quot;revive-beacon.yml&quot;);</span>
+<span class="fc" id="L621">        adminConfig = configLoader.load(&quot;admin.yml&quot;);</span>
+<span class="fc" id="L622">        smurfConfig = configLoader.load(&quot;smurf.yml&quot;);</span>
+<span class="fc" id="L623">        storageConfig = configLoader.load(&quot;storage.yml&quot;);</span>
+<span class="fc" id="L624">        lifestealCoreConfig = configLoader.load(&quot;lifesteal-core.yml&quot;);</span>
+<span class="fc" id="L625">        lifestealDropsConfig = configLoader.load(&quot;lifesteal-drops.yml&quot;);</span>
+<span class="fc" id="L626">        lifestealWorldsConfig = configLoader.load(&quot;lifesteal-worlds.yml&quot;);</span>
+<span class="fc" id="L627">        lifestealMobsConfig = configLoader.load(&quot;lifesteal-mobs.yml&quot;);</span>
+<span class="fc" id="L628">        lifestealKillStreaksConfig = configLoader.load(&quot;lifesteal-killstreaks.yml&quot;);</span>
+<span class="fc" id="L629">        heartsConfig = configLoader.load(&quot;hearts.yml&quot;);</span>
+<span class="fc" id="L630">        shopConfig = configLoader.load(&quot;shop.yml&quot;);</span>
+<span class="fc" id="L631">        featureConfig = configLoader.load(&quot;features.yml&quot;);</span>
+<span class="fc" id="L632">        reviveBeaconConfig = configLoader.load(&quot;revive-beacon.yml&quot;);</span>
+        // Initialize config adapters
+<span class="fc" id="L634">        adminConfigAdapter = new AdminConfigAdapter(adminConfig, getConfig());</span>
+<span class="fc" id="L635">        lifestealConfigAdapter = new LifestealConfigAdapter(</span>
+                lifestealCoreConfig,
+<span class="fc" id="L637">                List.of(lifestealDropsConfig, lifestealWorldsConfig, lifestealMobsConfig, lifestealKillStreaksConfig,</span>
+                        reviveBeaconConfig),
+<span class="fc" id="L639">                getConfig()</span>
+        );
+<span class="fc" id="L641">        smurfConfigAdapter = new SmurfConfigAdapter(smurfConfig, getConfig());</span>
+
+<span class="fc" id="L643">        configState.setAdminConfig(adminConfig);</span>
+<span class="fc" id="L644">        configState.setAdminConfigFile(adminConfigFile);</span>
+<span class="fc" id="L645">        configState.setSmurfConfig(smurfConfig);</span>
+<span class="fc" id="L646">        configState.setSmurfConfigFile(smurfConfigFile);</span>
+<span class="fc" id="L647">        configState.setStorageConfig(storageConfig);</span>
+<span class="fc" id="L648">        configState.setStorageConfigFile(storageConfigFile);</span>
+<span class="fc" id="L649">        configState.setLifestealConfig(lifestealCoreConfig);</span>
+<span class="fc" id="L650">        configState.setLifestealConfigFile(lifestealCoreConfigFile);</span>
+<span class="fc" id="L651">        configState.setHeartsConfig(heartsConfig);</span>
+<span class="fc" id="L652">        configState.setHeartsConfigFile(heartsConfigFile);</span>
+<span class="fc" id="L653">        configState.setShopConfig(shopConfig);</span>
+<span class="fc" id="L654">        configState.setShopConfigFile(shopConfigFile);</span>
+<span class="fc" id="L655">        configState.setFeatureConfig(featureConfig);</span>
+<span class="fc" id="L656">        configState.setFeatureConfigFile(featureConfigFile);</span>
+<span class="fc" id="L657">        configState.setAdminConfigAdapter(adminConfigAdapter);</span>
+<span class="fc" id="L658">        configState.setLifestealConfigAdapter(lifestealConfigAdapter);</span>
+<span class="fc" id="L659">        configState.setSmurfConfigAdapter(smurfConfigAdapter);</span>
+<span class="fc" id="L660">    }</span>
+
+    public void setupMessages() {
+<span class="fc" id="L663">        final String configuredLanguage = getConfig().getString(&quot;language&quot;, &quot;en&quot;);</span>
+<span class="fc" id="L664">        final YamlConfiguration languageConfiguration = loadLanguageConfiguration(configuredLanguage);</span>
+
+<span class="fc" id="L666">        String prefix = languageConfiguration.getString(&quot;prefix&quot;);</span>
+<span class="pc bpc" id="L667" title="2 of 6 branches missed.">        if ((prefix == null || prefix.isBlank()) &amp;&amp; getConfig().contains(&quot;messages.prefix&quot;)) {</span>
+<span class="fc" id="L668">            prefix = getConfig().getString(&quot;messages.prefix&quot;);</span>
+        }
+<span class="fc" id="L670">        messageService = new MessageService(prefix);</span>
+
+<span class="fc" id="L672">        YamlConfiguration englishConfiguration = null;</span>
+<span class="fc bfc" id="L673" title="All 2 branches covered.">        if (!&quot;en&quot;.equalsIgnoreCase(activeLanguage)) {</span>
+<span class="fc" id="L674">            englishConfiguration = loadLanguageFile(&quot;en&quot;);</span>
+        }
+        else {
+<span class="fc" id="L677">            englishConfiguration = languageConfiguration;</span>
+        }
+
+<span class="fc" id="L680">        registerMessagesFromSection(englishConfiguration);</span>
+<span class="pc bpc" id="L681" title="1 of 4 branches missed.">        if (languageConfiguration != null &amp;&amp; languageConfiguration != englishConfiguration) {</span>
+<span class="fc" id="L682">            registerMessagesFromSection(languageConfiguration);</span>
+        }
+
+<span class="fc" id="L685">        final ConfigurationSection legacySection = getConfig().getConfigurationSection(&quot;messages&quot;);</span>
+<span class="fc" id="L686">        registerMessagesFromSection(legacySection);</span>
+
+<span class="fc" id="L688">    }</span>
+
+    private YamlConfiguration loadLanguageConfiguration(String language) {
+<span class="fc" id="L691">        String normalized = normalizeLanguage(language);</span>
+<span class="fc" id="L692">        YamlConfiguration configuration = loadLanguageFile(normalized);</span>
+<span class="pc bpc" id="L693" title="2 of 6 branches missed.">        if ((configuration == null || configuration.getKeys(false).isEmpty()) &amp;&amp; !&quot;en&quot;.equals(normalized)) {</span>
+<span class="fc" id="L694">            getLogger().warning(&quot;Language '&quot; + language + &quot;' is not available; falling back to English.&quot;);</span>
+<span class="fc" id="L695">            normalized = &quot;en&quot;;</span>
+<span class="fc" id="L696">            configuration = loadLanguageFile(normalized);</span>
+        }
+<span class="pc bpc" id="L698" title="1 of 2 branches missed.">        if (configuration == null) {</span>
+<span class="nc" id="L699">            configuration = new YamlConfiguration();</span>
+        }
+<span class="fc" id="L701">        activeLanguage = normalized;</span>
+<span class="fc" id="L702">        configState.setActiveLanguage(normalized);</span>
+<span class="fc" id="L703">        return configuration;</span>
+    }
+
+    private YamlConfiguration loadLanguageFile(String language) {
+<span class="fc bfc" id="L707" title="All 2 branches covered.">        if (configService != null) {</span>
+<span class="fc" id="L708">            return configService.loadLanguageFile(language);</span>
+        }
+<span class="pc bpc" id="L710" title="2 of 4 branches missed.">        if (language == null || language.isBlank()) {</span>
+<span class="nc" id="L711">            return null;</span>
+        }
+<span class="fc" id="L713">        final String resourcePath = &quot;languages/&quot; + language + &quot;.yml&quot;;</span>
+<span class="fc" id="L714">        final File target = new File(getDataFolder(), resourcePath);</span>
+<span class="fc bfc" id="L715" title="All 2 branches covered.">        if (!target.exists()) {</span>
+<span class="fc" id="L716">            configLoader.ensureResources(List.of(resourcePath));</span>
+        }
+<span class="fc bfc" id="L718" title="All 2 branches covered.">        if (!target.exists()) {</span>
+<span class="fc" id="L719">            return null;</span>
+        }
+<span class="fc" id="L721">        return YamlConfiguration.loadConfiguration(target);</span>
+    }
+
+    private String normalizeLanguage(String language) {
+<span class="fc bfc" id="L725" title="All 2 branches covered.">        if (configService != null) {</span>
+<span class="fc" id="L726">            return configService.normalizeLanguage(language);</span>
+        }
+<span class="fc bfc" id="L728" title="All 4 branches covered.">        if (language == null || language.isBlank()) {</span>
+<span class="fc" id="L729">            return &quot;en&quot;;</span>
+        }
+<span class="fc" id="L731">        String normalized = language.trim().toLowerCase(Locale.ROOT).replace('-', '_');</span>
+<span class="fc" id="L732">        final int separatorIndex = normalized.indexOf('_');</span>
+<span class="fc bfc" id="L733" title="All 2 branches covered.">        if (separatorIndex &gt; 0) {</span>
+<span class="fc" id="L734">            normalized = normalized.substring(0, separatorIndex);</span>
+        }
+<span class="fc" id="L736">        return normalized;</span>
+    }
+
+    private void registerMessagesFromSection(ConfigurationSection section) {
+<span class="fc bfc" id="L740" title="All 2 branches covered.">        if (section == null) {</span>
+<span class="fc" id="L741">            return;</span>
+        }
+<span class="fc bfc" id="L743" title="All 2 branches covered.">        for (String key : section.getKeys(false)) {</span>
+<span class="fc bfc" id="L744" title="All 2 branches covered.">            if (&quot;prefix&quot;.equalsIgnoreCase(key)) {</span>
+<span class="fc" id="L745">                continue;</span>
+            }
+<span class="pc bpc" id="L747" title="1 of 2 branches missed.">            if (section.isString(key)) {</span>
+<span class="fc" id="L748">                messageService.register(key, section.getString(key));</span>
+            }
+<span class="fc" id="L750">        }</span>
+<span class="fc" id="L751">    }</span>
+
+    public void setupStorage() {
+<span class="fc bfc" id="L754" title="All 2 branches covered.">        if (storageService != null) {</span>
+<span class="fc" id="L755">            storageService.setupStorage();</span>
+<span class="fc" id="L756">            syncStorageStateFromService();</span>
+<span class="fc" id="L757">            return;</span>
+        }
+<span class="fc" id="L759">        setupLegacyStorage();</span>
+<span class="fc" id="L760">    }</span>
+
+    private void syncStorageStateFromService() {
+<span class="fc" id="L763">        storageSummary = storageService.getStorageSummary();</span>
+<span class="fc" id="L764">        storage = storageService.getStorage();</span>
+<span class="fc" id="L765">        profileRepository = storageService.getProfileRepository();</span>
+<span class="fc" id="L766">        banRepository = storageService.getBanRepository();</span>
+<span class="fc" id="L767">        teamBankRepository = storageService.getTeamBankRepository();</span>
+<span class="fc" id="L768">        storageExecutor = storageService.getStorageExecutor();</span>
+<span class="fc" id="L769">    }</span>
+
+    private void setupLegacyStorage() {
+<span class="pc bpc" id="L772" title="1 of 2 branches missed.">        if (storageConfig == null) {</span>
+<span class="nc" id="L773">            return;</span>
+        }
+
+<span class="fc" id="L776">        String configuredType = storageConfig.getString(&quot;type&quot;);</span>
+<span class="pc bpc" id="L777" title="2 of 6 branches missed.">        if ((configuredType == null || configuredType.isBlank()) &amp;&amp; getConfig().contains(&quot;storage.type&quot;)) {</span>
+<span class="nc" id="L778">            configuredType = getConfig().getString(&quot;storage.type&quot;);</span>
+        }
+
+<span class="pc bpc" id="L781" title="1 of 4 branches missed.">        final String type = configuredType == null || configuredType.isBlank()</span>
+<span class="fc" id="L782">                ? &quot;YAML&quot;</span>
+<span class="fc" id="L783">                : configuredType.toUpperCase(Locale.ROOT);</span>
+<span class="pc bpc" id="L784" title="3 of 6 branches missed.">        if (&quot;YAML&quot;.equals(type) &amp;&amp; (configuredType == null || configuredType.isBlank())) {</span>
+<span class="fc" id="L785">            getLogger().warning(&quot;No storage type configured; defaulting to YAML storage.&quot;);</span>
+<span class="fc" id="L786">            setStorageValue(&quot;type&quot;, type);</span>
+<span class="fc" id="L787">            saveStorageConfiguration();</span>
+        }
+
+<span class="fc" id="L790">        storageSummary = &quot;Unknown storage&quot;;</span>
+<span class="fc" id="L791">        closeLegacyStorage();</span>
+<span class="fc" id="L792">        initializeLegacyStorageProvider(type, configuredType);</span>
+<span class="fc" id="L793">        initializeLegacyStorageBridge();</span>
+<span class="fc" id="L794">    }</span>
+
+    private void closeLegacyStorage() {
+<span class="fc bfc" id="L797" title="All 2 branches covered.">        if (storage == null) {</span>
+<span class="fc" id="L798">            return;</span>
+        }
+        try {
+<span class="nc" id="L801">            storage.close();</span>
+        }
+<span class="fc" id="L803">        catch (StorageException exception) {</span>
+<span class="fc" id="L804">            getLogger().warning(&quot;Failed to close existing storage: &quot; + exception.getMessage());</span>
+<span class="nc" id="L805">        }</span>
+<span class="fc" id="L806">    }</span>
+
+    private void initializeLegacyStorageProvider(String type, String configuredType) {
+<span class="fc bfc" id="L809" title="All 3 branches covered.">        switch (type) {</span>
+            case &quot;MYSQL&quot;:
+<span class="fc" id="L811">                final ConfigurationSection mysql = getStorageSection(&quot;mysql&quot;);</span>
+<span class="pc bpc" id="L812" title="1 of 2 branches missed.">                if (mysql == null) {</span>
+<span class="nc" id="L813">                    throw new IllegalStateException(&quot;MySQL storage selected but no configuration provided&quot;);</span>
+                }
+<span class="fc" id="L815">                final String host = mysql.getString(&quot;host&quot;, &quot;localhost&quot;);</span>
+<span class="fc" id="L816">                final int port = mysql.getInt(&quot;port&quot;, 3306);</span>
+<span class="fc" id="L817">                final String database = mysql.getString(&quot;database&quot;, &quot;lifesteal&quot;);</span>
+<span class="fc" id="L818">                final String username = mysql.getString(&quot;username&quot;, &quot;root&quot;);</span>
+<span class="fc" id="L819">                final String password = mysql.getString(&quot;password&quot;, &quot;password&quot;);</span>
+<span class="fc" id="L820">                final boolean useSsl = mysql.getBoolean(&quot;use-ssl&quot;, false);</span>
+<span class="fc" id="L821">                final String table = mysql.getString(&quot;table&quot;, &quot;lifesteal_players&quot;);</span>
+<span class="fc" id="L822">                storageProvider = new MySqlStorageProvider(host, port, database, username, password, useSsl, table);</span>
+<span class="fc" id="L823">                storageSummary = String.format(</span>
+                        Locale.US,
+                        &quot;MySQL storage (%s:%d/%s, user=%s, table=%s, SSL=%s)&quot;,
+                        host,
+<span class="fc" id="L827">                        port,</span>
+                        database,
+                        username,
+                        table,
+<span class="fc bfc" id="L831" title="All 2 branches covered.">                        useSsl ? &quot;on&quot; : &quot;off&quot;</span>
+                );
+<span class="fc" id="L833">                break;</span>
+            case &quot;YML&quot;:
+            case &quot;YAML&quot;:
+<span class="fc" id="L836">                final File dataFolder = new File(getDataFolder(), &quot;data&quot;);</span>
+<span class="fc" id="L837">                final String fileName = &quot;players.yml&quot;;</span>
+<span class="fc" id="L838">                storageProvider = new YamlStorageProvider(dataFolder, fileName);</span>
+<span class="fc" id="L839">                storageSummary = &quot;YAML storage (&quot; + new File(dataFolder, fileName).getPath() + &quot;)&quot;;</span>
+<span class="fc" id="L840">                break;</span>
+            default:
+<span class="pc bpc" id="L842" title="1 of 2 branches missed.">                final String reportedType = configuredType == null ? type : configuredType;</span>
+<span class="fc" id="L843">                getLogger().warning(&quot;Unknown storage type '&quot; + reportedType + &quot;', defaulting to YAML storage.&quot;);</span>
+<span class="fc" id="L844">                final File fallbackFolder = new File(getDataFolder(), &quot;data&quot;);</span>
+<span class="fc" id="L845">                final String fallbackFile = &quot;players.yml&quot;;</span>
+<span class="fc" id="L846">                storageProvider = new YamlStorageProvider(fallbackFolder, fallbackFile);</span>
+<span class="fc" id="L847">                storageSummary = &quot;YAML storage (fallback for unknown type '&quot; + reportedType + &quot;')&quot;;</span>
+                break;
+        }
+<span class="fc" id="L850">    }</span>
+
+    private void initializeLegacyStorageBridge() {
+        try {
+<span class="fc" id="L854">            storage = new RepositoryBackedStorageBridge(storageProvider);</span>
+<span class="fc" id="L855">            profileRepository = storageProvider.profiles();</span>
+<span class="fc" id="L856">            banRepository = storageProvider.bans();</span>
+<span class="fc" id="L857">            teamBankRepository = storageProvider.teamBanks();</span>
+<span class="fc" id="L858">            storage.init();</span>
+<span class="fc" id="L859">            reconcileRuntimeBans();</span>
+        }
+<span class="fc" id="L861">        catch (StorageException exception) {</span>
+<span class="fc" id="L862">            getLogger().severe(&quot;Failed to initialise storage: &quot; + exception.getMessage());</span>
+<span class="fc" id="L863">            storage = null;</span>
+<span class="fc" id="L864">            storageProvider = null;</span>
+<span class="fc" id="L865">            profileRepository = null;</span>
+<span class="fc" id="L866">            banRepository = null;</span>
+<span class="fc" id="L867">        }</span>
+<span class="fc" id="L868">    }</span>
+
+    private void reconcileRuntimeBans() {
+<span class="pc bpc" id="L871" title="1 of 2 branches missed.">        if (storageService != null) {</span>
+<span class="nc" id="L872">            storageService.reconcileRuntimeBans();</span>
+<span class="nc" id="L873">            return;</span>
+        }
+
+<span class="fc" id="L876">        importRuntimeBansIntoStorage();</span>
+        final List&lt;BanRecord&gt; activeBans;
+        try {
+<span class="fc" id="L879">            activeBans = getBanRepository().loadActiveBans();</span>
+        }
+<span class="fc" id="L881">        catch (StorageException exception) {</span>
+<span class="fc" id="L882">            getLogger().warning(&quot;Failed to load active bans from storage: &quot; + exception.getMessage());</span>
+<span class="fc" id="L883">            return;</span>
+<span class="fc" id="L884">        }</span>
+<span class="fc bfc" id="L885" title="All 2 branches covered.">        if (activeBans.isEmpty()) {</span>
+<span class="fc" id="L886">            return;</span>
+        }
+<span class="fc bfc" id="L888" title="All 2 branches covered.">        for (BanRecord record : activeBans) {</span>
+<span class="fc" id="L889">            final String playerName = record.getPlayerName();</span>
+<span class="fc" id="L890">            final UUID playerUuid = record.getUniqueId();</span>
+<span class="pc bpc" id="L891" title="3 of 6 branches missed.">            if (playerName == null || playerName.isBlank() || playerUuid == null) {</span>
+<span class="nc" id="L892">                continue;</span>
+            }
+<span class="fc bfc" id="L894" title="All 2 branches covered.">            if (!banAdapter.isBanned(playerUuid, playerName)) {</span>
+                // The ban is active in storage but absent from Bukkit's ban list.
+                // This indicates the player was manually pardoned (e.g. /pardon). Sync the
+                // removal to storage so the player is not re-banned on the next restart.
+                try {
+<span class="fc" id="L899">                    getBanRepository().removeBan(playerUuid);</span>
+                }
+<span class="nc" id="L901">                catch (StorageException exception) {</span>
+<span class="nc" id="L902">                    getLogger().warning(&quot;Failed to sync pardon for &quot; + playerName</span>
+<span class="nc" id="L903">                            + &quot; into storage: &quot; + exception.getMessage());</span>
+<span class="fc" id="L904">                }</span>
+            }
+<span class="fc" id="L906">        }</span>
+<span class="fc" id="L907">    }</span>
+
+    private void importRuntimeBansIntoStorage() {
+<span class="pc bpc" id="L910" title="1 of 2 branches missed.">        if (storageService != null) {</span>
+<span class="nc" id="L911">            storageService.importRuntimeBansIntoStorage();</span>
+<span class="nc" id="L912">            return;</span>
+        }
+<span class="fc" id="L914">        final BanRepository repository = getBanRepository();</span>
+<span class="pc bpc" id="L915" title="1 of 2 branches missed.">        if (repository == null) {</span>
+<span class="nc" id="L916">            return;</span>
+        }
+<span class="fc bfc" id="L918" title="All 2 branches covered.">        for (BanEntryView entry : banAdapter.getBanEntries()) {</span>
+<span class="fc" id="L919">            final UUID uniqueId = entry.getPlayerId();</span>
+<span class="fc bfc" id="L920" title="All 2 branches covered.">            if (uniqueId == null) {</span>
+<span class="fc" id="L921">                continue;</span>
+            }
+<span class="fc" id="L923">            final String playerName = entry.getPlayerName();</span>
+<span class="pc bpc" id="L924" title="1 of 4 branches missed.">            if (playerName == null || playerName.isBlank()) {</span>
+<span class="fc" id="L925">                continue;</span>
+            }
+            try {
+<span class="fc bfc" id="L928" title="All 2 branches covered.">                if (repository.loadBan(uniqueId).isPresent()) {</span>
+<span class="fc" id="L929">                    continue;</span>
+                }
+<span class="fc" id="L931">                final Date created = entry.getCreated();</span>
+<span class="fc" id="L932">                final Date expiresAt = entry.getExpiration();</span>
+<span class="fc" id="L933">                final BanRecord imported = new BanRecord(</span>
+                        uniqueId,
+                        playerName,
+<span class="fc" id="L936">                        entry.getReason(),</span>
+<span class="fc" id="L937">                        entry.getSource(),</span>
+<span class="pc bpc" id="L938" title="1 of 2 branches missed.">                        created == null ? Instant.now() : created.toInstant(),</span>
+<span class="pc bpc" id="L939" title="1 of 2 branches missed.">                        expiresAt == null ? null : expiresAt.toInstant(),</span>
+                        true
+                );
+<span class="fc" id="L942">                repository.saveBan(imported);</span>
+            }
+<span class="nc" id="L944">            catch (StorageException exception) {</span>
+<span class="nc" id="L945">                getLogger().warning(&quot;Failed to import runtime ban for &quot; + playerName + &quot;: &quot; + exception.getMessage());</span>
+<span class="fc" id="L946">            }</span>
+<span class="fc" id="L947">        }</span>
+<span class="fc" id="L948">    }</span>
+
+    public void setupVault() {
+<span class="fc bfc" id="L951" title="All 2 branches covered.">        if (integrationService != null) {</span>
+<span class="fc" id="L952">            integrationService.setupVault();</span>
+<span class="fc" id="L953">            return;</span>
+        }
+        // fallback to original behavior when integrationService is not initialised
+<span class="fc" id="L956">        final Economy previous = registry.getVaultIntegrationState().getEconomy();</span>
+<span class="fc" id="L957">        registry.getVaultIntegrationState().setEconomy(null);</span>
+<span class="fc bfc" id="L958" title="All 2 branches covered.">        if (!Bukkit.getPluginManager().isPluginEnabled(&quot;Vault&quot;)) {</span>
+<span class="pc bpc" id="L959" title="1 of 2 branches missed.">            if (previous != null) {</span>
+<span class="nc" id="L960">                getLogger().info(&quot;Vault is unavailable; currency rewards are disabled.&quot;);</span>
+            }
+<span class="fc" id="L962">            return;</span>
+        }
+<span class="fc bfc" id="L964" title="All 2 branches covered.">        if (!ensureVaultEconomyClassesAvailable()) {</span>
+<span class="pc bpc" id="L965" title="1 of 2 branches missed.">            if (previous != null) {</span>
+<span class="nc" id="L966">                getLogger().info(&quot;Vault economy classes are unavailable; currency rewards are disabled.&quot;);</span>
+            }
+            else {
+<span class="fc" id="L969">                getLogger().fine(&quot;Vault economy classes are unavailable; skipping currency integration.&quot;);</span>
+            }
+<span class="fc" id="L971">            return;</span>
+        }
+        try {
+<span class="fc" id="L974">            final RegisteredServiceProvider&lt;Economy&gt; registration =</span>
+<span class="fc" id="L975">                    getServer().getServicesManager().getRegistration(Economy.class);</span>
+<span class="fc bfc" id="L976" title="All 2 branches covered.">            if (registration == null) {</span>
+<span class="pc bpc" id="L977" title="1 of 2 branches missed.">                if (previous != null) {</span>
+<span class="nc" id="L978">                    getLogger().info(&quot;No Vault economy provider detected; currency rewards are disabled.&quot;);</span>
+                }
+<span class="fc" id="L980">                return;</span>
+            }
+<span class="fc" id="L982">            final Economy provider = registration.getProvider();</span>
+<span class="fc bfc" id="L983" title="All 2 branches covered.">            if (provider == null) {</span>
+<span class="pc bpc" id="L984" title="1 of 2 branches missed.">                if (previous != null) {</span>
+<span class="nc" id="L985">                    getLogger().info(&quot;Vault returned a null economy provider; currency rewards are disabled.&quot;);</span>
+                }
+<span class="fc" id="L987">                return;</span>
+            }
+<span class="fc" id="L989">            registry.getVaultIntegrationState().setEconomy(provider);</span>
+<span class="pc bpc" id="L990" title="3 of 4 branches missed.">            if (previous == null || !previous.getName().equalsIgnoreCase(provider.getName())) {</span>
+<span class="fc" id="L991">                getLogger().info(&quot;Hooked into Vault economy provider: &quot; + provider.getName() + '.');</span>
+            }
+        }
+<span class="nc" id="L994">        catch (NoClassDefFoundError error) {</span>
+<span class="nc" id="L995">            registry.getVaultIntegrationState().setEconomy(null);</span>
+<span class="nc" id="L996">            registry.getVaultIntegrationState().setEconomyClassesAvailable(false);</span>
+<span class="nc bnc" id="L997" title="All 2 branches missed.">            if (previous != null) {</span>
+<span class="nc" id="L998">                getLogger().info(&quot;Vault economy classes are unavailable; currency rewards are disabled.&quot;);</span>
+            }
+            else {
+<span class="nc" id="L1001">                getLogger().fine(&quot;Vault economy classes are unavailable; skipping currency integration.&quot;);</span>
+            }
+        }
+<span class="fc" id="L1004">        catch (Throwable throwable) {</span>
+<span class="fc" id="L1005">            registry.getVaultIntegrationState().setEconomy(null);</span>
+<span class="fc" id="L1006">            getLogger().warning(&quot;Failed to hook into Vault economy: &quot; + throwable.getMessage());</span>
+<span class="pc" id="L1007">        }</span>
+<span class="fc" id="L1008">    }</span>
+
+    public boolean ensureVaultEconomyClassesAvailable() {
+<span class="pc bpc" id="L1011" title="1 of 2 branches missed.">        if (integrationService != null) {</span>
+<span class="nc" id="L1012">            return integrationService.ensureVaultEconomyClassesAvailable();</span>
+        }
+<span class="pc bpc" id="L1014" title="1 of 2 branches missed.">        if (!registry.getVaultIntegrationState().isEconomyClassesAvailable()) {</span>
+<span class="nc" id="L1015">            return false;</span>
+        }
+        try {
+<span class="fc" id="L1018">            Class.forName(&quot;net.milkbowl.vault.economy.Economy&quot;, false, getClassLoader());</span>
+<span class="fc" id="L1019">            return true;</span>
+        }
+<span class="nc" id="L1021">        catch (ClassNotFoundException | LinkageError exception) {</span>
+<span class="nc" id="L1022">            registry.getVaultIntegrationState().setEconomyClassesAvailable(false);</span>
+<span class="nc" id="L1023">            return false;</span>
+        }
+    }
+
+    private void setupManagers() {
+<span class="fc" id="L1028">        requireManagerService().setupManagers();</span>
+<span class="fc" id="L1029">        compatibilityAdapter.syncManagerFields();</span>
+<span class="fc" id="L1030">    }</span>
+
+    private void setupOverlay() {
+<span class="fc" id="L1033">        requireOverlayService().setupOverlay();</span>
+<span class="fc" id="L1034">        compatibilityAdapter.syncManagerFields();</span>
+<span class="fc" id="L1035">    }</span>
+
+    private void setupHologram() {
+<span class="fc" id="L1038">        requireHologramService().setupHologram();</span>
+<span class="fc" id="L1039">        compatibilityAdapter.syncManagerFields();</span>
+<span class="fc" id="L1040">    }</span>
+
+    public void setupPlaceholderExpansion(PluginAccessor pluginAccessor) {
+<span class="pc bpc" id="L1043" title="1 of 2 branches missed.">        if (placeholderService != null) {</span>
+<span class="fc" id="L1044">            placeholderService.setupPlaceholderExpansion(pluginAccessor);</span>
+        }
+<span class="fc" id="L1046">    }</span>
+
+    public PlaceholderHook getPlaceholderExpansion() {
+<span class="fc" id="L1049">        return placeholderExpansion;</span>
+    }
+
+    public BeaconSpawnService getBeaconSpawnService() {
+<span class="nc" id="L1053">        return beaconSpawnService;</span>
+    }
+
+    /**
+     * Starts the beacon spawn feature by detecting optional integrations (WorldGuard, EzCountdown),
+     * creating the services, registering the listener, and starting the schedule.
+     */
+    public void startBeaconSpawnFeature(PluginAccessor pluginAccessor) {
+<span class="fc" id="L1061">        this.beaconPluginAccessor = pluginAccessor;</span>
+
+        // Stop any previous run (in case of reload)
+<span class="fc" id="L1064">        stopBeaconSpawnFeature();</span>
+
+<span class="pc bpc" id="L1066" title="1 of 2 branches missed.">        if (!pluginAccessor.getBeaconSpawnSettings().enabled()) {</span>
+<span class="nc" id="L1067">            return;</span>
+        }
+
+<span class="fc" id="L1070">        final SpawnedBeaconRepository repository = new SpawnedBeaconRepository();</span>
+<span class="fc" id="L1071">        final BeaconAvailabilityService availabilityService =</span>
+<span class="fc" id="L1072">                new BeaconAvailabilityService(plugin.getLogger());</span>
+<span class="fc" id="L1073">        beaconSpawnService = new BeaconSpawnService(repository, availabilityService, plugin.getLogger());</span>
+
+        // Optional WorldGuard integration
+<span class="pc bpc" id="L1076" title="1 of 2 branches missed.">        if (Bukkit.getPluginManager().isPluginEnabled(&quot;WorldGuard&quot;)) {</span>
+            try {
+<span class="nc" id="L1078">                final BeaconAreaProtection hook = new WorldGuardBeaconHook(plugin.getLogger());</span>
+<span class="nc" id="L1079">                beaconSpawnService.setAreaProtection(hook);</span>
+<span class="nc" id="L1080">                plugin.getLogger().info(&quot;BeaconSpawnFeature: WorldGuard protection enabled.&quot;);</span>
+<span class="nc" id="L1081">            } catch (Throwable t) {</span>
+<span class="nc" id="L1082">                plugin.getLogger().warning(&quot;BeaconSpawnFeature: WorldGuard hook failed: &quot; + t.getMessage());</span>
+<span class="nc" id="L1083">            }</span>
+        }
+
+        // Optional EzCountdown integration
+<span class="pc bpc" id="L1087" title="1 of 2 branches missed.">        if (Bukkit.getPluginManager().isPluginEnabled(&quot;EzCountdown&quot;)) {</span>
+            try {
+<span class="nc" id="L1089">                final BeaconCountdownProvider hook = new EzCountdownBeaconHook(plugin.getLogger());</span>
+<span class="nc" id="L1090">                beaconSpawnService.setCountdownProvider(hook);</span>
+<span class="nc" id="L1091">                plugin.getLogger().info(&quot;BeaconSpawnFeature: EzCountdown integration enabled.&quot;);</span>
+<span class="nc" id="L1092">            } catch (Throwable t) {</span>
+<span class="nc" id="L1093">                plugin.getLogger().warning(&quot;BeaconSpawnFeature: EzCountdown hook failed: &quot; + t.getMessage());</span>
+<span class="nc" id="L1094">            }</span>
+        }
+
+        // Register listener
+<span class="fc" id="L1098">        final SpawnedBeaconListener listener =</span>
+<span class="fc" id="L1099">                new SpawnedBeaconListener(beaconSpawnService, pluginAccessor, plugin.getLogger());</span>
+<span class="fc" id="L1100">        plugin.getServer().getPluginManager().registerEvents(listener, plugin);</span>
+<span class="fc" id="L1101">        plugin.getServer().getPluginManager().registerEvents(new BeaconGuiListener(), plugin);</span>
+
+        // Start schedule
+<span class="fc" id="L1104">        beaconScheduleService = new BeaconScheduleService(beaconSpawnService, plugin.getLogger());</span>
+<span class="fc" id="L1105">        beaconScheduleService.start(pluginAccessor);</span>
+<span class="fc" id="L1106">    }</span>
+
+    /**
+     * Stops the beacon schedule and despawns all active beacons.
+     */
+    public void stopBeaconSpawnFeature() {
+<span class="fc bfc" id="L1112" title="All 2 branches covered.">        if (beaconScheduleService != null) {</span>
+<span class="fc" id="L1113">            beaconScheduleService.stop();</span>
+<span class="fc" id="L1114">            beaconScheduleService = null;</span>
+        }
+<span class="pc bpc" id="L1116" title="1 of 4 branches missed.">        if (beaconSpawnService != null &amp;&amp; beaconPluginAccessor != null) {</span>
+<span class="fc" id="L1117">            beaconSpawnService.despawnAll(beaconPluginAccessor);</span>
+        }
+<span class="fc" id="L1119">        beaconSpawnService = null;</span>
+<span class="fc" id="L1120">    }</span>
+
+    /**
+     * Reloads the beacon spawn feature by stopping and restarting with updated settings.
+     */
+    public void reloadBeaconSpawnFeature(PluginAccessor pluginAccessor) {
+<span class="fc" id="L1126">        startBeaconSpawnFeature(pluginAccessor);</span>
+<span class="fc" id="L1127">    }</span>
+
+    public org.bukkit.plugin.PluginDescriptionFile getDescription() {
+<span class="fc" id="L1130">        return plugin.getDescription();</span>
+    }
+
+    public void setPlaceholderExpansion(PlaceholderHook placeholderExpansion) {
+<span class="nc" id="L1134">        this.placeholderExpansion = placeholderExpansion;</span>
+<span class="nc" id="L1135">        managerState.setPlaceholderExpansion(placeholderExpansion);</span>
+<span class="nc" id="L1136">        compatibilityAdapter.setPlaceholderField(placeholderExpansion);</span>
+<span class="nc" id="L1137">    }</span>
+
+    public void logStartupSummary() {
+<span class="fc" id="L1140">        final List&lt;String&gt; lines = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L1141">        final String version = getDescription().getVersion();</span>
+<span class="pc bpc" id="L1142" title="2 of 4 branches missed.">        if (version == null || version.isBlank()) {</span>
+<span class="nc" id="L1143">            lines.add(&quot;EzLifesteal plugin enabled.&quot;);</span>
+        }
+        else {
+<span class="fc" id="L1146">            lines.add(&quot;EzLifesteal v&quot; + version + &quot; ready.&quot;);</span>
+        }
+<span class="fc" id="L1148">        lines</span>
+<span class="fc" id="L1149">                .add(&quot;Storage backend: &quot;</span>
+<span class="pc bpc" id="L1150" title="1 of 2 branches missed.">                        + (storageService != null ? storageService.getStorageSummary() : storageSummary) + &quot;.&quot;);</span>
+<span class="fc" id="L1151">        lines.add(&quot;Messages language: &quot; + activeLanguage + &quot;.&quot;);</span>
+<span class="pc bpc" id="L1152" title="1 of 2 branches missed.">        if (globalLifestealEnabled) {</span>
+<span class="nc" id="L1153">            final StringBuilder lifesteal = new StringBuilder(&quot;Global lifesteal: enabled (&quot;);</span>
+<span class="nc" id="L1154">            lifesteal.append(formatDouble(heartsPerKill)).append(&quot; hearts/kill, &quot;);</span>
+<span class="nc" id="L1155">            lifesteal.append(formatDouble(heartsLostOnDeath)).append(&quot; hearts lost on death&quot;);</span>
+<span class="nc bnc" id="L1156" title="All 2 branches missed.">            if (banWhenZeroHearts) {</span>
+<span class="nc" id="L1157">                lifesteal.append(&quot;, zero-heart bans enabled&quot;);</span>
+            }
+<span class="nc" id="L1159">            lifesteal.append(&quot;).&quot;);</span>
+<span class="nc" id="L1160">            lines.add(lifesteal.toString());</span>
+<span class="nc" id="L1161">        }</span>
+        else {
+<span class="fc" id="L1163">            lines.add(&quot;Global lifesteal: disabled.&quot;);</span>
+        }
+<span class="fc" id="L1165">        lines.add(describeWorldRestrictions());</span>
+        final boolean overlayEnabled;
+<span class="pc bpc" id="L1167" title="1 of 2 branches missed.">        if (overlayService != null) {</span>
+<span class="fc" id="L1168">            overlayEnabled = overlayService.isEnabled();</span>
+        }
+        else {
+<span class="nc" id="L1171">            final HeartOverlayManager overlay = managerState.getHeartOverlayManager();</span>
+<span class="nc bnc" id="L1172" title="All 4 branches missed.">            overlayEnabled = overlay != null &amp;&amp; overlay.isEnabled();</span>
+        }
+<span class="pc bpc" id="L1174" title="1 of 2 branches missed.">        lines.add(&quot;Heart overlay: &quot; + (overlayEnabled ? &quot;enabled&quot; : &quot;disabled&quot;) + &quot;.&quot;);</span>
+
+        final boolean hologramPlaced;
+<span class="pc bpc" id="L1177" title="1 of 2 branches missed.">        if (hologramService != null) {</span>
+<span class="fc" id="L1178">            hologramPlaced = hologramService.hasHologram();</span>
+        }
+        else {
+<span class="nc" id="L1181">            final TopHologramManager top = managerState.getTopHologramManager();</span>
+<span class="nc bnc" id="L1182" title="All 4 branches missed.">            hologramPlaced = top != null &amp;&amp; top.hasHologram();</span>
+        }
+<span class="pc bpc" id="L1184" title="1 of 2 branches missed.">        lines.add(&quot;Leaderboard hologram: &quot; + (hologramPlaced ? &quot;placed&quot; : &quot;not placed&quot;) + &quot;.&quot;);</span>
+<span class="pc bpc" id="L1185" title="1 of 2 branches missed.">        lines.add(&quot;PlaceholderAPI expansion: &quot; + (placeholderExpansion != null ? &quot;registered.&quot; : &quot;not registered.&quot;));</span>
+<span class="pc bpc" id="L1186" title="1 of 2 branches missed.">        lines.add(killStreakSettings != null ? killStreakSettings.summary() : &quot;Kill streaks: disabled.&quot;);</span>
+<span class="pc bpc" id="L1187" title="1 of 2 branches missed.">        if (combatLogoutProtectionEnabled) {</span>
+<span class="nc" id="L1188">            final double tagSeconds = combatLogoutTagDurationMillis / 1000.0;</span>
+<span class="nc" id="L1189">            lines.add(&quot;Combat logout protection: enabled (&quot; + formatDouble(tagSeconds) + &quot;s tag window).&quot;);</span>
+<span class="nc" id="L1190">        }</span>
+        else {
+<span class="fc" id="L1192">            lines.add(&quot;Combat logout protection: disabled.&quot;);</span>
+        }
+<span class="pc bpc" id="L1194" title="1 of 2 branches missed.">        String smurfStatus = smurfDetectionEnabled ? &quot;enabled&quot; : &quot;disabled&quot;;</span>
+<span class="pc bpc" id="L1195" title="3 of 4 branches missed.">        if (smurfDetectionEnabled &amp;&amp; restrictSmurfAlertsToAdmins) {</span>
+<span class="nc" id="L1196">            smurfStatus += &quot; (alerts restricted to admins)&quot;;</span>
+        }
+<span class="fc" id="L1198">        lines.add(&quot;Smurf detection: &quot; + smurfStatus + &quot;.&quot;);</span>
+<span class="fc" id="L1199">        final String overrideSummary = buildWorldOverrideSummary();</span>
+<span class="pc bpc" id="L1200" title="2 of 4 branches missed.">        if (overrideSummary != null &amp;&amp; !overrideSummary.isBlank()) {</span>
+<span class="fc" id="L1201">            lines.add(overrideSummary);</span>
+        }
+<span class="fc bfc" id="L1203" title="All 2 branches covered.">        for (String line : lines) {</span>
+<span class="fc" id="L1204">            getLogger().info(line);</span>
+<span class="fc" id="L1205">        }</span>
+<span class="fc" id="L1206">    }</span>
+
+    public boolean ensureSeasonsClasses() {
+<span class="fc" id="L1209">        final var integrationState = registry.getSeasonsIntegrationState();</span>
+<span class="pc bpc" id="L1210" title="1 of 2 branches missed.">        if (integrationState.getApiClass() != null</span>
+<span class="nc bnc" id="L1211" title="All 2 branches missed.">                &amp;&amp; integrationState.getIntegrationClass() != null</span>
+<span class="nc bnc" id="L1212" title="All 2 branches missed.">                &amp;&amp; integrationState.getProfileClass() != null) {</span>
+<span class="nc" id="L1213">            return true;</span>
+        }
+<span class="fc" id="L1215">        final Plugin plugin = Bukkit.getPluginManager().getPlugin(SEASONS_PLUGIN_NAME);</span>
+<span class="fc bfc" id="L1216" title="All 2 branches covered.">        if (plugin == null) {</span>
+<span class="fc" id="L1217">            return false;</span>
+        }
+<span class="fc" id="L1219">        final ClassLoader loader = plugin.getClass().getClassLoader();</span>
+        try {
+<span class="fc" id="L1221">            integrationState.setApiClass(tryLoadClass(loader, SEASONS_API_CLASS_NAME, LEGACY_SEASONS_API_CLASS_NAME));</span>
+<span class="fc" id="L1222">            integrationState</span>
+<span class="fc" id="L1223">                    .setIntegrationClass(tryLoadClass(loader,</span>
+                            SEASONS_INTEGRATION_CLASS_NAME, LEGACY_SEASONS_INTEGRATION_CLASS_NAME));
+<span class="pc bpc" id="L1225" title="2 of 4 branches missed.">            if (integrationState.getApiClass() == null || integrationState.getIntegrationClass() == null) {</span>
+<span class="nc" id="L1226">                integrationState.clearLoadedClasses();</span>
+<span class="nc" id="L1227">                return false;</span>
+            }
+<span class="fc" id="L1229">            integrationState.setProfileClass(resolveSeasonsProfileClass(integrationState.getIntegrationClass()));</span>
+<span class="pc bpc" id="L1230" title="1 of 2 branches missed.">            return integrationState.getProfileClass() != null;</span>
+        }
+<span class="fc" id="L1232">        catch (ReflectiveOperationException exception) {</span>
+<span class="fc" id="L1233">            integrationState.clearLoadedClasses();</span>
+<span class="fc" id="L1234">            return false;</span>
+        }
+    }
+
+
+    private Class&lt;?&gt; resolveSeasonsProfileClass(Class&lt;?&gt; integrationClass) throws ClassNotFoundException {
+<span class="pc bfc" id="L1240" title="All 2 branches covered.">        for (Class&lt;?&gt; nested : integrationClass.getDeclaredClasses()) {</span>
+<span class="pc bpc" id="L1241" title="1 of 2 branches missed.">            if (&quot;Profile&quot;.equals(nested.getSimpleName())) {</span>
+<span class="fc" id="L1242">                return nested;</span>
+            }
+        }
+<span class="fc" id="L1245">        final ClassLoader loader = integrationClass.getClassLoader();</span>
+<span class="fc" id="L1246">        final String name = integrationClass.getName() + &quot;$Profile&quot;;</span>
+<span class="fc" id="L1247">        return Class.forName(name, false, loader);</span>
+    }
+
+    private Class&lt;?&gt; tryLoadClass(ClassLoader loader, String... candidates) throws ClassNotFoundException {
+<span class="fc" id="L1251">        ClassNotFoundException lastFailure = null;</span>
+<span class="fc bfc" id="L1252" title="All 2 branches covered.">        for (String candidate : candidates) {</span>
+            try {
+<span class="fc" id="L1254">                return Class.forName(candidate, false, loader);</span>
+            }
+<span class="fc" id="L1256">            catch (ClassNotFoundException exception) {</span>
+<span class="fc" id="L1257">                lastFailure = exception;</span>
+            }
+        }
+<span class="pc bpc" id="L1260" title="1 of 2 branches missed.">        if (lastFailure != null) {</span>
+<span class="fc" id="L1261">            throw lastFailure;</span>
+        }
+<span class="nc" id="L1263">        throw new ClassNotFoundException(&quot;No class candidates were provided.&quot;);</span>
+    }
+
+    public void clearRegisteredHeartRecipes() {
+<span class="fc" id="L1267">        requireRecipeService().clearRegisteredHeartRecipes();</span>
+<span class="fc" id="L1268">    }</span>
+
+    // Compatibility helpers used by runtime services
+    public void saveDefaultConfig() {
+<span class="fc" id="L1272">        plugin.saveDefaultConfig();</span>
+<span class="fc" id="L1273">    }</span>
+
+    public void reloadConfig() {
+<span class="fc" id="L1276">        plugin.reloadConfig();</span>
+<span class="fc" id="L1277">    }</span>
+
+    public void clearRegisteredHeartRecipesInternal() {
+<span class="nc bnc" id="L1280" title="All 4 branches missed.">        if (registeredHeartRecipes == null || registeredHeartRecipes.isEmpty()) {</span>
+<span class="nc" id="L1281">            return;</span>
+        }
+<span class="nc bnc" id="L1283" title="All 2 branches missed.">        for (NamespacedKey key : new java.util.ArrayList&lt;&gt;(registeredHeartRecipes)) {</span>
+            try {
+<span class="nc" id="L1285">                SchedulerAdapter.run(plugin, () -&gt; Bukkit.getServer().removeRecipe(key));</span>
+            }
+<span class="nc" id="L1287">            catch (Throwable ignored) {</span>
+<span class="nc" id="L1288">            }</span>
+<span class="nc" id="L1289">        }</span>
+<span class="nc" id="L1290">        registeredHeartRecipes.clear();</span>
+<span class="nc" id="L1291">    }</span>
+
+    // Helper for migrated services to add registered recipe keys
+    public void addRegisteredHeartRecipe(NamespacedKey key) {
+<span class="nc bnc" id="L1295" title="All 2 branches missed.">        if (key == null) {</span>
+<span class="nc" id="L1296">            return;</span>
+        }
+<span class="nc" id="L1298">        registeredHeartRecipes.add(key);</span>
+<span class="nc" id="L1299">    }</span>
+
+    // Helper to create namespaced keys using the plugin instance
+    public NamespacedKey createNamespacedKey(String key) {
+<span class="nc" id="L1303">        return new NamespacedKey(plugin, key);</span>
+    }
+
+    // Internal wrappers for RecipeService compatibility
+    public void registerHeartRecipesInternal() {
+<span class="nc" id="L1308">        registerHeartRecipes();</span>
+<span class="nc" id="L1309">    }</span>
+
+    public boolean isHeartRecipesEnabledInternal() {
+<span class="nc" id="L1312">        return isHeartRecipesEnabled();</span>
+    }
+
+    public void registerHeartRecipes() {
+<span class="nc" id="L1316">        requireRecipeService().registerHeartRecipes();</span>
+<span class="nc" id="L1317">    }</span>
+
+    public boolean isHeartRecipesEnabled() {
+<span class="pc bpc" id="L1320" title="1 of 2 branches missed.">        if (heartsConfig == null) {</span>
+<span class="nc" id="L1321">            return false;</span>
+        }
+
+<span class="fc" id="L1324">        boolean enabled = true;</span>
+<span class="pc bpc" id="L1325" title="2 of 4 branches missed.">        if (featureConfig != null &amp;&amp; featureConfig.contains(&quot;heart-recipes.enabled&quot;)) {</span>
+<span class="nc" id="L1326">            enabled = featureConfig.getBoolean(&quot;heart-recipes.enabled&quot;, true);</span>
+        }
+<span class="pc bpc" id="L1328" title="1 of 2 branches missed.">        if (heartsConfig.contains(&quot;recipes.enabled&quot;)) {</span>
+<span class="nc" id="L1329">            enabled = heartsConfig.getBoolean(&quot;recipes.enabled&quot;, enabled);</span>
+        }
+<span class="pc bpc" id="L1331" title="1 of 2 branches missed.">        if (!enabled) {</span>
+<span class="nc" id="L1332">            return false;</span>
+        }
+
+<span class="fc" id="L1335">        final ConfigurationSection recipesSection = heartsConfig.getConfigurationSection(&quot;recipes&quot;);</span>
+<span class="pc bpc" id="L1336" title="1 of 2 branches missed.">        if (recipesSection == null) {</span>
+<span class="fc" id="L1337">            return false;</span>
+        }
+<span class="nc bnc" id="L1339" title="All 2 branches missed.">        return !recipesSection.getKeys(false).isEmpty();</span>
+    }
+
+    public ExecutorService getStorageExecutor() {
+<span class="pc bpc" id="L1343" title="1 of 2 branches missed.">        return storageService != null ? storageService.getStorageExecutor() : storageExecutor;</span>
+    }
+
+    public Registry getRegistry() {
+<span class="fc" id="L1347">        return registry;</span>
+    }
+
+    public com.skyblockexp.ezlifesteal.config.AdminConfigAdapter getAdminConfigAdapter() {
+<span class="fc" id="L1351">        return adminConfigAdapter;</span>
+    }
+
+    public com.skyblockexp.ezlifesteal.config.SmurfConfigAdapter getSmurfConfigAdapter() {
+<span class="fc" id="L1355">        return smurfConfigAdapter;</span>
+    }
+
+    public void setAdminDetector(AdminDetector detector) {
+<span class="fc" id="L1359">        this.adminDetector = detector;</span>
+<span class="fc" id="L1360">    }</span>
+
+    public void setSmurfDetector(SmurfDetector detector) {
+<span class="fc" id="L1363">        this.smurfDetector = detector;</span>
+<span class="fc" id="L1364">    }</span>
+
+    public String getZeroHeartBanMessage() {
+<span class="fc" id="L1367">        return zeroHeartBanMessage;</span>
+    }
+
+    public String getZeroHeartKickMessage() {
+<span class="fc" id="L1371">        return zeroHeartKickMessage;</span>
+    }
+
+    public void setPlayerListener(PlayerListener playerListener) {
+<span class="fc" id="L1375">        this.playerListener = playerListener;</span>
+<span class="fc" id="L1376">        registry.setPlayerListener(playerListener);</span>
+<span class="fc" id="L1377">    }</span>
+
+    public String getWorldOverrideSummary() {
+<span class="fc" id="L1380">        return buildWorldOverrideSummary();</span>
+    }
+
+    public LifestealManager getLifestealManager() {
+<span class="fc" id="L1384">        final LifestealManager manager = managerState.getLifestealManager();</span>
+<span class="pc bpc" id="L1385" title="1 of 2 branches missed.">        return manager != null ? manager : lifestealManager;</span>
+    }
+
+    public LifestealConfigAdapter getLifestealConfigAdapter() {
+<span class="fc" id="L1389">        final LifestealConfigAdapter adapter = configState.getLifestealConfigAdapter();</span>
+<span class="fc bfc" id="L1390" title="All 2 branches covered.">        return adapter != null ? adapter : lifestealConfigAdapter;</span>
+    }
+
+    public MessageService getMessageService() {
+<span class="fc" id="L1394">        return messageService;</span>
+    }
+
+    public TopHologramManager getTopHologramManager() {
+<span class="nc bnc" id="L1398" title="All 2 branches missed.">        if (hologramService != null) {</span>
+<span class="nc" id="L1399">            final TopHologramManager mgr = hologramService.getManager();</span>
+<span class="nc bnc" id="L1400" title="All 2 branches missed.">            if (mgr != null) {</span>
+<span class="nc" id="L1401">                return mgr;</span>
+            }
+        }
+<span class="nc" id="L1404">        TopHologramManager manager = managerState.getTopHologramManager();</span>
+<span class="nc bnc" id="L1405" title="All 2 branches missed.">        if (manager == null) {</span>
+<span class="nc" id="L1406">            manager = new TopHologramManager(plugin);</span>
+<span class="nc" id="L1407">            managerState.setTopHologramManager(manager);</span>
+        }
+<span class="nc" id="L1409">        return manager;</span>
+    }
+
+    public SmurfDetector getSmurfDetector() {
+<span class="nc" id="L1413">        return smurfDetector;</span>
+    }
+
+    public boolean addSmurfExemption(UUID uniqueId) {
+<span class="nc bnc" id="L1417" title="All 2 branches missed.">        if (smurfDetector == null) {</span>
+<span class="nc" id="L1418">            return false;</span>
+        }
+<span class="nc" id="L1420">        final boolean added = smurfDetector.addExemptPlayer(uniqueId);</span>
+<span class="nc bnc" id="L1421" title="All 2 branches missed.">        if (added) {</span>
+<span class="nc" id="L1422">            persistSmurfExemptions();</span>
+        }
+<span class="nc" id="L1424">        return added;</span>
+    }
+
+    public boolean removeSmurfExemption(UUID uniqueId) {
+<span class="nc bnc" id="L1428" title="All 2 branches missed.">        if (smurfDetector == null) {</span>
+<span class="nc" id="L1429">            return false;</span>
+        }
+<span class="nc" id="L1431">        final boolean removed = smurfDetector.removeExemptPlayer(uniqueId);</span>
+<span class="nc bnc" id="L1432" title="All 2 branches missed.">        if (removed) {</span>
+<span class="nc" id="L1433">            persistSmurfExemptions();</span>
+        }
+<span class="nc" id="L1435">        return removed;</span>
+    }
+
+    public void persistSmurfExemptions() {
+<span class="nc bnc" id="L1439" title="All 2 branches missed.">        if (smurfDetector == null) {</span>
+<span class="nc" id="L1440">            return;</span>
+        }
+<span class="nc" id="L1442">        final List&lt;String&gt; serialized = smurfDetector.getExemptPlayers().stream()</span>
+<span class="nc" id="L1443">                .map(UUID::toString)</span>
+<span class="nc" id="L1444">                .collect(Collectors.toList());</span>
+<span class="nc bnc" id="L1445" title="All 4 branches missed.">        if (smurfConfig == null || smurfConfigFile == null) {</span>
+<span class="nc" id="L1446">            getLogger().warning(&quot;Smurf configuration is not loaded; unable to persist exemptions.&quot;);</span>
+<span class="nc" id="L1447">            return;</span>
+        }
+<span class="nc" id="L1449">        smurfConfig.set(&quot;exempted-players&quot;, serialized);</span>
+        try {
+<span class="nc" id="L1451">            smurfConfig.save(smurfConfigFile);</span>
+        }
+<span class="nc" id="L1453">        catch (IOException exception) {</span>
+<span class="nc" id="L1454">            getLogger().severe(&quot;Failed to save smurf.yml: &quot; + exception.getMessage());</span>
+<span class="nc" id="L1455">        }</span>
+<span class="nc" id="L1456">    }</span>
+
+    public AdminDetector getAdminDetector() {
+<span class="nc" id="L1459">        return adminDetector;</span>
+    }
+
+    public boolean simulatePlayerDeath(Player victim, Player killer) {
+<span class="nc bnc" id="L1463" title="All 4 branches missed.">        if (playerListener == null || victim == null) {</span>
+<span class="nc" id="L1464">            return false;</span>
+        }
+<span class="nc" id="L1466">        playerListener.handlePlayerDeath(victim, killer);</span>
+<span class="nc" id="L1467">        return true;</span>
+    }
+
+    public boolean simulatePlayerKill(Player killer) {
+<span class="nc bnc" id="L1471" title="All 2 branches missed.">        if (killer == null) {</span>
+<span class="nc" id="L1472">            return false;</span>
+        }
+<span class="nc bnc" id="L1474" title="All 2 branches missed.">        if (!isGlobalLifestealEnabled()) {</span>
+<span class="nc" id="L1475">            return false;</span>
+        }
+<span class="nc bnc" id="L1477" title="All 2 branches missed.">        if (!isLifestealEnabledInWorld(killer.getWorld().getName())) {</span>
+<span class="nc" id="L1478">            return false;</span>
+        }
+<span class="nc" id="L1480">        final LifestealManager manager = getLifestealManager();</span>
+<span class="nc" id="L1481">        final LifestealProfile killerProfile = manager.getOrCreateProfile(killer.getUniqueId());</span>
+<span class="nc" id="L1482">        final AdminDetector detector = getAdminDetector();</span>
+<span class="nc bnc" id="L1483" title="All 4 branches missed.">        final boolean killerIsAdmin = detector != null &amp;&amp; detector.isAdmin(killer);</span>
+<span class="nc bnc" id="L1484" title="All 4 branches missed.">        final boolean applyHeartGain = !(killerIsAdmin &amp;&amp; isAdminBypassHeartGain());</span>
+<span class="nc bnc" id="L1485" title="All 2 branches missed.">        if (applyHeartGain) {</span>
+<span class="nc bnc" id="L1486" title="All 4 branches missed.">            if (dropHeartOnKill &amp;&amp; heartRegistry != null) {</span>
+<span class="nc" id="L1487">                com.skyblockexp.ezlifesteal.heart.Heart heart = heartRegistry.getById(dropHeartId);</span>
+<span class="nc bnc" id="L1488" title="All 2 branches missed.">                if (heart == null) {</span>
+                    // try to match by tier using hearts-per-kill rounded
+<span class="nc" id="L1490">                    final int tierGuess = (int) Math.max(1, Math.round(getHeartsPerKill(killer.getWorld().getName())));</span>
+<span class="nc" id="L1491">                    heart = heartRegistry.getByTier(tierGuess);</span>
+                }
+<span class="nc bnc" id="L1493" title="All 2 branches missed.">                if (heart != null) {</span>
+<span class="nc" id="L1494">                    final com.skyblockexp.ezlifesteal.heart.Heart selected = heart;</span>
+<span class="nc" id="L1495">                    final int giveAmount = Math.max(1, dropHeartAmount);</span>
+<span class="nc" id="L1496">                    AdapterSupport.runForPlayer(plugin, killer, () -&gt; {</span>
+<span class="nc" id="L1497">                        final ItemStack stack = selected.createItemStack();</span>
+<span class="nc bnc" id="L1498" title="All 2 branches missed.">                        for (int i = 0; i &lt; giveAmount; i++) {</span>
+<span class="nc" id="L1499">                            final ItemStack toGive = stack.clone();</span>
+<span class="nc" id="L1500">                            final Map&lt;Integer, ItemStack&gt; leftover = killer.getInventory().addItem(toGive);</span>
+<span class="nc bnc" id="L1501" title="All 2 branches missed.">                            if (!leftover.isEmpty()) {</span>
+<span class="nc" id="L1502">                                AdapterSupport.dropItemLeftoversAtPlayer(plugin, killer, leftover);</span>
+                            }
+                        }
+<span class="nc" id="L1505">                    });</span>
+<span class="nc" id="L1506">                }</span>
+                else {
+                    // fallback to applying hearts directly if no heart definition found
+<span class="nc" id="L1509">                    final double heartsPerKillAmount = getHeartsPerKill(killer.getWorld().getName());</span>
+<span class="nc" id="L1510">                    killerProfile.addHearts(heartsPerKillAmount, manager.getMaxHearts());</span>
+<span class="nc" id="L1511">                    manager.saveProfileAsync(killerProfile).whenComplete((unused, throwable) -&gt; {</span>
+<span class="nc bnc" id="L1512" title="All 2 branches missed.">                        if (throwable != null) {</span>
+<span class="nc" id="L1513">                            getLogger()</span>
+<span class="nc" id="L1514">                                    .severe(&quot;Failed to save killer profile for &quot; + killer.getName()</span>
+<span class="nc" id="L1515">                                            + &quot;: &quot; + throwable.getMessage());</span>
+                        }
+<span class="nc" id="L1517">                    });</span>
+                }
+<span class="nc" id="L1519">            }</span>
+            else {
+<span class="nc" id="L1521">                final double heartsPerKillAmount = getHeartsPerKill(killer.getWorld().getName());</span>
+<span class="nc" id="L1522">                killerProfile.addHearts(heartsPerKillAmount, manager.getMaxHearts());</span>
+<span class="nc" id="L1523">                manager.saveProfileAsync(killerProfile).whenComplete((unused, throwable) -&gt; {</span>
+<span class="nc bnc" id="L1524" title="All 2 branches missed.">                    if (throwable != null) {</span>
+<span class="nc" id="L1525">                        getLogger()</span>
+<span class="nc" id="L1526">                                .severe(&quot;Failed to save killer profile for &quot; + killer.getName()</span>
+<span class="nc" id="L1527">                                        + &quot;: &quot; + throwable.getMessage());</span>
+                    }
+<span class="nc" id="L1529">                });</span>
+            }
+        }
+<span class="nc" id="L1532">        AdapterSupport.runForPlayer(plugin, killer, () -&gt; {</span>
+<span class="nc" id="L1533">            manager.applyHearts(killer, killerProfile);</span>
+<span class="nc" id="L1534">            sendHeartStatus(killer, killerProfile.getHearts());</span>
+<span class="nc" id="L1535">        });</span>
+<span class="nc" id="L1536">        requestTopHologramUpdate();</span>
+<span class="nc" id="L1537">        return true;</span>
+    }
+
+    public double getHeartsPerKill() {
+<span class="nc" id="L1541">        return gameplayState.getHeartRulesState().getHeartsPerKill();</span>
+    }
+
+    public double getHeartsPerKill(String worldName) {
+<span class="fc bfc" id="L1545" title="All 4 branches covered.">        if (worldName == null || worldName.isBlank()) {</span>
+<span class="fc" id="L1546">            return gameplayState.getHeartRulesState().getHeartsPerKill();</span>
+        }
+<span class="fc" id="L1548">        return gameplayState.getWorldRulesState().getHeartsPerKillOverrides()</span>
+<span class="fc" id="L1549">                .getOrDefault(normalizeWorldName(worldName),</span>
+<span class="fc" id="L1550">                gameplayState.getHeartRulesState().getHeartsPerKill());</span>
+    }
+
+    public double getHeartsLostOnDeath() {
+<span class="nc" id="L1554">        return gameplayState.getHeartRulesState().getHeartsLostOnDeath();</span>
+    }
+
+    public double getHeartsLostOnDeath(String worldName) {
+<span class="fc bfc" id="L1558" title="All 4 branches covered.">        if (worldName == null || worldName.isBlank()) {</span>
+<span class="fc" id="L1559">            return gameplayState.getHeartRulesState().getHeartsLostOnDeath();</span>
+        }
+<span class="fc" id="L1561">        return gameplayState.getWorldRulesState().getHeartsLostOnDeathOverrides()</span>
+<span class="fc" id="L1562">                .getOrDefault(normalizeWorldName(worldName),</span>
+<span class="fc" id="L1563">                gameplayState.getHeartRulesState().getHeartsLostOnDeath());</span>
+    }
+
+    public boolean isDropHeartOnKill() {
+<span class="nc" id="L1567">        return gameplayState.getDropRulesState().isDropHeartOnKill();</span>
+    }
+
+    public boolean isDropHeartOnDeath() {
+<span class="nc" id="L1571">        return gameplayState.getDropRulesState().isDropHeartOnDeath();</span>
+    }
+
+    public boolean isDropHeartOnlyWhenKilledByPlayer() {
+<span class="nc" id="L1575">        return gameplayState.getDropRulesState().isDropHeartOnlyWhenKilledByPlayer();</span>
+    }
+
+    public String getDropHeartId() {
+<span class="nc" id="L1579">        return gameplayState.getDropRulesState().getDropHeartId();</span>
+    }
+
+    public int getDropHeartAmount() {
+<span class="nc" id="L1583">        return gameplayState.getDropRulesState().getDropHeartAmount();</span>
+    }
+
+    public static SanitizedHeartBounds sanitizeHeartBounds(double minHearts, double defaultHearts, double maxHearts) {
+<span class="fc" id="L1587">        final double sanitizedMin = Math.max(0.0, minHearts);</span>
+<span class="fc" id="L1588">        final double sanitizedMax = Math.max(sanitizedMin, maxHearts);</span>
+<span class="fc" id="L1589">        final double sanitizedDefault = Math.max(sanitizedMin, Math.min(defaultHearts, sanitizedMax));</span>
+<span class="fc bfc" id="L1590" title="All 2 branches covered.">        final boolean adjusted = Double.compare(sanitizedMin, minHearts) != 0</span>
+<span class="fc bfc" id="L1591" title="All 2 branches covered.">                || Double.compare(sanitizedDefault, defaultHearts) != 0</span>
+<span class="pc bpc" id="L1592" title="1 of 2 branches missed.">                || Double.compare(sanitizedMax, maxHearts) != 0;</span>
+<span class="fc" id="L1593">        return new SanitizedHeartBounds(sanitizedMin, sanitizedDefault, sanitizedMax, adjusted);</span>
+    }
+
+<span class="fc" id="L1596">    public static record SanitizedHeartBounds(double minHearts, double defaultHearts, double maxHearts,</span>
+            boolean adjusted) {
+        public boolean adjusted() {
+            return adjusted;
+        }
+    }
+
+    public boolean isBanWhenZeroHearts() {
+<span class="nc" id="L1604">        return gameplayState.getHeartRulesState().isBanWhenZeroHearts();</span>
+    }
+
+    public boolean isBanWhenZeroHearts(String worldName) {
+<span class="fc bfc" id="L1608" title="All 4 branches covered.">        if (worldName == null || worldName.isBlank()) {</span>
+<span class="fc" id="L1609">            return gameplayState.getHeartRulesState().isBanWhenZeroHearts();</span>
+        }
+<span class="fc" id="L1611">        return gameplayState.getWorldRulesState().getBanWhenZeroOverrides().getOrDefault(normalizeWorldName(worldName),</span>
+<span class="fc" id="L1612">                gameplayState.getHeartRulesState().isBanWhenZeroHearts());</span>
+    }
+
+    public boolean isGlobalLifestealEnabled() {
+<span class="nc" id="L1616">        return gameplayState.getHeartRulesState().isGlobalLifestealEnabled();</span>
+    }
+
+    public boolean isTeamKillBypassEnabled() {
+<span class="fc" id="L1620">        return gameplayState.getHeartRulesState().isTeamKillBypassWithTeamsApi();</span>
+    }
+
+    public List&lt;String&gt; getTeamKillBypassExemptWorlds() {
+<span class="fc" id="L1624">        return gameplayState.getHeartRulesState().getTeamKillBypassExemptWorlds();</span>
+    }
+
+    public int getTeamKillBypassMinTeamSize() {
+<span class="fc" id="L1628">        return gameplayState.getHeartRulesState().getTeamKillBypassMinTeamSize();</span>
+    }
+
+    public boolean isTeamBankEnabled() {
+<span class="fc" id="L1632">        return gameplayState.getHeartRulesState().isTeamBankEnabled();</span>
+    }
+
+    public double getTeamBankMaxHearts() {
+<span class="fc" id="L1636">        return gameplayState.getHeartRulesState().getTeamBankMaxHearts();</span>
+    }
+
+    public double getTeamBankMaxHeartsForTeam(UUID teamId) {
+<span class="fc bfc" id="L1640" title="All 2 branches covered.">        if (teamId == null) {</span>
+<span class="fc" id="L1641">            return getTeamBankMaxHearts();</span>
+        }
+<span class="fc" id="L1643">        final Map&lt;String, Double&gt; perTeamOverrides = gameplayState.getHeartRulesState().getTeamBankPerTeamMaxHearts();</span>
+<span class="fc" id="L1644">        final Double override = perTeamOverrides.get(teamId.toString());</span>
+<span class="pc bpc" id="L1645" title="1 of 4 branches missed.">        if (override != null &amp;&amp; override &gt; 0) {</span>
+<span class="fc" id="L1646">            return override;</span>
+        }
+        // Also try team name via resolver if available
+<span class="fc bfc" id="L1649" title="All 2 branches covered.">        if (teamsApiTeamResolver != null) {</span>
+<span class="fc" id="L1650">            final Optional&lt;String&gt; teamName = teamsApiTeamResolver.resolveTeamName(teamId);</span>
+<span class="pc bpc" id="L1651" title="1 of 2 branches missed.">            if (teamName.isPresent()) {</span>
+<span class="fc" id="L1652">                final Double nameOverride = perTeamOverrides.get(teamName.get());</span>
+<span class="pc bpc" id="L1653" title="2 of 4 branches missed.">                if (nameOverride != null &amp;&amp; nameOverride &gt; 0) {</span>
+<span class="fc" id="L1654">                    return nameOverride;</span>
+                }
+            }
+        }
+<span class="fc" id="L1658">        return getTeamBankMaxHearts();</span>
+    }
+
+    public com.skyblockexp.ezlifesteal.service.TeamBankAdminService getTeamBankAdminService() {
+<span class="fc" id="L1662">        return teamBankAdminService;</span>
+    }
+
+    public boolean shouldBypassForTeamKill(Player killer, Player victim) {
+<span class="pc bpc" id="L1666" title="3 of 4 branches missed.">        return teamKillBypassService != null &amp;&amp; teamKillBypassService.shouldBypass(killer, victim);</span>
+    }
+
+    public boolean isAdminBypassHeartLoss() {
+<span class="nc" id="L1670">        return gameplayState.getHeartRulesState().isAdminBypassHeartLoss();</span>
+    }
+
+    public boolean isDontRemoveHeartsFromMobs() {
+<span class="nc" id="L1674">        return gameplayState.getMobRulesState().isDontRemoveHeartsFromMobs();</span>
+    }
+
+    public double getMobRemoveHeartsGreaterThan() {
+<span class="nc" id="L1678">        return gameplayState.getMobRulesState().getMobRemoveHeartsGreaterThan();</span>
+    }
+
+    public boolean isCombatLogoutProtectionEnabled() {
+<span class="fc" id="L1682">        return combatLogoutProtectionEnabled;</span>
+    }
+
+    public long getCombatLogoutTagDurationMillis() {
+<span class="fc" id="L1686">        return combatLogoutTagDurationMillis;</span>
+    }
+
+    public boolean isAdminBypassHeartGain() {
+<span class="nc" id="L1690">        return gameplayState.getHeartRulesState().isAdminBypassHeartGain();</span>
+    }
+
+    public boolean isRestrictSmurfAlertsToAdmins() {
+<span class="nc" id="L1694">        return restrictSmurfAlertsToAdmins;</span>
+    }
+
+    public Set&lt;String&gt; getEnabledWorlds() {
+<span class="fc" id="L1698">        return gameplayState.getWorldRulesState().getEnabledWorlds();</span>
+    }
+
+    public Set&lt;String&gt; getDisabledWorlds() {
+<span class="fc" id="L1702">        return gameplayState.getWorldRulesState().getDisabledWorlds();</span>
+    }
+
+    public MobReward getMobReward(EntityType entityType) {
+<span class="pc bpc" id="L1706" title="1 of 2 branches missed.">        if (entityType == null) {</span>
+<span class="nc" id="L1707">            return null;</span>
+        }
+<span class="fc" id="L1709">        return gameplayState.getMobRulesState().getMobRewards().get(entityType);</span>
+    }
+
+    public Optional&lt;Economy&gt; getEconomy() {
+<span class="nc" id="L1713">        return Optional.ofNullable(registry.getVaultIntegrationState().getEconomy());</span>
+    }
+
+    public KillStreakManager getKillStreakManager() {
+<span class="fc" id="L1717">        final KillStreakManager manager = managerState.getKillStreakManager();</span>
+<span class="fc bfc" id="L1718" title="All 2 branches covered.">        return manager != null ? manager : killStreakManager;</span>
+    }
+
+    public KillStreakSettings getKillStreakSettings() {
+<span class="nc" id="L1722">        return killStreakSettings;</span>
+    }
+
+    public boolean isLifestealEnabledInWorld(String worldName) {
+<span class="nc bnc" id="L1726" title="All 4 branches missed.">        if (worldName == null || worldName.isBlank()) {</span>
+<span class="nc" id="L1727">            return gameplayState.getWorldRulesState().getEnabledWorlds().isEmpty();</span>
+        }
+<span class="nc" id="L1729">        final String normalized = worldName.toLowerCase(Locale.ROOT);</span>
+<span class="nc bnc" id="L1730" title="All 2 branches missed.">        if (!gameplayState.getWorldRulesState().getEnabledWorlds().isEmpty()</span>
+<span class="nc bnc" id="L1731" title="All 2 branches missed.">                &amp;&amp; !gameplayState.getWorldRulesState().getEnabledWorlds().contains(normalized)) {</span>
+<span class="nc" id="L1732">            return false;</span>
+        }
+<span class="nc bnc" id="L1734" title="All 2 branches missed.">        return !gameplayState.getWorldRulesState().getDisabledWorlds().contains(normalized);</span>
+    }
+
+    public void sendHeartStatus(Player player, double hearts) {
+<span class="nc bnc" id="L1738" title="All 2 branches missed.">        if (overlayService != null) {</span>
+<span class="nc" id="L1739">            overlayService.sendHeartStatus(player, hearts);</span>
+<span class="nc" id="L1740">            return;</span>
+        }
+<span class="nc" id="L1742">        final HeartOverlayManager overlay = managerState.getHeartOverlayManager();</span>
+<span class="nc bnc" id="L1743" title="All 2 branches missed.">        if (overlay == null) {</span>
+<span class="nc" id="L1744">            return;</span>
+        }
+<span class="nc bnc" id="L1746" title="All 2 branches missed.">        if (!isGlobalLifestealEnabled()) {</span>
+<span class="nc" id="L1747">            overlay.clear(player.getUniqueId());</span>
+<span class="nc" id="L1748">            return;</span>
+        }
+<span class="nc" id="L1750">        overlay.sendHeartStatus(player, hearts);</span>
+<span class="nc" id="L1751">    }</span>
+
+    public void requestTopHologramUpdate() {
+<span class="nc bnc" id="L1754" title="All 2 branches missed.">        if (hologramService != null) {</span>
+<span class="nc" id="L1755">            hologramService.requestUpdate();</span>
+<span class="nc" id="L1756">            return;</span>
+        }
+<span class="nc" id="L1758">        final TopHologramManager mgr = getTopHologramManager();</span>
+<span class="nc bnc" id="L1759" title="All 2 branches missed.">        if (mgr != null) {</span>
+<span class="nc" id="L1760">            mgr.requestUpdate();</span>
+        }
+<span class="nc" id="L1762">    }</span>
+
+    public void clearHeartStatus(UUID uniqueId) {
+<span class="nc bnc" id="L1765" title="All 2 branches missed.">        if (overlayService != null) {</span>
+<span class="nc" id="L1766">            overlayService.clear(uniqueId);</span>
+<span class="nc" id="L1767">            return;</span>
+        }
+<span class="nc" id="L1769">        final HeartOverlayManager overlay = managerState.getHeartOverlayManager();</span>
+<span class="nc bnc" id="L1770" title="All 2 branches missed.">        if (overlay != null) {</span>
+<span class="nc" id="L1771">            overlay.clear(uniqueId);</span>
+        }
+<span class="nc" id="L1773">    }</span>
+
+    private boolean getAdminBoolean(String key, boolean defaultValue) {
+<span class="nc" id="L1776">        return resolveLegacyConfig().getBoolean(adminConfig, &quot;admin-detection&quot;, key, defaultValue);</span>
+    }
+
+    private String getAdminString(String key, String defaultValue) {
+<span class="nc" id="L1780">        return resolveLegacyConfig().getString(adminConfig, &quot;admin-detection&quot;, key, defaultValue);</span>
+    }
+
+    private List&lt;String&gt; getAdminStringList(String key) {
+<span class="nc" id="L1784">        return resolveLegacyConfig().getStringList(adminConfig, &quot;admin-detection&quot;, key);</span>
+    }
+
+    private boolean getSmurfBoolean(String key, boolean defaultValue) {
+<span class="nc" id="L1788">        return resolveLegacyConfig().getBoolean(smurfConfig, &quot;smurf-detection&quot;, key, defaultValue);</span>
+    }
+
+    private int getSmurfInt(String key, int defaultValue) {
+<span class="nc" id="L1792">        return resolveLegacyConfig().getInt(smurfConfig, &quot;smurf-detection&quot;, key, defaultValue);</span>
+    }
+
+    private long getSmurfLong(String key, long defaultValue) {
+<span class="nc" id="L1796">        return resolveLegacyConfig().getLong(smurfConfig, &quot;smurf-detection&quot;, key, defaultValue);</span>
+    }
+
+    private String getSmurfString(String key, String defaultValue) {
+<span class="nc" id="L1800">        return resolveLegacyConfig().getString(smurfConfig, &quot;smurf-detection&quot;, key, defaultValue);</span>
+    }
+
+    private List&lt;String&gt; getSmurfStringList(String key) {
+<span class="nc" id="L1804">        return resolveLegacyConfig().getStringList(smurfConfig, &quot;smurf-detection&quot;, key);</span>
+    }
+
+    private LegacyConfigResolver resolveLegacyConfig() {
+<span class="nc" id="L1808">        return new LegacyConfigResolver(getConfig());</span>
+    }
+
+    private Set&lt;String&gt; parseWorldList(List&lt;String&gt; worldNames) {
+<span class="nc bnc" id="L1812" title="All 4 branches missed.">        if (worldNames == null || worldNames.isEmpty()) {</span>
+<span class="nc" id="L1813">            return new HashSet&lt;&gt;();</span>
+        }
+<span class="nc" id="L1815">        final Set&lt;String&gt; parsed = new HashSet&lt;&gt;();</span>
+<span class="nc bnc" id="L1816" title="All 2 branches missed.">        for (String name : worldNames) {</span>
+<span class="nc bnc" id="L1817" title="All 2 branches missed.">            if (name == null) {</span>
+<span class="nc" id="L1818">                continue;</span>
+            }
+<span class="nc" id="L1820">            final String trimmed = name.trim();</span>
+<span class="nc bnc" id="L1821" title="All 2 branches missed.">            if (!trimmed.isEmpty()) {</span>
+<span class="nc" id="L1822">                parsed.add(trimmed.toLowerCase(Locale.ROOT));</span>
+            }
+<span class="nc" id="L1824">        }</span>
+<span class="nc" id="L1825">        return parsed;</span>
+    }
+
+    private double getLifestealDouble(String path, double defaultValue) {
+<span class="nc" id="L1829">        return lifestealConfigAdapter.getDouble(path, defaultValue);</span>
+    }
+
+    public boolean getLifestealBoolean(String path, boolean defaultValue) {
+<span class="nc" id="L1833">        return lifestealConfigAdapter.getBoolean(path, defaultValue);</span>
+    }
+
+    private String getLifestealString(String path, String defaultValue) {
+<span class="nc" id="L1837">        return lifestealConfigAdapter.getString(path, defaultValue);</span>
+    }
+
+    private List&lt;String&gt; getLifestealStringList(String path) {
+<span class="nc" id="L1841">        return lifestealConfigAdapter.getStringList(path);</span>
+    }
+
+    private ConfigurationSection getLifestealSection(String path) {
+<span class="nc" id="L1845">        return lifestealConfigAdapter.getSection(path);</span>
+    }
+
+    public void setLifestealValue(String path, Object value) {
+<span class="nc bnc" id="L1849" title="All 2 branches missed.">        if (lifestealCoreConfig != null) {</span>
+<span class="nc" id="L1850">            lifestealCoreConfig.set(path, value);</span>
+        }
+        else {
+<span class="nc" id="L1853">            getConfig().set(&quot;lifesteal.&quot; + path, value);</span>
+        }
+<span class="nc" id="L1855">    }</span>
+
+    public void saveLifestealSettings() {
+<span class="nc bnc" id="L1858" title="All 4 branches missed.">        if (lifestealCoreConfig != null &amp;&amp; lifestealCoreConfigFile != null) {</span>
+<span class="nc" id="L1859">            configLoader.save(lifestealCoreConfig, &quot;lifesteal-core.yml&quot;);</span>
+        }
+        else {
+<span class="nc" id="L1862">            plugin.saveConfig();</span>
+        }
+<span class="nc" id="L1864">    }</span>
+
+    private void setStorageValue(String path, Object value) {
+<span class="pc bpc" id="L1867" title="1 of 2 branches missed.">        if (storageConfig != null) {</span>
+<span class="fc" id="L1868">            storageConfig.set(path, value);</span>
+        }
+        else {
+<span class="nc" id="L1871">            getConfig().set(&quot;storage.&quot; + path, value);</span>
+        }
+<span class="fc" id="L1873">    }</span>
+
+    private void saveStorageConfiguration() {
+<span class="pc bpc" id="L1876" title="2 of 4 branches missed.">        if (storageConfig != null &amp;&amp; storageConfigFile != null) {</span>
+<span class="nc" id="L1877">            configLoader.save(storageConfig, &quot;storage.yml&quot;);</span>
+        }
+        else {
+<span class="fc" id="L1880">            plugin.saveConfig();</span>
+        }
+<span class="fc" id="L1882">    }</span>
+
+    private ConfigurationSection getStorageSection(String path) {
+<span class="fc" id="L1885">        ConfigurationSection section = null;</span>
+<span class="pc bpc" id="L1886" title="1 of 2 branches missed.">        if (storageConfig != null) {</span>
+<span class="pc bpc" id="L1887" title="1 of 2 branches missed.">            section = path == null ? storageConfig : storageConfig.getConfigurationSection(path);</span>
+        }
+<span class="pc bpc" id="L1889" title="1 of 2 branches missed.">        if (section == null) {</span>
+<span class="nc" id="L1890">            final ConfigurationSection legacy = getConfig().getConfigurationSection(&quot;storage&quot;);</span>
+<span class="nc bnc" id="L1891" title="All 2 branches missed.">            if (legacy != null) {</span>
+<span class="nc bnc" id="L1892" title="All 2 branches missed.">                section = path == null ? legacy : legacy.getConfigurationSection(path);</span>
+            }
+        }
+<span class="fc" id="L1895">        return section;</span>
+    }
+
+    public ConfigurationSection getActionBarSection() {
+<span class="fc bfc" id="L1899" title="All 2 branches covered.">        if (featureConfig != null) {</span>
+<span class="fc" id="L1900">            return featureConfig.getConfigurationSection(&quot;action-bar&quot;);</span>
+        }
+<span class="fc" id="L1902">        final ConfigurationSection legacy = getConfig().getConfigurationSection(&quot;lifesteal&quot;);</span>
+<span class="pc bpc" id="L1903" title="1 of 2 branches missed.">        return legacy == null ? null : legacy.getConfigurationSection(&quot;action-bar&quot;);</span>
+    }
+
+    public ConfigurationSection getHologramSection(boolean create) {
+<span class="fc bfc" id="L1907" title="All 2 branches covered.">        if (featureConfig != null) {</span>
+<span class="fc" id="L1908">            ConfigurationSection section = featureConfig.getConfigurationSection(&quot;hologram&quot;);</span>
+<span class="pc bpc" id="L1909" title="3 of 4 branches missed.">            if (section == null &amp;&amp; create) {</span>
+<span class="nc" id="L1910">                section = featureConfig.createSection(&quot;hologram&quot;);</span>
+            }
+<span class="fc" id="L1912">            return section;</span>
+        }
+<span class="fc" id="L1914">        ConfigurationSection section = getConfig().getConfigurationSection(&quot;hologram&quot;);</span>
+<span class="pc bpc" id="L1915" title="2 of 4 branches missed.">        if (section == null &amp;&amp; create) {</span>
+<span class="nc" id="L1916">            section = getConfig().createSection(&quot;hologram&quot;);</span>
+        }
+<span class="fc" id="L1918">        return section;</span>
+    }
+
+    public void saveHologramSettings() {
+<span class="nc" id="L1922">        saveFeaturesConfiguration();</span>
+<span class="nc" id="L1923">    }</span>
+
+    private void saveFeaturesConfiguration() {
+<span class="nc bnc" id="L1926" title="All 4 branches missed.">        if (featureConfig != null &amp;&amp; featureConfigFile != null) {</span>
+<span class="nc" id="L1927">            configLoader.save(featureConfig, &quot;features.yml&quot;);</span>
+        }
+        else {
+<span class="nc" id="L1930">            plugin.saveConfig();</span>
+        }
+<span class="nc" id="L1932">    }</span>
+
+    public void parseWorldOverrides() {
+<span class="fc" id="L1935">        final GameplayParsingService.WorldOverrides parsed = requireGameplayParsingService().parseWorldOverrides();</span>
+<span class="fc" id="L1936">        heartsPerKillOverrides = parsed.heartsPerKillOverrides();</span>
+<span class="fc" id="L1937">        heartsLostOnDeathOverrides = parsed.heartsLostOnDeathOverrides();</span>
+<span class="fc" id="L1938">        banWhenZeroOverrides = parsed.banWhenZeroOverrides();</span>
+<span class="fc" id="L1939">        gameplayState.getWorldRulesState().setHeartsPerKillOverrides(heartsPerKillOverrides);</span>
+<span class="fc" id="L1940">        gameplayState.getWorldRulesState().setHeartsLostOnDeathOverrides(heartsLostOnDeathOverrides);</span>
+<span class="fc" id="L1941">        gameplayState.getWorldRulesState().setBanWhenZeroOverrides(banWhenZeroOverrides);</span>
+<span class="fc" id="L1942">    }</span>
+
+    public void parseMobRewards() {
+<span class="fc" id="L1945">        mobRewards = requireGameplayParsingService().parseMobRewards();</span>
+<span class="fc" id="L1946">        gameplayState.getMobRulesState().setMobRewards(mobRewards);</span>
+<span class="fc" id="L1947">    }</span>
+
+    public KillStreakSettings parseKillStreakSettings() {
+<span class="fc" id="L1950">        return requireKillStreakParsingService().parseKillStreakSettings();</span>
+    }
+
+    private KillStreakReward parseKillStreakReward(String key, ConfigurationSection rewardSection) {
+<span class="nc" id="L1954">        return requireKillStreakParsingService().parseKillStreakReward(key, rewardSection);</span>
+    }
+
+    private List&lt;ItemStack&gt; parseRewardItems(ConfigurationSection rewardSection, String key) {
+<span class="nc" id="L1958">        return requireKillStreakParsingService().parseRewardItems(rewardSection, key);</span>
+    }
+
+    private ItemStack parseRewardItem(Object raw, String key) {
+<span class="nc" id="L1962">        return requireKillStreakParsingService().parseRewardItem(raw, key);</span>
+    }
+
+    private ItemStack parseRewardItemMap(Map&lt;?, ?&gt; map, String key) {
+<span class="fc" id="L1966">        return requireKillStreakParsingService().parseRewardItemMap(map, key);</span>
+    }
+
+    private ItemStack parseRewardItemString(String value, String key) {
+<span class="nc" id="L1970">        return requireKillStreakParsingService().parseRewardItemString(value, key);</span>
+    }
+
+    private String describeWorldRestrictions() {
+<span class="fc bfc" id="L1974" title="All 2 branches covered.">        if (!enabledWorlds.isEmpty()) {</span>
+<span class="fc" id="L1975">            return &quot;World restrictions: enabled only in &quot; + formatWorldList(enabledWorlds) + &quot;.&quot;;</span>
+        }
+<span class="fc bfc" id="L1977" title="All 2 branches covered.">        if (!disabledWorlds.isEmpty()) {</span>
+<span class="fc" id="L1978">            return &quot;World restrictions: disabled in &quot; + formatWorldList(disabledWorlds) + &quot;.&quot;;</span>
+        }
+<span class="fc" id="L1980">        return &quot;World restrictions: none (all worlds inherit the global setting).&quot;;</span>
+    }
+
+    private String formatWorldList(Set&lt;String&gt; worlds) {
+<span class="pc bpc" id="L1984" title="2 of 4 branches missed.">        if (worlds == null || worlds.isEmpty()) {</span>
+<span class="nc" id="L1985">            return &quot;&quot;;</span>
+        }
+<span class="fc" id="L1987">        return String.join(&quot;, &quot;, new TreeSet&lt;&gt;(worlds));</span>
+    }
+
+    private String buildWorldOverrideSummary() {
+<span class="fc" id="L1991">        final Set&lt;String&gt; worlds = new TreeSet&lt;&gt;();</span>
+<span class="fc" id="L1992">        addNonBlankWorldKeys(worlds, heartsPerKillOverrides);</span>
+<span class="fc" id="L1993">        addNonBlankWorldKeys(worlds, heartsLostOnDeathOverrides);</span>
+<span class="fc" id="L1994">        addNonBlankWorldKeys(worlds, banWhenZeroOverrides);</span>
+<span class="fc bfc" id="L1995" title="All 2 branches covered.">        if (worlds.isEmpty()) {</span>
+<span class="fc" id="L1996">            return &quot;No world-specific lifesteal overrides are configured.&quot;;</span>
+        }
+<span class="fc" id="L1998">        final List&lt;String&gt; details = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L1999" title="All 2 branches covered.">        for (String world : worlds) {</span>
+<span class="fc" id="L2000">            final List&lt;String&gt; parts = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L2001" title="All 2 branches covered.">            if (heartsPerKillOverrides.containsKey(world)) {</span>
+<span class="fc" id="L2002">                parts.add(&quot;kill=&quot; + formatDouble(heartsPerKillOverrides.get(world)));</span>
+            }
+<span class="fc bfc" id="L2004" title="All 2 branches covered.">            if (heartsLostOnDeathOverrides.containsKey(world)) {</span>
+<span class="fc" id="L2005">                parts.add(&quot;death=&quot; + formatDouble(heartsLostOnDeathOverrides.get(world)));</span>
+            }
+<span class="fc bfc" id="L2007" title="All 2 branches covered.">            if (banWhenZeroOverrides.containsKey(world)) {</span>
+<span class="pc bpc" id="L2008" title="1 of 2 branches missed.">                parts.add(&quot;ban=&quot; + (banWhenZeroOverrides.get(world) ? &quot;on&quot; : &quot;off&quot;));</span>
+            }
+<span class="pc bpc" id="L2010" title="1 of 2 branches missed.">            if (!parts.isEmpty()) {</span>
+<span class="fc" id="L2011">                details.add(world + &quot;: &quot; + String.join(&quot;, &quot;, parts));</span>
+            }
+<span class="fc" id="L2013">        }</span>
+<span class="pc bpc" id="L2014" title="1 of 2 branches missed.">        if (details.isEmpty()) {</span>
+<span class="nc" id="L2015">            return &quot;No world-specific lifesteal overrides are configured.&quot;;</span>
+        }
+<span class="fc" id="L2017">        return &quot;World overrides loaded (&quot; + details.size() + &quot;): &quot; + String.join(&quot;; &quot;, details);</span>
+    }
+
+    private String formatDouble(double value) {
+<span class="fc bfc" id="L2021" title="All 2 branches covered.">        return value % 1 == 0 ? Integer.toString((int) value) : String.format(Locale.US, &quot;%.2f&quot;, value);</span>
+    }
+
+    private void addNonBlankWorldKeys(Set&lt;String&gt; destination, Map&lt;String, ?&gt; source) {
+<span class="pc bpc" id="L2025" title="1 of 6 branches missed.">        if (destination == null || source == null || source.isEmpty()) {</span>
+<span class="fc" id="L2026">            return;</span>
+        }
+<span class="fc bfc" id="L2028" title="All 2 branches covered.">        for (String key : source.keySet()) {</span>
+<span class="fc bfc" id="L2029" title="All 4 branches covered.">            if (key != null &amp;&amp; !key.isBlank()) {</span>
+<span class="fc" id="L2030">                destination.add(key);</span>
+            }
+<span class="fc" id="L2032">        }</span>
+<span class="fc" id="L2033">    }</span>
+
+    public String normalizeWorldName(String worldName) {
+<span class="pc bpc" id="L2036" title="1 of 2 branches missed.">        return worldName == null ? &quot;&quot; : worldName.trim().toLowerCase(Locale.ROOT);</span>
+    }
+
+    private ManagerService requireManagerService() {
+<span class="fc" id="L2040">        return Objects.requireNonNull(managerService,</span>
+                &quot;initializeCoreState() must be called before manager lifecycle methods.&quot;);
+    }
+
+    private OverlayService requireOverlayService() {
+<span class="fc" id="L2045">        return Objects.requireNonNull(overlayService,</span>
+                &quot;initializeCoreState() must be called before overlay lifecycle methods.&quot;);
+    }
+
+    private HologramService requireHologramService() {
+<span class="fc" id="L2050">        return Objects.requireNonNull(hologramService,</span>
+                &quot;initializeCoreState() must be called before hologram lifecycle methods.&quot;);
+    }
+
+    private RecipeService requireRecipeService() {
+<span class="fc" id="L2055">        return Objects.requireNonNull(recipeService,</span>
+                &quot;initializeCoreState() must be called before recipe lifecycle methods.&quot;);
+    }
+
+    private KillStreakParsingService requireKillStreakParsingService() {
+<span class="fc" id="L2060">        return Objects.requireNonNull(killStreakParsingService,</span>
+                &quot;initializeCoreState() must be called before kill streak parsing.&quot;);
+    }
+
+    private GameplayParsingService requireGameplayParsingService() {
+<span class="fc" id="L2065">        return Objects.requireNonNull(gameplayParsingService,</span>
+                &quot;initializeCoreState() must be called before gameplay parsing.&quot;);
+    }
+
+    void setLegacyLifestealManager(LifestealManager lifestealManager) {
+<span class="fc" id="L2070">        this.lifestealManager = lifestealManager;</span>
+<span class="fc" id="L2071">    }</span>
+
+    void setLegacyHeartOverlayManager(HeartOverlayManager heartOverlayManager) {
+<span class="fc" id="L2074">        this.heartOverlayManager = heartOverlayManager;</span>
+<span class="fc" id="L2075">    }</span>
+
+    void setLegacyTopHologramManager(TopHologramManager topHologramManager) {
+<span class="fc" id="L2078">        this.topHologramManager = topHologramManager;</span>
+<span class="fc" id="L2079">    }</span>
+
+    void setLegacyKillStreakManager(KillStreakManager killStreakManager) {
+<span class="fc" id="L2082">        this.killStreakManager = killStreakManager;</span>
+<span class="fc" id="L2083">    }</span>
+
+    void setLegacyPlaceholderExpansion(PlaceholderHook placeholderExpansion) {
+<span class="fc" id="L2086">        this.placeholderExpansion = placeholderExpansion;</span>
+<span class="fc" id="L2087">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

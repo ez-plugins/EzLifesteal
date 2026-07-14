@@ -1,0 +1,9 @@
+# ==============================================================
+# EzLifesteal - Revive beacon whitelist data
+# ============================================================== 
+# This file stores whitelist beacon locations managed via commands.
+# It is intentionally separate from revive-beacon.yml so runtime
+# updates are not accidentally overwritten during config edits.
+
+revive-beacon-whitelist:
+  whitelisted-beacons: []

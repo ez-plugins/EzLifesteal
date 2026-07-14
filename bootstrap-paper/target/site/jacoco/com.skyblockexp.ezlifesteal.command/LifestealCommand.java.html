@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LifestealCommand.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.command</a> &gt; <span class="el_source">LifestealCommand.java</span></div><h1>LifestealCommand.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.command;
+
+import com.skyblockexp.ezlifesteal.command.subcommand.AboutSubcommand;
+import com.skyblockexp.ezlifesteal.command.subcommand.AddSubcommand;
+import com.skyblockexp.ezlifesteal.command.subcommand.BanlistSubcommand;
+import com.skyblockexp.ezlifesteal.command.subcommand.BeaconSubcommand;
+import com.skyblockexp.ezlifesteal.command.subcommand.GiveheartSubcommand;
+import com.skyblockexp.ezlifesteal.command.subcommand.HeartsSubcommand;
+import com.skyblockexp.ezlifesteal.command.subcommand.HelpSubcommand;
+import com.skyblockexp.ezlifesteal.command.subcommand.HologramSubcommand;
+import com.skyblockexp.ezlifesteal.command.subcommand.ReloadSubcommand;
+import com.skyblockexp.ezlifesteal.command.subcommand.RemoveSubcommand;
+import com.skyblockexp.ezlifesteal.command.subcommand.ResetAllSubcommand;
+import com.skyblockexp.ezlifesteal.command.subcommand.ResetSubcommand;
+import com.skyblockexp.ezlifesteal.command.subcommand.ReviveSubcommand;
+import com.skyblockexp.ezlifesteal.command.subcommand.SetSubcommand;
+import com.skyblockexp.ezlifesteal.command.subcommand.ShopSubcommand;
+import com.skyblockexp.ezlifesteal.command.subcommand.SmurfSubcommand;
+import com.skyblockexp.ezlifesteal.command.subcommand.Subcommand;
+import com.skyblockexp.ezlifesteal.command.subcommand.TestSubcommand;
+import com.skyblockexp.ezlifesteal.command.subcommand.TopSubcommand;
+import com.skyblockexp.ezlifesteal.command.subcommand.TransferSubcommand;
+import com.skyblockexp.ezlifesteal.command.subcommand.TeamBankAdminSubcommand;
+import com.skyblockexp.ezlifesteal.command.subcommand.TeamBankSubcommand;
+import com.skyblockexp.ezlifesteal.command.subcommand.WithdrawSubcommand;
+import com.skyblockexp.ezlifesteal.model.LifestealProfile;
+import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
+import com.skyblockexp.ezlifesteal.service.LifestealManager;
+import com.skyblockexp.ezlifesteal.util.PlayerLookupService;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.command.CommandSender;
+
+public class LifestealCommand implements org.bukkit.command.CommandExecutor {
+    private final PluginAccessor plugin;
+
+    private final SubcommandRegistry subcommandRegistry;
+
+
+    public LifestealCommand() {
+<span class="fc" id="L48">        this(null, createDefaultSubcommandRegistry());</span>
+<span class="fc" id="L49">    }</span>
+
+    public LifestealCommand(PluginAccessor plugin) {
+<span class="fc" id="L52">        this(plugin, createDefaultSubcommandRegistry());</span>
+<span class="fc" id="L53">    }</span>
+
+<span class="fc" id="L55">    public LifestealCommand(PluginAccessor plugin, SubcommandRegistry subcommandRegistry) {</span>
+<span class="fc" id="L56">        this.plugin = plugin;</span>
+<span class="fc" id="L57">        this.subcommandRegistry = subcommandRegistry;</span>
+<span class="fc" id="L58">    }</span>
+
+    public boolean requirePermission(Object senderObj, Object permissionObj, Object... fallbackObjs) {
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">        if (permissionObj == null) {</span>
+<span class="nc" id="L62">            return true;</span>
+        }
+<span class="fc" id="L64">        final String permission = permissionObj.toString();</span>
+<span class="fc" id="L65">        String[] fallback = null;</span>
+<span class="pc bpc" id="L66" title="2 of 4 branches missed.">        if (fallbackObjs != null &amp;&amp; fallbackObjs.length &gt; 0) {</span>
+<span class="fc" id="L67">            fallback = new String[fallbackObjs.length];</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">            for (int i = 0; i &lt; fallbackObjs.length; i++) {</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">                fallback[i] = fallbackObjs[i] == null ? null : fallbackObjs[i].toString();</span>
+            }
+        }
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">        final CommandSender sender = senderObj instanceof CommandSender ? (CommandSender) senderObj : null;</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        return requirePermission(sender, permission, fallback == null ? new String[0] : fallback);</span>
+    }
+
+    public boolean requirePermission(CommandSender sender, String permission, String... fallback) {
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">        if (sender == null) {</span>
+<span class="nc" id="L78">            return false;</span>
+        }
+<span class="pc bpc" id="L80" title="1 of 4 branches missed.">        if (permission != null &amp;&amp; sender.hasPermission(permission)) {</span>
+<span class="fc" id="L81">            return true;</span>
+        }
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">        if (fallback != null) {</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">            for (String p : fallback) {</span>
+<span class="pc bpc" id="L85" title="2 of 4 branches missed.">                if (p != null &amp;&amp; sender.hasPermission(p)) {</span>
+<span class="nc" id="L86">                    return true;</span>
+                }
+            }
+        }
+<span class="pc bpc" id="L90" title="2 of 4 branches missed.">        if (plugin != null &amp;&amp; plugin.getMessageService() != null) {</span>
+<span class="fc" id="L91">            plugin.getMessageService().sendMessage(sender, &quot;no-permission&quot;);</span>
+        }
+        else {
+<span class="nc" id="L94">            sender.sendMessage(&quot;You do not have permission to do that.&quot;);</span>
+        }
+<span class="fc" id="L96">        return false;</span>
+    }
+
+    public PluginAccessor getPluginAccessor() {
+<span class="fc" id="L100">        return plugin;</span>
+    }
+
+    public boolean requirePermissionPublic(Object senderObj, String permission, Object... fallbackObjs) {
+<span class="pc bpc" id="L104" title="2 of 4 branches missed.">        if (fallbackObjs == null || fallbackObjs.length == 0) {</span>
+<span class="nc" id="L105">            return requirePermission(senderObj, permission);</span>
+        }
+<span class="fc" id="L107">        final String[] fallback = new String[fallbackObjs.length];</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">        for (int i = 0; i &lt; fallbackObjs.length; i++) {</span>
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">            fallback[i] = fallbackObjs[i] == null ? null : fallbackObjs[i].toString();</span>
+        }
+<span class="fc" id="L111">        return requirePermission(senderObj, permission, (Object[]) fallback);</span>
+    }
+
+    public PluginAccessor getPluginAccessorPublic() {
+<span class="fc" id="L115">        return getPluginAccessor();</span>
+    }
+
+    public PlayerLookupService getPlayerLookupService() {
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">        return plugin == null ? null : plugin.getPlayerLookupService();</span>
+    }
+
+    public PlayerLookupService getPlayerLookupServicePublic() {
+<span class="fc" id="L123">        return getPlayerLookupService();</span>
+    }
+
+    public Executor getMainThreadExecutor() {
+<span class="fc" id="L127">        return Runnable::run;</span>
+    }
+
+    public Executor getMainThreadExecutorPublic() {
+<span class="fc" id="L131">        return getMainThreadExecutor();</span>
+    }
+
+    public org.bukkit.plugin.java.JavaPlugin getSchedulerPlugin() {
+<span class="nc bnc" id="L135" title="All 2 branches missed.">        return plugin == null ? null : plugin.getPlugin();</span>
+    }
+
+    public String format(Object value) {
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">        return value == null ? &quot;&quot; : String.valueOf(value);</span>
+    }
+
+    public String formatPublic(double value) {
+<span class="fc" id="L143">        return format(value);</span>
+    }
+
+    public String formatCoordinate(double coord) {
+<span class="fc bfc" id="L147" title="All 2 branches covered.">        if (coord == (long) coord) {</span>
+<span class="fc" id="L148">            return String.format(&quot;%d&quot;, (long) coord);</span>
+        }
+<span class="fc" id="L150">        return String.format(&quot;%s&quot;, coord);</span>
+    }
+
+    public CompletableFuture&lt;LifestealProfile&gt; ensureProfileLoaded(LifestealManager manager, UUID uniqueId) {
+<span class="nc bnc" id="L154" title="All 2 branches missed.">        return manager == null ? CompletableFuture.completedFuture(null) : manager.loadProfileAsync(uniqueId);</span>
+    }
+
+    public String resolvePlayerName(OfflinePlayer player, String fallback) {
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">        if (player != null) {</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">            return player.getName() == null ? fallback : player.getName();</span>
+        }
+<span class="nc" id="L161">        return fallback;</span>
+    }
+
+    public String resolvePlayerNamePublic(Object playerObj, String fallback) {
+<span class="fc bfc" id="L165" title="All 2 branches covered.">        if (playerObj instanceof OfflinePlayer offlinePlayer) {</span>
+<span class="fc" id="L166">            return resolvePlayerName(offlinePlayer, fallback);</span>
+        }
+<span class="fc" id="L168">        return fallback;</span>
+    }
+
+    public void sendPlayerNotFound(Object senderObj, Object identifierObj) {
+<span class="nc bnc" id="L172" title="All 2 branches missed.">        if (senderObj instanceof CommandSender sender) {</span>
+<span class="nc" id="L173">            sender.sendMessage(&quot;Player not found: &quot; + identifierObj);</span>
+        }
+<span class="nc" id="L175">    }</span>
+
+    public void sendPlayerNotFoundPublic(CommandSender sender, String identifier) {
+<span class="nc" id="L178">        sendPlayerNotFound(sender, identifier);</span>
+<span class="nc" id="L179">    }</span>
+
+    public void sendHeartMessage(Object senderObj, OfflinePlayer target, double hearts) {
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">        if (senderObj instanceof CommandSender sender) {</span>
+<span class="fc" id="L183">            sender.sendMessage(&quot;Hearts: &quot; + hearts);</span>
+        }
+<span class="fc" id="L185">    }</span>
+
+    public void handleLookupFailure(Object senderObj, Object identifierObj, Throwable throwable) {
+<span class="nc bnc" id="L188" title="All 2 branches missed.">        if (senderObj instanceof CommandSender sender) {</span>
+<span class="nc" id="L189">            sender.sendMessage(&quot;Lookup failed for: &quot; + identifierObj);</span>
+        }
+<span class="nc" id="L191">    }</span>
+
+    public void handleAsyncFailure(Object senderObj, Throwable throwable, String contextMsg) {
+<span class="nc bnc" id="L194" title="All 2 branches missed.">        if (senderObj instanceof CommandSender sender) {</span>
+<span class="nc" id="L195">            sender.sendMessage(&quot;Async failure while &quot; + contextMsg + &quot;: &quot; + throwable);</span>
+        }
+<span class="nc" id="L197">    }</span>
+
+
+    private static SubcommandRegistry createDefaultSubcommandRegistry() {
+<span class="fc" id="L201">        final SubcommandRegistry registry = new SubcommandRegistry();</span>
+<span class="fc" id="L202">        registry.register(&quot;banlist&quot;, new BanlistSubcommand(),</span>
+<span class="fc" id="L203">                requirement(false, &quot;lifesteal.admin.banlist&quot;, &quot;lifesteal.admin&quot;));</span>
+<span class="fc" id="L204">        registry.register(&quot;transfer&quot;, new TransferSubcommand(),</span>
+<span class="fc" id="L205">                requirement(true, &quot;lifesteal.transfer&quot;, &quot;lifesteal.admin&quot;));</span>
+<span class="fc" id="L206">        registry.register(&quot;teambank&quot;, new TeamBankSubcommand(),</span>
+<span class="fc" id="L207">                requirement(true, &quot;lifesteal.teambank.balance&quot;, &quot;lifesteal.teambank.deposit&quot;,</span>
+                        &quot;lifesteal.teambank.withdraw&quot;, &quot;lifesteal.admin&quot;), &quot;tb&quot;);
+<span class="fc" id="L209">        registry.register(&quot;teambank-admin&quot;, new TeamBankAdminSubcommand(),</span>
+<span class="fc" id="L210">                requirement(false, &quot;lifesteal.teambank.admin&quot;, &quot;lifesteal.admin&quot;), &quot;tba&quot;);</span>
+<span class="fc" id="L211">        registry.register(&quot;top&quot;, new TopSubcommand(), requirement(false, &quot;lifesteal.top&quot;, &quot;lifesteal.admin&quot;));</span>
+<span class="fc" id="L212">        registry.register(&quot;shop&quot;, new ShopSubcommand(), requirement(true));</span>
+<span class="fc" id="L213">        registry.register(&quot;help&quot;, new HelpSubcommand(), requirement(false, &quot;lifesteal.command.base&quot;));</span>
+<span class="fc" id="L214">        registry.register(&quot;about&quot;, new AboutSubcommand(), requirement(true));</span>
+<span class="fc" id="L215">        registry.register(&quot;hearts&quot;, new HeartsSubcommand(),</span>
+<span class="fc" id="L216">                requirement(false, &quot;lifesteal.manage.view&quot;, &quot;lifesteal.admin&quot;));</span>
+<span class="fc" id="L217">        registry.register(&quot;set&quot;, new SetSubcommand(), requirement(false, &quot;lifesteal.manage.modify&quot;, &quot;lifesteal.admin&quot;));</span>
+<span class="fc" id="L218">        registry.register(&quot;add&quot;, new AddSubcommand(), requirement(false, &quot;lifesteal.manage.modify&quot;, &quot;lifesteal.admin&quot;));</span>
+<span class="fc" id="L219">        registry.register(&quot;remove&quot;, new RemoveSubcommand(),</span>
+<span class="fc" id="L220">                requirement(false, &quot;lifesteal.manage.modify&quot;, &quot;lifesteal.admin&quot;));</span>
+<span class="fc" id="L221">        registry.register(&quot;reset&quot;, new ResetSubcommand(),</span>
+<span class="fc" id="L222">                requirement(false, &quot;lifesteal.manage.modify&quot;, &quot;lifesteal.admin&quot;));</span>
+<span class="fc" id="L223">        registry.register(&quot;resetall&quot;, new ResetAllSubcommand(),</span>
+<span class="fc" id="L224">                requirement(false, &quot;lifesteal.manage.resetall&quot;, &quot;lifesteal.admin&quot;));</span>
+<span class="fc" id="L225">        registry.register(&quot;revive&quot;, new ReviveSubcommand(),</span>
+<span class="fc" id="L226">                requirement(false, &quot;lifesteal.manage.modify&quot;, &quot;lifesteal.admin&quot;));</span>
+<span class="fc" id="L227">        registry.register(&quot;giveheart&quot;, new GiveheartSubcommand(),</span>
+<span class="fc" id="L228">                requirement(true, &quot;lifesteal.manage.modify&quot;, &quot;lifesteal.admin&quot;));</span>
+<span class="fc" id="L229">        registry.register(&quot;withdraw&quot;, new WithdrawSubcommand(),</span>
+<span class="fc" id="L230">                requirement(true, &quot;lifesteal.withdraw&quot;, &quot;lifesteal.admin&quot;));</span>
+<span class="fc" id="L231">        registry.register(&quot;reload&quot;, new ReloadSubcommand(), requirement(false, &quot;lifesteal.reload&quot;, &quot;lifesteal.admin&quot;));</span>
+<span class="fc" id="L232">        registry.register(&quot;hologram&quot;, new HologramSubcommand(),</span>
+<span class="fc" id="L233">                requirement(false, &quot;lifesteal.hologram&quot;, &quot;lifesteal.admin&quot;));</span>
+<span class="fc" id="L234">        registry.register(&quot;beacon&quot;, new BeaconSubcommand(),</span>
+<span class="fc" id="L235">                requirement(false, &quot;lifesteal.manage.modify&quot;, &quot;lifesteal.admin&quot;));</span>
+<span class="fc" id="L236">        registry.register(&quot;smurf&quot;, new SmurfSubcommand(),</span>
+<span class="fc" id="L237">                requirement(true, &quot;lifesteal.smurf.manage&quot;, &quot;lifesteal.admin&quot;), &quot;sm&quot;);</span>
+<span class="fc" id="L238">        registry.register(&quot;test&quot;, new TestSubcommand(), requirement(false, &quot;lifesteal.test&quot;, &quot;lifesteal.admin&quot;));</span>
+<span class="fc" id="L239">        return registry;</span>
+    }
+
+    private static SubcommandRequirement requirement(boolean playerOnly, String... permissions) {
+<span class="fc" id="L243">        return new SubcommandRequirement(</span>
+                playerOnly,
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">                permissions == null ? Collections.emptyList() : List.of(permissions),</span>
+<span class="fc" id="L246">                Collections.emptyMap()</span>
+        );
+    }
+
+<span class="fc" id="L250">    private static final Map&lt;String, SubcommandRequirement&gt; DEFAULT_REQUIREMENTS = Map.ofEntries(</span>
+<span class="fc" id="L251">            Map.entry(&quot;help&quot;, new SubcommandRequirement(false, List.of(&quot;lifesteal.command.base&quot;), null)),</span>
+<span class="fc" id="L252">            Map.entry(&quot;about&quot;, new SubcommandRequirement(true, Collections.emptyList(), null)),</span>
+<span class="fc" id="L253">            Map.entry(&quot;hearts&quot;,</span>
+<span class="fc" id="L254">                    new SubcommandRequirement(false, List.of(&quot;lifesteal.manage.view&quot;, &quot;lifesteal.admin&quot;), null)),</span>
+<span class="fc" id="L255">            Map.entry(&quot;shop&quot;, new SubcommandRequirement(true, Collections.emptyList(), null)),</span>
+<span class="fc" id="L256">            Map.entry(&quot;transfer&quot;,</span>
+<span class="fc" id="L257">                    new SubcommandRequirement(true, List.of(&quot;lifesteal.transfer&quot;, &quot;lifesteal.admin&quot;), null)),</span>
+<span class="fc" id="L258">            Map.entry(&quot;teambank&quot;,</span>
+<span class="fc" id="L259">                    new SubcommandRequirement(true, List.of(</span>
+                            &quot;lifesteal.teambank.balance&quot;,
+                            &quot;lifesteal.teambank.deposit&quot;,
+                            &quot;lifesteal.teambank.withdraw&quot;,
+                            &quot;lifesteal.admin&quot;
+                    ), null)),
+<span class="fc" id="L265">            Map.entry(&quot;teambank-admin&quot;,</span>
+<span class="fc" id="L266">                    new SubcommandRequirement(false, List.of(&quot;lifesteal.teambank.admin&quot;, &quot;lifesteal.admin&quot;), null)),</span>
+<span class="fc" id="L267">            Map.entry(&quot;smurf&quot;,</span>
+<span class="fc" id="L268">                    new SubcommandRequirement(true, List.of(&quot;lifesteal.smurf.manage&quot;, &quot;lifesteal.admin&quot;), null)),</span>
+<span class="fc" id="L269">            Map.entry(&quot;top&quot;, new SubcommandRequirement(false, List.of(&quot;lifesteal.top&quot;, &quot;lifesteal.admin&quot;), null)),</span>
+<span class="fc" id="L270">            Map.entry(&quot;banlist&quot;,</span>
+<span class="fc" id="L271">                    new SubcommandRequirement(false, List.of(&quot;lifesteal.admin.banlist&quot;, &quot;lifesteal.admin&quot;), null)),</span>
+<span class="fc" id="L272">            Map.entry(&quot;set&quot;,</span>
+<span class="fc" id="L273">                    new SubcommandRequirement(false, List.of(&quot;lifesteal.manage.modify&quot;, &quot;lifesteal.admin&quot;), null)),</span>
+<span class="fc" id="L274">            Map.entry(&quot;add&quot;,</span>
+<span class="fc" id="L275">                    new SubcommandRequirement(false, List.of(&quot;lifesteal.manage.modify&quot;, &quot;lifesteal.admin&quot;), null)),</span>
+<span class="fc" id="L276">            Map.entry(&quot;remove&quot;,</span>
+<span class="fc" id="L277">                    new SubcommandRequirement(false, List.of(&quot;lifesteal.manage.modify&quot;, &quot;lifesteal.admin&quot;), null)),</span>
+<span class="fc" id="L278">            Map.entry(&quot;reset&quot;,</span>
+<span class="fc" id="L279">                    new SubcommandRequirement(false, List.of(&quot;lifesteal.manage.modify&quot;, &quot;lifesteal.admin&quot;), null)),</span>
+<span class="fc" id="L280">            Map.entry(&quot;resetall&quot;,</span>
+<span class="fc" id="L281">                    new SubcommandRequirement(false, List.of(&quot;lifesteal.manage.resetall&quot;, &quot;lifesteal.admin&quot;), null)),</span>
+<span class="fc" id="L282">            Map.entry(&quot;revive&quot;,</span>
+<span class="fc" id="L283">                    new SubcommandRequirement(false, List.of(&quot;lifesteal.manage.modify&quot;, &quot;lifesteal.admin&quot;), null)),</span>
+<span class="fc" id="L284">            Map.entry(&quot;giveheart&quot;,</span>
+<span class="fc" id="L285">                    new SubcommandRequirement(true, List.of(&quot;lifesteal.manage.modify&quot;, &quot;lifesteal.admin&quot;), null)),</span>
+<span class="fc" id="L286">            Map.entry(&quot;withdraw&quot;,</span>
+<span class="fc" id="L287">                    new SubcommandRequirement(true, List.of(&quot;lifesteal.withdraw&quot;, &quot;lifesteal.admin&quot;), null)),</span>
+<span class="fc" id="L288">            Map.entry(&quot;reload&quot;, new SubcommandRequirement(false, List.of(&quot;lifesteal.reload&quot;, &quot;lifesteal.admin&quot;), null)),</span>
+<span class="fc" id="L289">            Map.entry(&quot;hologram&quot;,</span>
+<span class="fc" id="L290">                    new SubcommandRequirement(false, List.of(&quot;lifesteal.hologram&quot;, &quot;lifesteal.admin&quot;), null)),</span>
+<span class="fc" id="L291">            Map.entry(&quot;beacon&quot;,</span>
+<span class="fc" id="L292">                    new SubcommandRequirement(false, List.of(&quot;lifesteal.manage.modify&quot;, &quot;lifesteal.admin&quot;), null)),</span>
+<span class="fc" id="L293">            Map.entry(&quot;test&quot;, new SubcommandRequirement(false, List.of(&quot;lifesteal.test&quot;, &quot;lifesteal.admin&quot;), null))</span>
+    );
+
+    public static List&lt;String&gt; listAllowedSubcommands(CommandSender sender) {
+<span class="pc bpc" id="L297" title="1 of 2 branches missed.">        if (sender == null) {</span>
+<span class="nc" id="L298">            return Collections.emptyList();</span>
+        }
+<span class="fc" id="L300">        final List&lt;String&gt; allowed = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L301" title="All 2 branches covered.">        for (Map.Entry&lt;String, SubcommandRequirement&gt; entry : DEFAULT_REQUIREMENTS.entrySet()) {</span>
+<span class="fc" id="L302">            final SubcommandRequirement requirement = entry.getValue();</span>
+<span class="fc bfc" id="L303" title="All 4 branches covered.">            if (requirement.playerOnly &amp;&amp; !(sender instanceof org.bukkit.entity.Player)) {</span>
+<span class="fc" id="L304">                continue;</span>
+            }
+<span class="fc bfc" id="L306" title="All 2 branches covered.">            if (requirement.permissions.isEmpty()) {</span>
+<span class="fc" id="L307">                allowed.add(entry.getKey());</span>
+<span class="fc" id="L308">                continue;</span>
+            }
+<span class="fc bfc" id="L310" title="All 2 branches covered.">            for (String permission : requirement.permissions) {</span>
+<span class="fc bfc" id="L311" title="All 2 branches covered.">                if (sender.hasPermission(permission)) {</span>
+<span class="fc" id="L312">                    allowed.add(entry.getKey());</span>
+<span class="fc" id="L313">                    break;</span>
+                }
+<span class="fc" id="L315">            }</span>
+<span class="fc" id="L316">        }</span>
+<span class="fc" id="L317">        allowed.sort(String::compareTo);</span>
+<span class="fc" id="L318">        return allowed;</span>
+    }
+
+    public static List&lt;String&gt; listAllowedSubcommands(Object senderObj) {
+<span class="nc bnc" id="L322" title="All 2 branches missed.">        if (senderObj instanceof CommandSender sender) {</span>
+<span class="nc" id="L323">            return listAllowedSubcommands(sender);</span>
+        }
+<span class="nc" id="L325">        return Collections.emptyList();</span>
+
+    }
+
+
+    public boolean onCommand(CommandSender sender, org.bukkit.command.Command command, String label, String[] args) {
+<span class="pc bpc" id="L331" title="1 of 4 branches missed.">        if (args == null || args.length == 0) {</span>
+<span class="fc" id="L332">            args = new String[]{&quot;help&quot;};</span>
+        }
+
+<span class="fc" id="L335">        final String subcommandName = args[0].toLowerCase(Locale.ROOT);</span>
+<span class="fc" id="L336">        final Subcommand subcommand = subcommandRegistry.resolve(subcommandName).orElse(null);</span>
+<span class="fc bfc" id="L337" title="All 2 branches covered.">        if (subcommand == null) {</span>
+<span class="fc" id="L338">            sender.sendMessage(&quot;Unknown subcommand: &quot; + subcommandName);</span>
+<span class="fc" id="L339">            return true;</span>
+        }
+
+<span class="fc" id="L342">        return subcommand.execute(sender, command, label, args, this);</span>
+    }
+
+    public static final class SubcommandRequirement {
+        private final boolean playerOnly;
+
+        private final List&lt;String&gt; permissions;
+
+        private final Map&lt;String, SubcommandRequirement&gt; children;
+
+
+        public SubcommandRequirement(boolean playerOnly, List&lt;String&gt; permissions, Map&lt;String,
+<span class="fc" id="L354">                SubcommandRequirement&gt; children) {</span>
+<span class="fc" id="L355">            this.playerOnly = playerOnly;</span>
+<span class="pc bpc" id="L356" title="1 of 2 branches missed.">            this.permissions = permissions == null ? Collections.emptyList() : permissions;</span>
+<span class="fc bfc" id="L357" title="All 2 branches covered.">            this.children = children == null ? Collections.emptyMap() : children;</span>
+<span class="fc" id="L358">        }</span>
+
+        public boolean canExecute(CommandSender sender) {
+<span class="fc" id="L361">            return true;</span>
+        }
+
+        public List&lt;String&gt; getAccessibleChildren(CommandSender sender) {
+<span class="fc" id="L365">            return new ArrayList&lt;&gt;(children.keySet());</span>
+        }
+
+        public SubcommandRequirement getChild(String name) {
+<span class="pc bpc" id="L369" title="1 of 2 branches missed.">            if (name == null) {</span>
+<span class="nc" id="L370">                return null;</span>
+            }
+<span class="fc" id="L372">            return children.get(name.toLowerCase(Locale.ROOT));</span>
+        }
+
+        public boolean isPlayerOnly() {
+<span class="fc" id="L376">            return playerOnly;</span>
+        }
+
+        public List&lt;String&gt; getPermissions() {
+<span class="fc" id="L380">            return permissions;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

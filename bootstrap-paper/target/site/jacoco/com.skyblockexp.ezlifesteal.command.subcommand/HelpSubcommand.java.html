@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HelpSubcommand.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.command.subcommand</a> &gt; <span class="el_source">HelpSubcommand.java</span></div><h1>HelpSubcommand.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.command.subcommand;
+
+import com.skyblockexp.ezlifesteal.command.LifestealCommand;
+import com.skyblockexp.ezlifesteal.config.MessageService;
+import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import org.bukkit.ChatColor;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+
+<span class="fc" id="L13">public class HelpSubcommand implements Subcommand {</span>
+
+    private static final int PAGE_SIZE = 6;
+
+<span class="fc" id="L17">    private static final Map&lt;String, String&gt; FALLBACK_DESCRIPTIONS = createFallbackDescriptions();</span>
+
+    @Override
+    public boolean execute(CommandSender sender, Command command, String label, String[] args,
+            LifestealCommand context) {
+<span class="fc" id="L22">        final List&lt;String&gt; allowedSubcommands = LifestealCommand.listAllowedSubcommands(sender);</span>
+<span class="fc" id="L23">        final int requestedPage = parseRequestedPage(sender, args, context);</span>
+<span class="pc bpc" id="L24" title="1 of 2 branches missed.">        if (requestedPage &lt; 0) {</span>
+<span class="nc" id="L25">            return true;</span>
+        }
+
+<span class="fc" id="L28">        final PluginAccessor plugin = context.getPluginAccessorPublic();</span>
+<span class="pc bpc" id="L29" title="1 of 2 branches missed.">        final MessageService messageService = plugin == null ? null : plugin.getMessageService();</span>
+<span class="fc" id="L30">        final int totalPages = Math.max(1, (int) Math.ceil(allowedSubcommands.size() / (double) PAGE_SIZE));</span>
+<span class="pc bpc" id="L31" title="1 of 2 branches missed.">        if (requestedPage &gt; totalPages) {</span>
+<span class="nc" id="L32">            sendNoPage(sender, messageService, requestedPage, totalPages);</span>
+<span class="nc" id="L33">            return true;</span>
+        }
+
+<span class="fc" id="L36">        final int startIndex = (requestedPage - 1) * PAGE_SIZE;</span>
+<span class="fc" id="L37">        final int endIndex = Math.min(startIndex + PAGE_SIZE, allowedSubcommands.size());</span>
+
+<span class="fc" id="L39">        sendHeader(sender, messageService, requestedPage, totalPages);</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        for (int index = startIndex; index &lt; endIndex; index++) {</span>
+<span class="fc" id="L41">            final String subcommandName = allowedSubcommands.get(index);</span>
+<span class="fc" id="L42">            final String description = resolveDescription(subcommandName, messageService);</span>
+<span class="fc" id="L43">            sender.sendMessage(ChatColor.GRAY + &quot;/lifesteal &quot; + ChatColor.WHITE + subcommandName</span>
+                    + ChatColor.DARK_GRAY + &quot; - &quot; + ChatColor.GRAY + description);
+        }
+<span class="fc" id="L46">        sendFooter(sender, messageService, requestedPage, totalPages);</span>
+<span class="fc" id="L47">        return true;</span>
+    }
+
+    private int parseRequestedPage(CommandSender sender, String[] args, LifestealCommand context) {
+<span class="pc bpc" id="L51" title="1 of 4 branches missed.">        if (args == null || args.length &lt; 2) {</span>
+<span class="fc" id="L52">            return 1;</span>
+        }
+        try {
+<span class="fc" id="L55">            final int page = Integer.parseInt(args[1]);</span>
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">            if (page &gt; 0) {</span>
+<span class="fc" id="L57">                return page;</span>
+            }
+        }
+<span class="nc" id="L60">        catch (NumberFormatException ignored) {</span>
+<span class="nc" id="L61">        }</span>
+
+<span class="nc" id="L63">        final PluginAccessor plugin = context.getPluginAccessorPublic();</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">        final MessageService messageService = plugin == null ? null : plugin.getMessageService();</span>
+<span class="nc bnc" id="L65" title="All 4 branches missed.">        if (messageService != null &amp;&amp; !messageService.getMessage(&quot;help-invalid-page&quot;).isBlank()) {</span>
+<span class="nc" id="L66">            messageService.sendMessage(sender, &quot;help-invalid-page&quot;);</span>
+        }
+        else {
+<span class="nc" id="L69">            sender.sendMessage(ChatColor.RED + &quot;Please provide a valid positive page number.&quot;);</span>
+        }
+<span class="nc" id="L71">        return -1;</span>
+    }
+
+    private void sendHeader(CommandSender sender, MessageService messageService, int page, int totalPages) {
+<span class="pc bpc" id="L75" title="3 of 4 branches missed.">        if (messageService != null &amp;&amp; !messageService.getMessage(&quot;help-header&quot;).isBlank()) {</span>
+<span class="nc" id="L76">            messageService.sendMessage(sender, &quot;help-header&quot;, Map.of(</span>
+<span class="nc" id="L77">                    &quot;page&quot;, Integer.toString(page),</span>
+<span class="nc" id="L78">                    &quot;pages&quot;, Integer.toString(totalPages)</span>
+            ));
+<span class="nc" id="L80">            return;</span>
+        }
+<span class="fc" id="L82">        sender.sendMessage(ChatColor.RED + &quot;---------- &quot; + ChatColor.DARK_RED + &quot;EzLifesteal Help &quot;</span>
+                + ChatColor.RED + &quot;(Page &quot; + page + &quot;/&quot; + totalPages + &quot;) ----------&quot;);
+<span class="fc" id="L84">    }</span>
+
+    private void sendFooter(CommandSender sender, MessageService messageService, int page, int totalPages) {
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        if (page &lt; totalPages) {</span>
+<span class="pc bpc" id="L88" title="3 of 4 branches missed.">            if (messageService != null &amp;&amp; !messageService.getMessage(&quot;help-footer&quot;).isBlank()) {</span>
+<span class="nc" id="L89">                messageService.sendMessage(sender, &quot;help-footer&quot;, Map.of(&quot;next_page&quot;, Integer.toString(page + 1)));</span>
+            }
+            else {
+<span class="fc" id="L92">                sender.sendMessage(ChatColor.GRAY + &quot;Use &quot; + ChatColor.WHITE + &quot;/lifesteal help &quot; + (page + 1)</span>
+                        + ChatColor.GRAY + &quot; for the next page.&quot;);
+            }
+<span class="fc" id="L95">            return;</span>
+        }
+
+<span class="pc bpc" id="L98" title="3 of 4 branches missed.">        if (messageService != null &amp;&amp; !messageService.getMessage(&quot;help-footer-end&quot;).isBlank()) {</span>
+<span class="nc" id="L99">            messageService.sendMessage(sender, &quot;help-footer-end&quot;);</span>
+        }
+        else {
+<span class="fc" id="L102">            sender.sendMessage(ChatColor.GRAY + &quot;Use &quot; + ChatColor.WHITE + &quot;/lifesteal about &quot;</span>
+                    + ChatColor.GRAY + &quot;for plugin information.&quot;);
+        }
+<span class="fc" id="L105">    }</span>
+
+    private void sendNoPage(CommandSender sender, MessageService messageService, int page, int totalPages) {
+<span class="nc bnc" id="L108" title="All 4 branches missed.">        if (messageService != null &amp;&amp; !messageService.getMessage(&quot;help-no-page&quot;).isBlank()) {</span>
+<span class="nc" id="L109">            messageService.sendMessage(sender, &quot;help-no-page&quot;, Map.of(</span>
+<span class="nc" id="L110">                    &quot;page&quot;, Integer.toString(page),</span>
+<span class="nc" id="L111">                    &quot;pages&quot;, Integer.toString(totalPages)</span>
+            ));
+<span class="nc" id="L113">            return;</span>
+        }
+<span class="nc" id="L115">        sender.sendMessage(ChatColor.RED + &quot;There is no help page &quot; + page + &quot;. Max page is &quot; + totalPages + &quot;.&quot;);</span>
+<span class="nc" id="L116">    }</span>
+
+    private String resolveDescription(String subcommandName, MessageService messageService) {
+<span class="fc" id="L119">        final String key = &quot;help-desc-&quot; + subcommandName;</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">        if (messageService != null) {</span>
+<span class="nc" id="L121">            final String configured = messageService.getMessage(key);</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">            if (!configured.isBlank()) {</span>
+<span class="nc" id="L123">                return configured;</span>
+            }
+        }
+<span class="fc" id="L126">        return FALLBACK_DESCRIPTIONS.getOrDefault(subcommandName, &quot;No description available.&quot;);</span>
+    }
+
+    private static Map&lt;String, String&gt; createFallbackDescriptions() {
+<span class="fc" id="L130">        final Map&lt;String, String&gt; descriptions = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L131">        descriptions.put(&quot;help&quot;, &quot;Show available subcommands you can run.&quot;);</span>
+<span class="fc" id="L132">        descriptions.put(&quot;about&quot;, &quot;Show plugin information and version details.&quot;);</span>
+<span class="fc" id="L133">        descriptions.put(&quot;shop&quot;, &quot;Open the heart shop menu.&quot;);</span>
+<span class="fc" id="L134">        descriptions.put(&quot;hearts&quot;, &quot;View a player's hearts.&quot;);</span>
+<span class="fc" id="L135">        descriptions.put(&quot;transfer&quot;, &quot;Transfer hearts to another player.&quot;);</span>
+<span class="fc" id="L136">        descriptions.put(&quot;teambank&quot;, &quot;Manage your team's shared heart bank.&quot;);</span>
+<span class="fc" id="L137">        descriptions.put(&quot;top&quot;, &quot;Show the top hearts leaderboard.&quot;);</span>
+<span class="fc" id="L138">        descriptions.put(&quot;banlist&quot;, &quot;List active lifesteal bans.&quot;);</span>
+<span class="fc" id="L139">        descriptions.put(&quot;set&quot;, &quot;Set a player's heart count.&quot;);</span>
+<span class="fc" id="L140">        descriptions.put(&quot;add&quot;, &quot;Add hearts to a player.&quot;);</span>
+<span class="fc" id="L141">        descriptions.put(&quot;remove&quot;, &quot;Remove hearts from a player.&quot;);</span>
+<span class="fc" id="L142">        descriptions.put(&quot;reset&quot;, &quot;Reset a player's hearts to default.&quot;);</span>
+<span class="fc" id="L143">        descriptions.put(&quot;resetall&quot;, &quot;Reset all stored player hearts.&quot;);</span>
+<span class="fc" id="L144">        descriptions.put(&quot;revive&quot;, &quot;Revive a player and clear lifesteal ban state.&quot;);</span>
+<span class="fc" id="L145">        descriptions.put(&quot;giveheart&quot;, &quot;Give configured heart items to a player.&quot;);</span>
+<span class="fc" id="L146">        descriptions.put(&quot;withdraw&quot;, &quot;Withdraw one heart into a voucher item.&quot;);</span>
+<span class="fc" id="L147">        descriptions.put(&quot;reload&quot;, &quot;Reload plugin configuration and services.&quot;);</span>
+<span class="fc" id="L148">        descriptions.put(&quot;hologram&quot;, &quot;Manage the top leaderboard hologram.&quot;);</span>
+<span class="fc" id="L149">        descriptions.put(&quot;beacon&quot;, &quot;Manage revive beacon whitelist and runtime requirements.&quot;);</span>
+<span class="fc" id="L150">        descriptions.put(&quot;smurf&quot;, &quot;Open smurf management tools.&quot;);</span>
+<span class="fc" id="L151">        descriptions.put(&quot;test&quot;, &quot;Run lifesteal simulation commands.&quot;);</span>
+<span class="fc" id="L152">        return descriptions;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TeamBankService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.service</a> &gt; <span class="el_source">TeamBankService.java</span></div><h1>TeamBankService.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.service;
+
+import com.skyblockexp.ezlifesteal.EzLifestealPlugin;
+import com.skyblockexp.ezlifesteal.integration.TeamsApiTeamResolver;
+import com.skyblockexp.ezlifesteal.model.LifestealProfile;
+import com.skyblockexp.ezlifesteal.model.TeamBankAccount;
+import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
+import com.skyblockexp.ezlifesteal.storage.StorageException;
+import com.skyblockexp.ezlifesteal.storage.repository.ProfileRepository;
+import com.skyblockexp.ezlifesteal.storage.repository.TeamBankRepository;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import org.bukkit.entity.Player;
+
+public final class TeamBankService {
+
+<span class="fc" id="L22">    public enum Status {</span>
+<span class="fc" id="L23">        SUCCESS,</span>
+<span class="fc" id="L24">        DISABLED,</span>
+<span class="fc" id="L25">        INVALID_AMOUNT,</span>
+<span class="fc" id="L26">        TEAM_UNAVAILABLE,</span>
+<span class="fc" id="L27">        PROFILE_UNAVAILABLE,</span>
+<span class="fc" id="L28">        STORAGE_UNAVAILABLE,</span>
+<span class="fc" id="L29">        INSUFFICIENT_PLAYER_HEARTS,</span>
+<span class="fc" id="L30">        INSUFFICIENT_BANK_HEARTS,</span>
+<span class="fc" id="L31">        BANK_CAP_EXCEEDED</span>
+    }
+
+<span class="fc" id="L34">    public record Result(Status status, double playerHearts, double bankHearts, String teamName) {</span>
+    }
+
+    private final PluginAccessor plugin;
+
+    private final TeamResolver teamResolver;
+
+<span class="fc" id="L41">    private final Map&lt;UUID, Object&gt; teamLocks = new ConcurrentHashMap&lt;&gt;();</span>
+
+    public interface TeamResolver {
+        Optional&lt;TeamsApiTeamResolver.TeamContext&gt; resolveTeam(Player player);
+    }
+
+    public TeamBankService(PluginAccessor plugin, TeamsApiTeamResolver teamResolver) {
+<span class="fc" id="L48">        this(plugin, teamResolver::resolveTeam);</span>
+<span class="fc" id="L49">    }</span>
+
+<span class="fc" id="L51">    public TeamBankService(PluginAccessor plugin, TeamResolver teamResolver) {</span>
+<span class="fc" id="L52">        this.plugin = plugin;</span>
+<span class="fc" id="L53">        this.teamResolver = teamResolver;</span>
+<span class="fc" id="L54">    }</span>
+
+    public CompletableFuture&lt;Result&gt; balance(Player player) {
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        if (!plugin.isTeamBankEnabled()) {</span>
+<span class="fc" id="L58">            return CompletableFuture.completedFuture(new Result(Status.DISABLED, 0.0D, 0.0D, &quot;&quot;));</span>
+        }
+<span class="fc" id="L60">        return withTeamContext(player, team -&gt; CompletableFuture.supplyAsync(() -&gt; {</span>
+<span class="fc" id="L61">            final TeamBankRepository bankRepository = plugin.getTeamBankRepository();</span>
+<span class="fc" id="L62">            final LifestealManager manager = plugin.getLifestealManager();</span>
+<span class="pc bpc" id="L63" title="1 of 4 branches missed.">            if (bankRepository == null || manager == null) {</span>
+<span class="fc" id="L64">                return new Result(Status.STORAGE_UNAVAILABLE, 0.0D, 0.0D, team.teamName());</span>
+            }
+<span class="fc" id="L66">            final LifestealProfile profile = manager.getOrCreateProfile(player.getUniqueId());</span>
+            try {
+<span class="fc" id="L68">                final double bankHearts = bankRepository.loadAccount(team.teamId())</span>
+<span class="fc" id="L69">                        .map(TeamBankAccount::getHearts)</span>
+<span class="fc" id="L70">                        .orElse(0.0D);</span>
+<span class="fc" id="L71">                return new Result(Status.SUCCESS, profile.getHearts(), bankHearts, team.teamName());</span>
+            }
+<span class="fc" id="L73">            catch (StorageException exception) {</span>
+<span class="fc" id="L74">                throw new CompletionException(exception);</span>
+            }
+<span class="fc" id="L76">        }, storageExecutor()));</span>
+    }
+
+    public CompletableFuture&lt;Result&gt; deposit(Player player, double amount) {
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        if (!plugin.isTeamBankEnabled()) {</span>
+<span class="fc" id="L81">            return CompletableFuture.completedFuture(new Result(Status.DISABLED, 0.0D, 0.0D, &quot;&quot;));</span>
+        }
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (!isAmountValid(amount)) {</span>
+<span class="fc" id="L84">            return CompletableFuture.completedFuture(new Result(Status.INVALID_AMOUNT, 0.0D, 0.0D, &quot;&quot;));</span>
+        }
+<span class="fc" id="L86">        return withTeamContext(player, team -&gt; CompletableFuture.supplyAsync(</span>
+<span class="fc" id="L87">                () -&gt; applyTransfer(player, team, amount, true),</span>
+<span class="fc" id="L88">                storageExecutor()</span>
+        ));
+    }
+
+    public CompletableFuture&lt;Result&gt; withdraw(Player player, double amount) {
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        if (!plugin.isTeamBankEnabled()) {</span>
+<span class="fc" id="L94">            return CompletableFuture.completedFuture(new Result(Status.DISABLED, 0.0D, 0.0D, &quot;&quot;));</span>
+        }
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        if (!isAmountValid(amount)) {</span>
+<span class="fc" id="L97">            return CompletableFuture.completedFuture(new Result(Status.INVALID_AMOUNT, 0.0D, 0.0D, &quot;&quot;));</span>
+        }
+<span class="fc" id="L99">        return withTeamContext(player, team -&gt; CompletableFuture.supplyAsync(</span>
+<span class="fc" id="L100">                () -&gt; applyTransfer(player, team, amount, false),</span>
+<span class="fc" id="L101">                storageExecutor()</span>
+        ));
+    }
+
+    private CompletableFuture&lt;Result&gt; withTeamContext(Player player,
+            java.util.function.Function&lt;TeamsApiTeamResolver.TeamContext, CompletableFuture&lt;Result&gt;&gt; action) {
+<span class="fc" id="L107">        final Optional&lt;TeamsApiTeamResolver.TeamContext&gt; optionalTeam = teamResolver.resolveTeam(player);</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">        if (optionalTeam.isEmpty()) {</span>
+<span class="fc" id="L109">            return CompletableFuture.completedFuture(new Result(Status.TEAM_UNAVAILABLE, 0.0D, 0.0D, &quot;&quot;));</span>
+        }
+<span class="fc" id="L111">        return action.apply(optionalTeam.get());</span>
+    }
+
+    private Result applyTransfer(Player player,
+                                 TeamsApiTeamResolver.TeamContext team,
+                                 double amount,
+                                 boolean deposit) {
+<span class="fc" id="L118">        final TeamBankRepository bankRepository = plugin.getTeamBankRepository();</span>
+<span class="fc" id="L119">        final ProfileRepository profileRepository = plugin.getProfileRepository();</span>
+<span class="fc" id="L120">        final LifestealManager manager = plugin.getLifestealManager();</span>
+<span class="pc bpc" id="L121" title="2 of 6 branches missed.">        if (bankRepository == null || profileRepository == null || manager == null) {</span>
+<span class="fc" id="L122">            return new Result(Status.STORAGE_UNAVAILABLE, 0.0D, 0.0D, team.teamName());</span>
+        }
+
+<span class="fc" id="L125">        final LifestealProfile profile = manager.getOrCreateProfile(player.getUniqueId());</span>
+<span class="fc" id="L126">        final Object lock = teamLocks.computeIfAbsent(team.teamId(), ignored -&gt; new Object());</span>
+<span class="fc" id="L127">        synchronized (lock) {</span>
+            try {
+<span class="fc" id="L129">                final TeamBankAccount currentAccount = bankRepository.loadAccount(team.teamId())</span>
+<span class="fc" id="L130">                        .orElseGet(() -&gt; new TeamBankAccount(team.teamId(), 0.0D));</span>
+<span class="fc" id="L131">                final double playerBefore = profile.getHearts();</span>
+<span class="fc" id="L132">                final double bankBefore = currentAccount.getHearts();</span>
+
+                // Compute target values without mutating in-memory state yet
+<span class="fc" id="L135">                double playerAfter = playerBefore;</span>
+<span class="fc" id="L136">                double bankAfter = bankBefore;</span>
+
+<span class="fc bfc" id="L138" title="All 2 branches covered.">                if (deposit) {</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">                    if (playerBefore &lt; amount) {</span>
+<span class="fc" id="L140">                        return new Result(Status.INSUFFICIENT_PLAYER_HEARTS, playerBefore, bankBefore, team.teamName());</span>
+                    }
+<span class="fc" id="L142">                    final double max = plugin.getTeamBankMaxHeartsForTeam(team.teamId());</span>
+<span class="fc" id="L143">                    bankAfter = bankBefore + amount;</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">                    if (bankAfter &gt; max) {</span>
+<span class="fc" id="L145">                        return new Result(Status.BANK_CAP_EXCEEDED, playerBefore, bankBefore, team.teamName());</span>
+                    }
+<span class="fc" id="L147">                    playerAfter = Math.max(manager.getMinHearts(), playerBefore - amount);</span>
+<span class="fc" id="L148">                }</span>
+                else {
+<span class="fc bfc" id="L150" title="All 2 branches covered.">                    if (bankBefore &lt; amount) {</span>
+<span class="fc" id="L151">                        return new Result(Status.INSUFFICIENT_BANK_HEARTS, playerBefore, bankBefore, team.teamName());</span>
+                    }
+<span class="fc" id="L153">                    playerAfter = Math.min(manager.getMaxHearts(), playerBefore + amount);</span>
+<span class="fc" id="L154">                    bankAfter = bankBefore - amount;</span>
+                }
+
+                // Persist snapshots: save profile first, then bank. If bank save fails, rollback profile.
+                try {
+<span class="fc" id="L159">                    profileRepository.saveProfile(new LifestealProfile(profile.getUniqueId(), playerAfter));</span>
+                }
+<span class="fc" id="L161">                catch (StorageException e) {</span>
+<span class="fc" id="L162">                    throw new CompletionException(e);</span>
+<span class="fc" id="L163">                }</span>
+
+                try {
+<span class="fc" id="L166">                    final TeamBankAccount accountToSave = new TeamBankAccount(team.teamId(), bankAfter);</span>
+<span class="fc" id="L167">                    bankRepository.saveAccount(accountToSave);</span>
+                }
+<span class="fc" id="L169">                catch (StorageException bankEx) {</span>
+                    // Attempt to rollback profile to previous value
+                    try {
+<span class="fc" id="L172">                        profileRepository.saveProfile(new LifestealProfile(profile.getUniqueId(), playerBefore));</span>
+                    }
+<span class="fc" id="L174">                    catch (StorageException rollbackEx) {</span>
+<span class="fc" id="L175">                        plugin.getLogger().severe(&quot;Failed to rollback profile after team bank save failure: &quot; + rollbackEx.getMessage());</span>
+<span class="fc" id="L176">                        throw new CompletionException(rollbackEx);</span>
+<span class="fc" id="L177">                    }</span>
+                    // Restore in-memory profile to persisted state
+<span class="fc" id="L179">                    profile.overwriteHeartsFromStorage(playerBefore);</span>
+<span class="fc" id="L180">                    throw new CompletionException(bankEx);</span>
+<span class="fc" id="L181">                }</span>
+
+                // Both persisted successfully — update in-memory profile to match storage and report result.
+<span class="fc" id="L184">                profile.overwriteHeartsFromStorage(playerAfter);</span>
+<span class="fc" id="L185">                final double finalBank = bankAfter;</span>
+<span class="fc" id="L186">                return new Result(Status.SUCCESS, profile.getHearts(), finalBank, team.teamName());</span>
+            }
+<span class="fc" id="L188">            catch (StorageException exception) {</span>
+<span class="fc" id="L189">                throw new CompletionException(exception);</span>
+            }
+        }
+    }
+
+    private boolean isAmountValid(double amount) {
+<span class="pc bpc" id="L195" title="1 of 4 branches missed.">        return Double.isFinite(amount) &amp;&amp; amount &gt; 0.0D;</span>
+    }
+
+    private Executor storageExecutor() {
+<span class="pc bpc" id="L199" title="1 of 4 branches missed.">        if (plugin.getPlugin() instanceof EzLifestealPlugin ez &amp;&amp; ez.getStorageExecutor() != null) {</span>
+<span class="fc" id="L200">            return ez.getStorageExecutor();</span>
+        }
+<span class="fc" id="L202">        return Runnable::run;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

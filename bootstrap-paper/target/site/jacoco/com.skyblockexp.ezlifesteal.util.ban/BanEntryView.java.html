@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BanEntryView.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.util.ban</a> &gt; <span class="el_source">BanEntryView.java</span></div><h1>BanEntryView.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.util.ban;
+
+import java.util.Date;
+import java.util.UUID;
+
+/**
+ * Platform-neutral view of a single ban entry from Bukkit's ban list.
+ *
+ * &lt;p&gt;On Paper/Folia, {@link #getPlayerId()} is always populated.
+ * On Spigot (name-based banning), it may be {@code null}; callers must null-check.&lt;/p&gt;
+ */
+public final class BanEntryView {
+
+    private final UUID playerId;
+
+    private final String playerName;
+
+    private final String reason;
+
+    private final String source;
+
+    private final Date created;
+
+    private final Date expiration;
+
+    public BanEntryView(UUID playerId, String playerName, String reason, String source,
+<span class="fc" id="L27">            Date created, Date expiration) {</span>
+<span class="fc" id="L28">        this.playerId = playerId;</span>
+<span class="fc" id="L29">        this.playerName = playerName;</span>
+<span class="fc" id="L30">        this.reason = reason;</span>
+<span class="fc" id="L31">        this.source = source;</span>
+<span class="fc" id="L32">        this.created = created;</span>
+<span class="fc" id="L33">        this.expiration = expiration;</span>
+<span class="fc" id="L34">    }</span>
+
+    /** UUID of the banned player, or {@code null} when using Spigot name-based banning. */
+    public UUID getPlayerId() {
+<span class="fc" id="L38">        return playerId;</span>
+    }
+
+    public String getPlayerName() {
+<span class="fc" id="L42">        return playerName;</span>
+    }
+
+    public String getReason() {
+<span class="fc" id="L46">        return reason;</span>
+    }
+
+    public String getSource() {
+<span class="fc" id="L50">        return source;</span>
+    }
+
+    public Date getCreated() {
+<span class="fc" id="L54">        return created;</span>
+    }
+
+    public Date getExpiration() {
+<span class="fc" id="L58">        return expiration;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

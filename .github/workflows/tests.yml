@@ -9,14 +9,18 @@ on:
 
 jobs:
   unit-tests:
-    name: Unit tests
+    name: Unit tests (Java ${{ matrix.java-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java-version: ['21', '25']
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: ${{ matrix.java-version }}
           cache: maven
 
       - name: Build and install MockBukkit minecraft/v26
@@ -26,7 +30,7 @@ jobs:
           cd /tmp/MockBukkit && GITHUB_REPOSITORY=MockBukkit/MockBukkit ./gradlew publishToMavenLocal -xtest -xjavadoc
 
       - name: Run unit tests
-        run: mvn -B -ntp test -Dtest='*Test,!*FeatureTest'
+        run: mvn -B -ntp test -pl bootstrap-paper -am -Dtest='*Test,!*FeatureTest' -Dsurefire.failIfNoSpecifiedTests=false
 
   unit-test-coverage:
     name: Unit test coverage report
@@ -46,7 +50,7 @@ jobs:
           cd /tmp/MockBukkit && GITHUB_REPOSITORY=MockBukkit/MockBukkit ./gradlew publishToMavenLocal -xtest -xjavadoc
 
       - name: Generate unit test coverage report
-        run: mvn -B -ntp clean verify -Djacoco.haltOnFailure=false
+        run: mvn -B -ntp clean verify -pl bootstrap-paper -am -Djacoco.haltOnFailure=false
 
       - name: Add coverage summary to workflow report
         run: |
@@ -54,7 +58,7 @@ jobs:
           import csv
           from pathlib import Path
 
-          csv_path = Path("target/site/jacoco/jacoco.csv")
+          csv_path = Path("bootstrap-paper/target/site/jacoco/jacoco.csv")
           if not csv_path.exists():
               raise SystemExit("jacoco.csv was not produced")
 
@@ -92,26 +96,30 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: unit-test-coverage-report
-          path: target/site/jacoco
+          path: bootstrap-paper/target/site/jacoco
           if-no-files-found: error
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: target/site/jacoco/jacoco.xml
+          files: bootstrap-paper/target/site/jacoco/jacoco.xml
           flags: unittests
           fail_ci_if_error: true
 
   language-files-validation:
-    name: Language files completeness
+    name: Language files completeness (Java ${{ matrix.java-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java-version: ['21', '25']
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: ${{ matrix.java-version }}
           cache: maven
 
       - name: Build and install MockBukkit minecraft/v26
@@ -121,17 +129,21 @@ jobs:
           cd /tmp/MockBukkit && GITHUB_REPOSITORY=MockBukkit/MockBukkit ./gradlew publishToMavenLocal -xtest -xjavadoc
 
       - name: Check language file completeness
-        run: mvn -B -ntp test -Dtest='LanguageFilesCompletenessTest'
+        run: mvn -B -ntp test -pl bootstrap-paper -am -Dtest='LanguageFilesCompletenessTest' -Dsurefire.failIfNoSpecifiedTests=false
 
   feature-tests:
-    name: Feature tests
+    name: Feature tests (Java ${{ matrix.java-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java-version: ['21', '25']
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: ${{ matrix.java-version }}
           cache: maven
 
       - name: Build and install MockBukkit minecraft/v26
@@ -141,4 +153,4 @@ jobs:
           cd /tmp/MockBukkit && GITHUB_REPOSITORY=MockBukkit/MockBukkit ./gradlew publishToMavenLocal -xtest -xjavadoc
 
       - name: Run feature tests
-        run: mvn -B -ntp test -Dtest='*FeatureTest'
+        run: mvn -B -ntp test -pl bootstrap-paper -am -Dtest='*FeatureTest' -Dsurefire.failIfNoSpecifiedTests=false

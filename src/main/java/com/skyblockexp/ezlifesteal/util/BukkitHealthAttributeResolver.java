@@ -17,13 +17,14 @@ public class BukkitHealthAttributeResolver implements HealthAttributeResolver {
                 return attribute;
             }
         }
-        catch (NoSuchFieldException | IllegalAccessException exception) {
-            return Attribute.MAX_HEALTH;
+        catch (NoSuchFieldException | IllegalAccessException | RuntimeException ignored) {
+            // Fall back to legacy field names across server variants.
         }
-        catch (RuntimeException exception) {
-            return Attribute.MAX_HEALTH;
+        final Object fallbackValue = findAttributeByFieldNames("MAX_HEALTH", "GENERIC_MAX_HEALTH");
+        if (fallbackValue instanceof Attribute attribute) {
+            return attribute;
         }
-        return Attribute.MAX_HEALTH;
+        throw new IllegalStateException("Unable to resolve max-health attribute from Bukkit API.");
     }
 
     Object readGenericMaxHealthField() throws NoSuchFieldException, IllegalAccessException {
@@ -37,5 +38,16 @@ public class BukkitHealthAttributeResolver implements HealthAttributeResolver {
             }
         }
         return attributeClass.getField("MAX_HEALTH").get(null);
+    }
+
+    Object findAttributeByFieldNames(String... fieldNames) {
+        for (String fieldName : fieldNames) {
+            try {
+                return Attribute.class.getField(fieldName).get(null);
+            }
+            catch (NoSuchFieldException | IllegalAccessException ignored) {
+            }
+        }
+        return null;
     }
 }

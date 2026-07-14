@@ -1,0 +1,18 @@
+# ==============================================================
+# EzLifesteal - Data storage configuration
+# ==============================================================
+# type values:
+# - YAML  (flat file, easiest setup)
+# - MYSQL (recommended for larger or networked servers)
+
+type: YAML
+
+# MySQL settings are used only when type is MYSQL.
+mysql:
+  host: localhost
+  port: 3306
+  database: lifesteal
+  username: root
+  password: password
+  use-ssl: false
+  table: lifesteal_players

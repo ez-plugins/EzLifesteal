@@ -86,7 +86,7 @@ jobs:
             -DgenerateBackupPoms=false
 
       - name: Build
-        run: mvn -B -ntp -DskipTests package
+        run: mvn -B -ntp -DskipTests package -pl bootstrap-paper -am
 
       # ──────────────────────────────────────────────────────────────────────
       #  5. EXTRACT CHANGELOG
@@ -125,7 +125,7 @@ jobs:
           gh release create "${{ steps.meta.outputs.ref }}" \
             --title "EzLifesteal ${{ steps.meta.outputs.version }}" \
             --notes-file release-notes.md \
-            "target/ezlifesteal-v${{ steps.meta.outputs.version }}.jar"
+            "bootstrap-paper/target/ezlifesteal-v${{ steps.meta.outputs.version }}.jar"
 
       # ──────────────────────────────────────────────────────────────────────
       #  7. MODRINTH RELEASE
@@ -135,7 +135,7 @@ jobs:
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
         run: |
           VERSION="${{ steps.meta.outputs.version }}"
-          JAR="target/ezlifesteal-v${VERSION}.jar"
+          JAR="bootstrap-paper/target/ezlifesteal-v${VERSION}.jar"
 
           # Fetch Minecraft 1.21+ release game versions from the Modrinth tag API.
           # startswith("1.") is used so that 2026+ versions (26.x) are never matched.

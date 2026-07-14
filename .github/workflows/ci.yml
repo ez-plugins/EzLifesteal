@@ -12,8 +12,12 @@ on:
 
 jobs:
   build:
-    name: Build plugin
+    name: Build plugin (Java ${{ matrix.java-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java-version: ['21', '25']
 
     steps:
       - name: Checkout repository
@@ -23,7 +27,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: ${{ matrix.java-version }}
           cache: maven
 
       - name: Build and install MockBukkit minecraft/v26
@@ -33,13 +37,13 @@ jobs:
           cd /tmp/MockBukkit && GITHUB_REPOSITORY=MockBukkit/MockBukkit ./gradlew publishToMavenLocal -xtest -xjavadoc
 
       - name: Verify plugin build
-        run: mvn -B -ntp clean verify
+        run: mvn -B -ntp clean verify -pl bootstrap-paper -am
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: target/jacoco.exec
+          files: bootstrap-paper/target/jacoco.exec
           flags: unittests
           fail_ci_if_error: false
 
@@ -72,7 +76,7 @@ jobs:
           cd /tmp/MockBukkit && GITHUB_REPOSITORY=MockBukkit/MockBukkit ./gradlew publishToMavenLocal -xtest -xjavadoc
 
       - name: Publish Maven artifacts
-        run: mvn -B -ntp -DskipTests deploy
+        run: mvn -B -ntp -DskipTests deploy -pl bootstrap-paper -am
           -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/${{ github.repository }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

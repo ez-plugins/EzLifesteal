@@ -4,7 +4,7 @@
 [![codecov](https://codecov.io/gh/ez-plugins/EzLifesteal/graph/badge.svg)](https://codecov.io/gh/ez-plugins/EzLifesteal)
 [![Modrinth](https://img.shields.io/modrinth/v/ezlifesteal?logo=modrinth&label=Modrinth)](https://modrinth.com/plugin/ezlifesteal)
 [![Downloads](https://img.shields.io/modrinth/dt/ezlifesteal?logo=modrinth&label=Downloads)](https://modrinth.com/plugin/ezlifesteal)
-[![Java](https://img.shields.io/badge/Java-25-orange?logo=openjdk)](https://adoptium.net/)
+[![Java](https://img.shields.io/badge/Java-21%20%7C%2025-orange?logo=openjdk)](https://adoptium.net/)
 [![License](https://img.shields.io/github/license/ez-plugins/EzLifesteal)](LICENSE)
 
 EzLifesteal is a production-ready Paper plugin for running Lifesteal game modes on Minecraft servers. It gives server owners full control over heart gain/loss, progression, anti-abuse systems, seasonal resets, and monetization-friendly options while staying lightweight and configurable.
@@ -60,8 +60,17 @@ If these plugins are not installed, EzLifesteal keeps running and only disables 
 
 ## Requirements
 
-- **Java:** 17+
+- **Java:** 21 or 25
 - **Server software:** Paper 1.21+
+
+## Java compatibility structure
+
+- **Shared baseline code:** `src/main/java/com/skyblockexp/ezlifesteal/**`
+- **Version-sensitive adapters:** `src/main/java/com/skyblockexp/ezlifesteal/compat/**`
+- **Shared tests:** `src/test/java/**`
+
+Place compatibility logic under `compat/` and keep feature/business behavior in `service/`, `gui/`, `listener/`, and
+other domain packages. This keeps Java-version concerns isolated and easier to review.
 
 ## Installation
 

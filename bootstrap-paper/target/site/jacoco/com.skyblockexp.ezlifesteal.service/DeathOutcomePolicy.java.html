@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DeathOutcomePolicy.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.service</a> &gt; <span class="el_source">DeathOutcomePolicy.java</span></div><h1>DeathOutcomePolicy.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.service;
+
+<span class="fc" id="L3">public class DeathOutcomePolicy {</span>
+
+    public DeathOutcome computeVictimOutcome(VictimDeathInput input) {
+<span class="fc" id="L6">        final boolean applyHeartLoss = shouldApplyHeartLoss(input);</span>
+<span class="fc bfc" id="L7" title="All 2 branches covered.">        if (!applyHeartLoss) {</span>
+<span class="fc" id="L8">            return new DeathOutcome(false, 0.0, input.victimHeartsBeforeDeath(), false, false);</span>
+        }
+
+        // Compute the raw result before applying the min-hearts floor so that the ban/zero-heart
+        // conditions can fire even when minHearts &gt; 0 would otherwise clamp the value above 0.
+<span class="fc" id="L13">        final double rawResultHearts = input.victimHeartsBeforeDeath() - input.heartsLostOnDeath();</span>
+<span class="fc" id="L14">        final double resultingHearts = Math.max(input.minHearts(), rawResultHearts);</span>
+<span class="fc" id="L15">        final double heartDelta = resultingHearts - input.victimHeartsBeforeDeath();</span>
+<span class="fc bfc" id="L16" title="All 4 branches covered.">        final boolean shouldBan = input.banWhenZeroHearts() &amp;&amp; rawResultHearts &lt;= 0.0;</span>
+<span class="fc bfc" id="L17" title="All 4 branches covered.">        final boolean shouldExecuteZeroHeartCommands = !shouldBan &amp;&amp; rawResultHearts &lt;= 0.0;</span>
+<span class="fc" id="L18">        return new DeathOutcome(true, heartDelta, resultingHearts, shouldBan, shouldExecuteZeroHeartCommands);</span>
+    }
+
+    public KillerOutcome computeKillerOutcome(KillerInput input) {
+<span class="fc bfc" id="L22" title="All 4 branches covered.">        final boolean applyHeartGain = !(input.killerIsAdmin() &amp;&amp; input.adminBypassHeartGain());</span>
+<span class="fc bfc" id="L23" title="All 2 branches covered.">        if (!applyHeartGain) {</span>
+<span class="fc" id="L24">            return new KillerOutcome(false, KillerRewardMode.NONE, 0.0);</span>
+        }
+<span class="fc bfc" id="L26" title="All 2 branches covered.">        if (input.dropHeartOnDeath()) {</span>
+<span class="fc" id="L27">            return new KillerOutcome(true, KillerRewardMode.HEART_ITEM, input.heartsPerKill());</span>
+        }
+<span class="fc" id="L29">        return new KillerOutcome(true, KillerRewardMode.NUMERIC, input.heartsPerKill());</span>
+    }
+
+    private boolean shouldApplyHeartLoss(VictimDeathInput input) {
+<span class="fc bfc" id="L33" title="All 4 branches covered.">        if (input.victimIsAdmin() &amp;&amp; input.adminBypassHeartLoss()) {</span>
+<span class="fc" id="L34">            return false;</span>
+        }
+<span class="fc bfc" id="L36" title="All 4 branches covered.">        if (!input.mobDeath() || input.hasKiller()) {</span>
+<span class="fc" id="L37">            return true;</span>
+        }
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        if (input.dontRemoveHeartsFromMobs()) {</span>
+<span class="fc" id="L40">            return false;</span>
+        }
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">        return input.mobRemoveHeartsGreaterThan() &lt; 0</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">                || input.victimHeartsBeforeDeath() &gt; input.mobRemoveHeartsGreaterThan();</span>
+    }
+
+<span class="fc" id="L46">    public record VictimDeathInput(boolean victimIsAdmin,</span>
+                                   boolean adminBypassHeartLoss,
+                                   boolean hasKiller,
+                                   boolean mobDeath,
+                                   boolean dontRemoveHeartsFromMobs,
+                                   double mobRemoveHeartsGreaterThan,
+                                   double victimHeartsBeforeDeath,
+                                   double heartsLostOnDeath,
+                                   double minHearts,
+                                   boolean banWhenZeroHearts) {
+    }
+
+<span class="fc" id="L58">    public record KillerInput(boolean killerIsAdmin,</span>
+                              boolean adminBypassHeartGain,
+                              boolean dropHeartOnDeath,
+                              double heartsPerKill) {
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

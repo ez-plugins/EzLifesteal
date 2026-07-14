@@ -1,9 +1,11 @@
 package com.skyblockexp.ezlifesteal.service;
 
+import com.skyblockexp.ezlifesteal.compat.AdapterSupport;
 import com.skyblockexp.ezlifesteal.config.BeaconSpawnSettings;
 import com.skyblockexp.ezlifesteal.config.MessageService;
 import com.skyblockexp.ezlifesteal.model.SpawnedBeacon;
 import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
+import com.skyblockexp.ezlifesteal.util.SchedulerAdapter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -60,7 +62,7 @@ public final class BeaconAvailabilityService {
             fireTitle(beacon, accessor, settings.titleKey(), settings.subtitleKey());
         }
         if (settings.particlesEnabled()) {
-            fireParticles(location);
+            fireParticles(location, accessor);
         }
         if (settings.fireworksEnabled()) {
             fireFireworks(accessor, location);
@@ -83,10 +85,12 @@ public final class BeaconAvailabilityService {
         placeholders.put("y", String.valueOf(loc.getBlockY()));
         placeholders.put("z", String.valueOf(loc.getBlockZ()));
 
-        final String message = messageService.format(messageKey, placeholders);
-        if (!message.isBlank()) {
-            Bukkit.broadcastMessage(message);
-        }
+        AdapterSupport.runOnMain(accessor.getPlugin(), () -> {
+            final String message = messageService.format(messageKey, placeholders);
+            if (!message.isBlank()) {
+                Bukkit.broadcastMessage(message);
+            }
+        });
     }
 
     private void fireTitle(
@@ -111,18 +115,23 @@ public final class BeaconAvailabilityService {
         final String resolvedTitle = title != null ? title : "";
         final String resolvedSubtitle = subtitle != null ? subtitle : "";
 
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            player.sendTitle(resolvedTitle, resolvedSubtitle, 10, 70, 20);
-        }
+        AdapterSupport.runOnMain(accessor.getPlugin(), () -> {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                player.sendTitle(resolvedTitle, resolvedSubtitle, 10, 70, 20);
+            }
+        });
     }
 
-    private void fireParticles(Location location) {
+    private void fireParticles(Location location, PluginAccessor accessor) {
         final World world = location.getWorld();
         if (world == null) {
             return;
         }
-        world.spawnParticle(Particle.END_ROD, location.clone().add(0.5, 1.0, 0.5), 80, 1.5, 1.5, 1.5, 0.05);
-        world.spawnParticle(Particle.TOTEM_OF_UNDYING, location.clone().add(0.5, 0.5, 0.5), 50, 0.5, 0.5, 0.5, 0.1);
+        AdapterSupport.runAtLocation(accessor.getPlugin(), location, () -> {
+            world.spawnParticle(Particle.END_ROD, location.clone().add(0.5, 1.0, 0.5), 80, 1.5, 1.5, 1.5, 0.05);
+            world.spawnParticle(Particle.TOTEM_OF_UNDYING, location.clone().add(0.5, 0.5, 0.5), 50,
+                    0.5, 0.5, 0.5, 0.1);
+        });
     }
 
     private void fireFireworks(PluginAccessor accessor, Location location) {
@@ -142,7 +151,7 @@ public final class BeaconAvailabilityService {
                         (RANDOM.nextDouble() - 0.5) * 2
                 );
                 // Stagger the remaining fireworks slightly
-                com.skyblockexp.ezlifesteal.util.SchedulerAdapter.runLater(
+                SchedulerAdapter.runLater(
                         accessor.getPlugin(),
                         () -> spawnFirework(accessor, offset,
                                 fireworkIndex == 1 ? Color.RED : Color.AQUA,
@@ -159,16 +168,18 @@ public final class BeaconAvailabilityService {
             return;
         }
         try {
-            final Firework firework = (Firework) world.spawnEntity(location, EntityType.FIREWORK_ROCKET);
-            final FireworkMeta meta = firework.getFireworkMeta();
-            meta.addEffect(FireworkEffect.builder()
-                    .with(FireworkEffect.Type.STAR)
-                    .withColor(primary)
-                    .withFade(fade)
-                    .withTrail()
-                    .build());
-            meta.setPower(1);
-            firework.setFireworkMeta(meta);
+            AdapterSupport.runAtLocation(accessor.getPlugin(), location, () -> {
+                final Firework firework = (Firework) world.spawnEntity(location, EntityType.FIREWORK_ROCKET);
+                final FireworkMeta meta = firework.getFireworkMeta();
+                meta.addEffect(FireworkEffect.builder()
+                        .with(FireworkEffect.Type.STAR)
+                        .withColor(primary)
+                        .withFade(fade)
+                        .withTrail()
+                        .build());
+                meta.setPower(1);
+                firework.setFireworkMeta(meta);
+            });
         } catch (Exception exception) {
             logger.warning("Failed to spawn firework for beacon availability event: " + exception.getMessage());
         }

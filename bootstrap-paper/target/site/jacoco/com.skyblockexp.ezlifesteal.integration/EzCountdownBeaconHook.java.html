@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EzCountdownBeaconHook.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.integration</a> &gt; <span class="el_source">EzCountdownBeaconHook.java</span></div><h1>EzCountdownBeaconHook.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.integration;
+
+import com.skyblockexp.ezcountdown.api.EzCountdownApi;
+import com.skyblockexp.ezcountdown.api.exception.DuplicateCountdownException;
+import com.skyblockexp.ezcountdown.api.exception.EzCountdownException;
+import com.skyblockexp.ezcountdown.api.model.Countdown;
+import com.skyblockexp.ezcountdown.api.model.CountdownBuilder;
+import com.skyblockexp.ezcountdown.api.model.CountdownType;
+import com.skyblockexp.ezcountdown.display.DisplayType;
+import com.skyblockexp.ezlifesteal.config.BeaconSpawnSettings;
+import java.time.Duration;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.Set;
+import java.util.logging.Logger;
+import org.bukkit.Bukkit;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.plugin.RegisteredServiceProvider;
+
+/**
+ * EzCountdown-backed implementation of {@link BeaconCountdownProvider}.
+ */
+public final class EzCountdownBeaconHook implements BeaconCountdownProvider {
+
+    private static final String COUNTDOWN_PREFIX = &quot;ezls-beacon-&quot;;
+    private static final String DEFAULT_FORMAT_MESSAGE = &quot;&amp;5\u2620 &amp;d&amp;lRevive Beacon &amp;5\u2620 &amp;r&amp;7 {formatted} until active&quot;;
+
+    private final Logger logger;
+
+<span class="fc" id="L33">    public EzCountdownBeaconHook(Logger logger) {</span>
+<span class="fc" id="L34">        this.logger = logger;</span>
+<span class="fc" id="L35">    }</span>
+
+    @Override
+    public Optional&lt;String&gt; startCountdown(String beaconShortId, BeaconSpawnSettings.CountdownSettings settings) {
+<span class="fc" id="L39">        final EzCountdownApi api = resolveApi();</span>
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">        if (api == null) {</span>
+<span class="fc" id="L41">            return Optional.empty();</span>
+        }
+        try {
+<span class="nc bnc" id="L44" title="All 4 branches missed.">            final String effectivePrefix = (settings.namePrefix() != null &amp;&amp; !settings.namePrefix().isBlank())</span>
+<span class="nc" id="L45">                    ? settings.namePrefix()</span>
+<span class="nc" id="L46">                    : COUNTDOWN_PREFIX;</span>
+<span class="nc" id="L47">            final String countdownName = effectivePrefix + beaconShortId;</span>
+<span class="nc" id="L48">            final Set&lt;DisplayType&gt; displayTypeSet = parseDisplayTypes(settings.displayTypes());</span>
+<span class="nc bnc" id="L49" title="All 4 branches missed.">            final String formatMessage = settings.formatMessage() != null &amp;&amp; !settings.formatMessage().isEmpty()</span>
+<span class="nc" id="L50">                    ? settings.formatMessage()</span>
+<span class="nc" id="L51">                    : DEFAULT_FORMAT_MESSAGE;</span>
+
+<span class="nc" id="L53">            final CountdownBuilder builder = CountdownBuilder.builder(countdownName)</span>
+<span class="nc" id="L54">                    .type(CountdownType.DURATION)</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">                    .displayTypes(displayTypeSet.isEmpty()</span>
+<span class="nc" id="L56">                            ? EnumSet.of(DisplayType.ACTION_BAR)</span>
+<span class="nc" id="L57">                            : EnumSet.copyOf(displayTypeSet))</span>
+<span class="nc" id="L58">                    .duration(Duration.ofSeconds(settings.durationSeconds()))</span>
+<span class="nc" id="L59">                    .formatMessage(formatMessage)</span>
+<span class="nc" id="L60">                    .bossBarColor(parseBossBarColor(settings.bossBarColor()))</span>
+<span class="nc" id="L61">                    .bossBarStyle(parseBossBarStyle(settings.bossBarStyle()))</span>
+<span class="nc" id="L62">                    .updateIntervalSeconds(Math.max(1, settings.updateIntervalSeconds()))</span>
+<span class="nc" id="L63">                    .ephemeral(settings.ephemeral());</span>
+
+<span class="nc bnc" id="L65" title="All 4 branches missed.">            if (settings.startMessage() != null &amp;&amp; !settings.startMessage().isBlank()) {</span>
+<span class="nc" id="L66">                builder.startMessage(settings.startMessage());</span>
+            }
+<span class="nc bnc" id="L68" title="All 4 branches missed.">            if (settings.endMessage() != null &amp;&amp; !settings.endMessage().isBlank()) {</span>
+<span class="nc" id="L69">                builder.endMessage(settings.endMessage());</span>
+            }
+<span class="nc bnc" id="L71" title="All 4 branches missed.">            if (settings.endCommands() != null &amp;&amp; !settings.endCommands().isEmpty()) {</span>
+<span class="nc" id="L72">                builder.endCommands(settings.endCommands());</span>
+            }
+<span class="nc bnc" id="L74" title="All 4 branches missed.">            if (settings.visibilityPermission() != null &amp;&amp; !settings.visibilityPermission().isBlank()) {</span>
+<span class="nc" id="L75">                builder.visibilityPermission(settings.visibilityPermission());</span>
+            }
+
+<span class="nc" id="L78">            final Countdown countdown = builder.build();</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">            if (!api.createCountdown(countdown)) {</span>
+<span class="nc" id="L80">                logger.warning(&quot;EzCountdown: countdown '&quot; + countdownName + &quot;' already exists; skipping create.&quot;);</span>
+            }
+<span class="nc" id="L82">            api.startCountdown(countdownName);</span>
+<span class="nc" id="L83">            return Optional.of(countdownName);</span>
+<span class="nc" id="L84">        } catch (DuplicateCountdownException exception) {</span>
+<span class="nc" id="L85">            logger.warning(&quot;EzCountdown: duplicate countdown '&quot; + exception.getCountdownName()</span>
+                    + &quot;' for beacon &quot; + beaconShortId + &quot;; attempting to reuse.&quot;);
+<span class="nc" id="L87">            return Optional.of(COUNTDOWN_PREFIX + beaconShortId);</span>
+<span class="nc" id="L88">        } catch (EzCountdownException exception) {</span>
+<span class="nc" id="L89">            logger.warning(&quot;Failed to start EzCountdown for beacon &quot;</span>
+<span class="nc" id="L90">                    + beaconShortId + &quot;: &quot; + exception.getMessage());</span>
+<span class="nc" id="L91">            return Optional.empty();</span>
+<span class="nc" id="L92">        } catch (Exception exception) {</span>
+<span class="nc" id="L93">            logger.warning(&quot;Unexpected error starting EzCountdown for beacon &quot;</span>
+<span class="nc" id="L94">                    + beaconShortId + &quot;: &quot; + exception.getMessage());</span>
+<span class="nc" id="L95">            return Optional.empty();</span>
+        }
+    }
+
+    @Override
+    public void cancelCountdown(String countdownId) {
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        if (countdownId == null) {</span>
+<span class="fc" id="L102">            return;</span>
+        }
+<span class="fc" id="L104">        final EzCountdownApi api = resolveApi();</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">        if (api == null) {</span>
+<span class="fc" id="L106">            return;</span>
+        }
+        try {
+<span class="nc" id="L109">            api.deleteCountdown(countdownId);</span>
+<span class="nc" id="L110">        } catch (Exception exception) {</span>
+<span class="nc" id="L111">            logger.warning(&quot;Failed to cancel EzCountdown '&quot; + countdownId + &quot;': &quot; + exception.getMessage());</span>
+<span class="nc" id="L112">        }</span>
+<span class="nc" id="L113">    }</span>
+
+    private EzCountdownApi resolveApi() {
+        final RegisteredServiceProvider&lt;EzCountdownApi&gt; provider =
+<span class="fc" id="L117">                Bukkit.getServicesManager().getRegistration(EzCountdownApi.class);</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">        return provider != null ? provider.getProvider() : null;</span>
+    }
+
+    private Set&lt;DisplayType&gt; parseDisplayTypes(List&lt;String&gt; names) {
+<span class="nc" id="L122">        final Set&lt;DisplayType&gt; result = EnumSet.noneOf(DisplayType.class);</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">        for (String name : names) {</span>
+            try {
+<span class="nc" id="L125">                result.add(DisplayType.valueOf(name.toUpperCase(Locale.ROOT)));</span>
+<span class="nc" id="L126">            } catch (IllegalArgumentException ignored) {</span>
+<span class="nc" id="L127">                logger.warning(&quot;Unknown EzCountdown display type: '&quot; + name + &quot;'. &quot;</span>
+                        + &quot;Valid values: ACTION_BAR, BOSS_BAR, CHAT, TITLE, SCOREBOARD&quot;);
+<span class="nc" id="L129">            }</span>
+<span class="nc" id="L130">        }</span>
+<span class="nc" id="L131">        return result;</span>
+    }
+
+    private BarColor parseBossBarColor(String name) {
+<span class="nc bnc" id="L135" title="All 2 branches missed.">        if (name == null) {</span>
+<span class="nc" id="L136">            return BarColor.PURPLE;</span>
+        }
+        try {
+<span class="nc" id="L139">            return BarColor.valueOf(name.toUpperCase(Locale.ROOT));</span>
+<span class="nc" id="L140">        } catch (IllegalArgumentException ignored) {</span>
+<span class="nc" id="L141">            logger.warning(&quot;Unknown boss bar color: '&quot; + name + &quot;'. Falling back to PURPLE.&quot;);</span>
+<span class="nc" id="L142">            return BarColor.PURPLE;</span>
+        }
+    }
+
+    private BarStyle parseBossBarStyle(String name) {
+<span class="nc bnc" id="L147" title="All 2 branches missed.">        if (name == null) {</span>
+<span class="nc" id="L148">            return BarStyle.SEGMENTED_20;</span>
+        }
+        try {
+<span class="nc" id="L151">            return BarStyle.valueOf(name.toUpperCase(Locale.ROOT));</span>
+<span class="nc" id="L152">        } catch (IllegalArgumentException ignored) {</span>
+<span class="nc" id="L153">            logger.warning(&quot;Unknown boss bar style: '&quot; + name + &quot;'. Falling back to SEGMENTED_20.&quot;);</span>
+<span class="nc" id="L154">            return BarStyle.SEGMENTED_20;</span>
+        }
+    }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

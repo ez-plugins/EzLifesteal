@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PlayerListener.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.listener</a> &gt; <span class="el_source">PlayerListener.java</span></div><h1>PlayerListener.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.listener;
+
+import com.skyblockexp.ezlifesteal.config.MessageService;
+import com.skyblockexp.ezlifesteal.detector.AdminDetector;
+import com.skyblockexp.ezlifesteal.killstreak.KillStreakManager;
+import com.skyblockexp.ezlifesteal.model.LifestealProfile;
+import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
+import com.skyblockexp.ezlifesteal.service.BanEnforcementService;
+import com.skyblockexp.ezlifesteal.service.BeaconReviveService;
+import com.skyblockexp.ezlifesteal.service.CombatTagService;
+import com.skyblockexp.ezlifesteal.service.LifestealManager;
+import com.skyblockexp.ezlifesteal.service.ParticleEffectService;
+import com.skyblockexp.ezlifesteal.service.PlayerDeathService;
+import com.skyblockexp.ezlifesteal.service.ReviveAnimationService;
+import com.skyblockexp.ezlifesteal.util.SchedulerAdapter;
+import java.util.Map;
+import java.util.UUID;
+import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
+import org.bukkit.entity.TNTPrimed;
+import org.bukkit.entity.Tameable;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
+
+public class PlayerListener implements Listener {
+    private final PluginAccessor plugin;
+
+    private final CombatTagService combatTagService;
+
+    private final PlayerDeathService playerDeathService;
+
+    private final ParticleEffectService particleEffectService;
+
+    private final BeaconReviveService beaconReviveService;
+
+
+    private String banMessage;
+
+    private String kickMessage;
+
+    @SuppressWarnings(&quot;unused&quot;)
+
+    private final Map&lt;UUID, Long&gt; combatTags;
+
+    @SuppressWarnings(&quot;unused&quot;)
+
+    private final Map&lt;UUID, Entity&gt; lastDamagers;
+
+    public PlayerListener(PluginAccessor plugin,
+                          String banMessage,
+                          String kickMessage,
+                          boolean combatLogoutProtectionEnabled,
+                          long combatLogoutTagDurationMillis) {
+<span class="fc" id="L66">        this(plugin,</span>
+                new BanEnforcementService(plugin),
+                null,
+                null,
+                null,
+                null,
+                banMessage,
+                kickMessage,
+                combatLogoutProtectionEnabled,
+                combatLogoutTagDurationMillis);
+<span class="fc" id="L76">    }</span>
+
+    public PlayerListener(PluginAccessor plugin,
+                          BanEnforcementService banEnforcementService,
+                          CombatTagService combatTagService,
+                          PlayerDeathService playerDeathService,
+                          ParticleEffectService particleEffectService,
+                          BeaconReviveService beaconReviveService,
+                          String banMessage,
+                          String kickMessage,
+                          boolean combatLogoutProtectionEnabled,
+<span class="fc" id="L87">                          long combatLogoutTagDurationMillis) {</span>
+<span class="fc" id="L88">        this.plugin = plugin;</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">        final BanEnforcementService enforcementService = banEnforcementService == null</span>
+<span class="pc" id="L90">                ? new BanEnforcementService(plugin) : banEnforcementService;</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        this.combatTagService = combatTagService == null</span>
+<span class="fc" id="L92">                ? new CombatTagService(plugin, enforcementService, banMessage, kickMessage,</span>
+                combatLogoutProtectionEnabled, combatLogoutTagDurationMillis)
+<span class="fc" id="L94">                : combatTagService;</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">        this.playerDeathService = playerDeathService == null</span>
+<span class="fc" id="L96">                ? new PlayerDeathService(plugin, enforcementService)</span>
+<span class="fc" id="L97">                : playerDeathService;</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        this.particleEffectService = particleEffectService == null</span>
+<span class="fc" id="L99">                ? new ParticleEffectService(plugin)</span>
+<span class="fc" id="L100">                : particleEffectService;</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        this.beaconReviveService = beaconReviveService == null</span>
+<span class="fc" id="L102">                ? new BeaconReviveService(plugin, new ReviveAnimationService(plugin))</span>
+<span class="fc" id="L103">                : beaconReviveService;</span>
+<span class="fc" id="L104">        this.combatTags = this.combatTagService.getCombatTags();</span>
+<span class="fc" id="L105">        this.lastDamagers = this.combatTagService.getLastDamagers();</span>
+<span class="fc" id="L106">        this.banMessage = banMessage;</span>
+<span class="fc" id="L107">        this.kickMessage = kickMessage;</span>
+<span class="fc" id="L108">    }</span>
+
+    public void updateSettings(String banMessage,
+                               String kickMessage,
+                               boolean combatLogoutProtectionEnabled,
+                               long combatLogoutTagDurationMillis) {
+<span class="nc" id="L114">        this.banMessage = banMessage;</span>
+<span class="nc" id="L115">        this.kickMessage = kickMessage;</span>
+<span class="nc" id="L116">        combatTagService.updateSettings(banMessage, kickMessage,</span>
+                combatLogoutProtectionEnabled, combatLogoutTagDurationMillis);
+<span class="nc" id="L118">    }</span>
+
+    public BeaconReviveService getBeaconReviveService() {
+<span class="nc" id="L121">        return beaconReviveService;</span>
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerJoin(PlayerJoinEvent event) {
+<span class="fc" id="L126">        final Player player = event.getPlayer();</span>
+<span class="fc" id="L127">        combatTagService.clearPlayerState(player.getUniqueId());</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">        if (!plugin.isGlobalLifestealEnabled()) {</span>
+<span class="nc" id="L129">            plugin.clearHeartStatus(player.getUniqueId());</span>
+<span class="nc" id="L130">            return;</span>
+        }
+<span class="fc" id="L132">        final LifestealManager manager = plugin.getLifestealManager();</span>
+<span class="fc" id="L133">        final MessageService messageService = plugin.getMessageService();</span>
+<span class="fc" id="L134">        manager.loadProfileAsync(player.getUniqueId()).whenComplete((profile, throwable) -&gt; {</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">            if (throwable != null) {</span>
+<span class="fc" id="L136">                plugin.getLogger()</span>
+<span class="fc" id="L137">                        .severe(&quot;Failed to load profile for &quot; + player.getName() + &quot;: &quot; + throwable.getMessage());</span>
+<span class="fc" id="L138">                SchedulerAdapter.run(plugin.getPlugin(), () -&gt; {</span>
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">                    if (!player.isOnline()) {</span>
+<span class="nc" id="L140">                        plugin.clearHeartStatus(player.getUniqueId());</span>
+<span class="nc" id="L141">                        return;</span>
+                    }
+<span class="fc" id="L143">                    messageService.sendMessage(player, &quot;storage-error&quot;);</span>
+<span class="fc" id="L144">                });</span>
+<span class="fc" id="L145">                return;</span>
+            }
+<span class="fc" id="L147">            SchedulerAdapter.run(plugin.getPlugin(), () -&gt; {</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">                if (!player.isOnline()) {</span>
+<span class="nc" id="L149">                    plugin.clearHeartStatus(player.getUniqueId());</span>
+<span class="nc" id="L150">                    return;</span>
+                }
+<span class="fc bfc" id="L152" title="All 2 branches covered.">                if (!plugin.isLifestealEnabledInWorld(player.getWorld().getName())) {</span>
+<span class="fc" id="L153">                    plugin.getLogger().info(&quot;Skipping lifesteal join handling for &quot; + player.getName()</span>
+<span class="fc" id="L154">                            + &quot; in disabled world &quot; + player.getWorld().getName());</span>
+<span class="fc" id="L155">                    plugin.clearHeartStatus(player.getUniqueId());</span>
+<span class="fc" id="L156">                    return;</span>
+                }
+<span class="fc" id="L158">                manager.applyHearts(player, profile);</span>
+<span class="fc" id="L159">                plugin.sendHeartStatus(player, profile.getHearts());</span>
+<span class="fc" id="L160">                sendInstallationMessageToAdmin(player);</span>
+<span class="fc" id="L161">            });</span>
+<span class="fc" id="L162">        });</span>
+<span class="fc" id="L163">    }</span>
+
+
+    private void sendInstallationMessageToAdmin(Player player) {
+<span class="fc" id="L167">        final AdminDetector adminDetector = plugin.getAdminDetector();</span>
+<span class="pc bpc" id="L168" title="3 of 4 branches missed.">        if (adminDetector == null || !adminDetector.isAdmin(player)) {</span>
+<span class="fc" id="L169">            return;</span>
+        }
+<span class="nc bnc" id="L171" title="All 2 branches missed.">        if (plugin.getPlugin() == null) {</span>
+<span class="nc" id="L172">            return;</span>
+        }
+
+<span class="nc" id="L175">        final NamespacedKey key = new NamespacedKey(plugin.getPlugin(), &quot;admin_install_info_sent&quot;);</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">        if (player.getPersistentDataContainer().has(key, PersistentDataType.BYTE)) {</span>
+<span class="nc" id="L177">            return;</span>
+        }
+
+<span class="nc" id="L180">        final MessageService messageService = plugin.getMessageService();</span>
+<span class="nc" id="L181">        sendInstallationLine(player, messageService, &quot;admin-install-header&quot;,</span>
+                &quot;&amp;c[EzLifesteal] &amp;7Thanks for installing EzLifesteal!&quot;);
+<span class="nc" id="L183">        sendInstallationLine(player, messageService, &quot;admin-install-line-1&quot;,</span>
+                &quot;&amp;7Use &amp;f/lifesteal help &amp;7to view available subcommands.&quot;);
+<span class="nc" id="L185">        sendInstallationLine(player, messageService, &quot;admin-install-line-2&quot;,</span>
+                &quot;&amp;7Use &amp;f/lifesteal about &amp;7to view plugin metadata.&quot;);
+<span class="nc" id="L187">        sendInstallationLine(player, messageService, &quot;admin-install-line-3&quot;,</span>
+                &quot;&amp;7Configure files in your &amp;fplugins/EzLifesteal &amp;7folder.&quot;);
+<span class="nc" id="L189">        sendInstallationLine(player, messageService, &quot;admin-install-line-4&quot;,</span>
+                &quot;&amp;7Run &amp;f/lifesteal reload &amp;7after changing configuration.&quot;);
+<span class="nc" id="L191">        player.getPersistentDataContainer().set(key, PersistentDataType.BYTE, (byte) 1);</span>
+<span class="nc" id="L192">    }</span>
+
+    private void sendInstallationLine(Player player,
+                                      MessageService messageService,
+                                      String key,
+                                      String fallbackMessage) {
+<span class="nc bnc" id="L198" title="All 4 branches missed.">        if (messageService != null &amp;&amp; !messageService.getMessage(key).isBlank()) {</span>
+<span class="nc" id="L199">            messageService.sendMessage(player, key);</span>
+<span class="nc" id="L200">            return;</span>
+        }
+<span class="nc" id="L202">        player.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&amp;', fallbackMessage));</span>
+<span class="nc" id="L203">    }</span>
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+<span class="fc" id="L207">        final Player player = event.getPlayer();</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">        if (combatTagService.isInCombat(player.getUniqueId())</span>
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">                &amp;&amp; plugin.isGlobalLifestealEnabled()</span>
+<span class="pc bpc" id="L210" title="1 of 2 branches missed.">                &amp;&amp; plugin.isLifestealEnabledInWorld(player.getWorld().getName())) {</span>
+<span class="fc" id="L211">            combatTagService.handleCombatLogout(player);</span>
+        }
+
+<span class="fc" id="L214">        final LifestealManager manager = plugin.getLifestealManager();</span>
+<span class="fc" id="L215">        manager.getLoadedProfile(player.getUniqueId()).ifPresent(profile -&gt;</span>
+<span class="fc" id="L216">                manager.saveProfileAsync(profile).whenComplete((unused, throwable) -&gt; {</span>
+<span class="fc bfc" id="L217" title="All 2 branches covered.">                    if (throwable != null) {</span>
+<span class="fc" id="L218">                        plugin.getLogger()</span>
+<span class="fc" id="L219">                                .severe(&quot;Failed to save profile for &quot; + player.getName()</span>
+<span class="fc" id="L220">                                        + &quot;: &quot; + throwable.getMessage());</span>
+                    }
+<span class="fc" id="L222">                    manager.unload(player.getUniqueId());</span>
+<span class="fc" id="L223">                })</span>
+        );
+
+<span class="fc" id="L226">        plugin.clearHeartStatus(player.getUniqueId());</span>
+<span class="fc" id="L227">        combatTagService.clearPlayerState(player.getUniqueId());</span>
+<span class="fc" id="L228">        final KillStreakManager killStreakManager = plugin.getKillStreakManager();</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">        if (killStreakManager != null) {</span>
+<span class="fc" id="L230">            killStreakManager.handleQuit(player);</span>
+        }
+<span class="fc" id="L232">    }</span>
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+<span class="pc bpc" id="L236" title="1 of 2 branches missed.">        if (!(event.getEntity() instanceof Player victim)) {</span>
+<span class="nc" id="L237">            return;</span>
+        }
+<span class="fc" id="L239">        final Entity damager = event.getDamager();</span>
+<span class="fc" id="L240">        combatTagService.recordDamager(victim.getUniqueId(), damager);</span>
+<span class="fc" id="L241">        combatTagService.tryTagPlayers(victim, resolveAttacker(damager));</span>
+<span class="fc" id="L242">    }</span>
+
+    @EventHandler
+    public void onPlayerDeath(PlayerDeathEvent event) {
+<span class="nc" id="L246">        handlePlayerDeath(event.getEntity(), event.getEntity().getKiller());</span>
+<span class="nc" id="L247">    }</span>
+
+    public void handlePlayerDeath(Player victim, Player killer) {
+<span class="fc" id="L250">        final boolean mobDeath = combatTagService.isMobDeath(victim.getUniqueId());</span>
+<span class="fc" id="L251">        combatTagService.clearPlayerState(victim.getUniqueId());</span>
+<span class="fc bfc" id="L252" title="All 2 branches covered.">        if (killer != null) {</span>
+<span class="fc" id="L253">            combatTagService.clearCombatTag(killer.getUniqueId());</span>
+        }
+<span class="fc" id="L255">        playerDeathService.handlePlayerDeath(victim, killer,</span>
+                mobDeath, banMessage, kickMessage);
+<span class="fc" id="L257">    }</span>
+
+    @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent event) {
+<span class="pc bpc" id="L261" title="1 of 4 branches missed.">        if (event.getAction() != Action.RIGHT_CLICK_AIR &amp;&amp; event.getAction() != Action.RIGHT_CLICK_BLOCK) {</span>
+<span class="nc" id="L262">            return;</span>
+        }
+<span class="fc" id="L264">        final Player player = event.getPlayer();</span>
+<span class="fc" id="L265">        final ItemStack item = event.getItem();</span>
+<span class="pc bpc" id="L266" title="1 of 2 branches missed.">        if (item == null) {</span>
+<span class="nc" id="L267">            return;</span>
+        }
+
+<span class="fc bfc" id="L270" title="All 2 branches covered.">        if (event.getAction() == Action.RIGHT_CLICK_BLOCK</span>
+<span class="pc bpc" id="L271" title="1 of 2 branches missed.">                &amp;&amp; event.getClickedBlock() != null</span>
+<span class="fc bfc" id="L272" title="All 2 branches covered.">                &amp;&amp; beaconReviveService.tryHandleBeaconInteract(player, item, event.getClickedBlock())) {</span>
+<span class="fc" id="L273">            event.setCancelled(true);</span>
+<span class="fc" id="L274">            return;</span>
+        }
+
+        try {
+<span class="fc bfc" id="L278" title="All 2 branches covered.">            final var container = item.getItemMeta() == null ? null : item.getItemMeta().getPersistentDataContainer();</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">            if (container == null) {</span>
+<span class="fc" id="L280">                return;</span>
+            }
+<span class="fc" id="L282">            final String heartId = plugin.getHeartIdFrom(container);</span>
+<span class="fc bfc" id="L283" title="All 2 branches covered.">            if (heartId == null) {</span>
+<span class="fc" id="L284">                return;</span>
+            }
+
+<span class="fc" id="L287">            event.setCancelled(true);</span>
+<span class="fc" id="L288">            final var registry = plugin.getHeartRegistry();</span>
+<span class="pc bpc" id="L289" title="1 of 2 branches missed.">            if (registry == null) {</span>
+<span class="nc" id="L290">                return;</span>
+            }
+<span class="fc" id="L292">            final var heart = registry.getById(heartId);</span>
+<span class="pc bpc" id="L293" title="1 of 2 branches missed.">            if (heart == null) {</span>
+<span class="nc" id="L294">                return;</span>
+            }
+
+<span class="fc" id="L297">            final LifestealManager manager = plugin.getLifestealManager();</span>
+<span class="fc" id="L298">            final var optional = manager.getLoadedProfile(player.getUniqueId());</span>
+<span class="pc bpc" id="L299" title="1 of 2 branches missed.">            if (optional.isEmpty()) {</span>
+<span class="nc" id="L300">                return;</span>
+            }
+<span class="fc" id="L302">            final LifestealProfile profile = optional.get();</span>
+<span class="fc" id="L303">            final double current = profile.getHearts();</span>
+<span class="fc" id="L304">            final double max = manager.getMaxHearts();</span>
+<span class="fc bfc" id="L305" title="All 2 branches covered.">            if (current &gt;= max) {</span>
+<span class="fc" id="L306">                SchedulerAdapter.run(plugin.getPlugin(), () -&gt; {</span>
+<span class="fc" id="L307">                    final var ms = plugin.getMessageService();</span>
+<span class="fc" id="L308">                    final String configured = ms.getMessage(&quot;already-at-max&quot;);</span>
+<span class="pc bpc" id="L309" title="2 of 4 branches missed.">                    if (configured == null || configured.isBlank()) {</span>
+<span class="nc" id="L310">                        player.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&amp;',</span>
+                                &quot;You Already have reached the max heart capacity&quot;));
+                    }
+                    else {
+<span class="fc" id="L314">                        ms.sendMessage(player, &quot;already-at-max&quot;);</span>
+                    }
+<span class="fc" id="L316">                });</span>
+<span class="fc" id="L317">                return;</span>
+            }
+
+<span class="fc" id="L320">            profile.addHearts(heart.getHearts(), max);</span>
+<span class="fc" id="L321">            manager.saveProfileAsync(profile);</span>
+<span class="fc" id="L322">            SchedulerAdapter.run(plugin.getPlugin(), () -&gt; {</span>
+<span class="fc" id="L323">                final var ms = plugin.getMessageService();</span>
+<span class="fc" id="L324">                ms.sendMessage(player, &quot;heart-redeemed&quot;, Map.of(</span>
+<span class="fc" id="L325">                        &quot;heart&quot;, heart.getId(),</span>
+<span class="fc" id="L326">                        &quot;amount&quot;, Double.toString(heart.getHearts()),</span>
+<span class="fc" id="L327">                        &quot;total&quot;, Double.toString(profile.getHearts())</span>
+                ));
+<span class="fc" id="L329">                manager.applyHearts(player, profile);</span>
+<span class="fc" id="L330">                plugin.sendHeartStatus(player, profile.getHearts());</span>
+<span class="fc" id="L331">            });</span>
+<span class="fc" id="L332">            item.setAmount(Math.max(0, item.getAmount() - 1));</span>
+<span class="fc" id="L333">            final Location location = player.getLocation().add(0, 1, 0);</span>
+<span class="fc" id="L334">            particleEffectService.spawnHeartConsumptionEffects(player, location);</span>
+        }
+<span class="fc" id="L336">        catch (Exception ignored) {</span>
+<span class="fc" id="L337">        }</span>
+<span class="fc" id="L338">    }</span>
+
+    private Player resolveAttacker(Entity damager) {
+<span class="fc bfc" id="L341" title="All 2 branches covered.">        if (damager instanceof Player player) {</span>
+<span class="fc" id="L342">            return player;</span>
+        }
+<span class="pc bpc" id="L344" title="2 of 4 branches missed.">        if (damager instanceof Projectile projectile &amp;&amp; projectile.getShooter() instanceof Player shooter) {</span>
+<span class="fc" id="L345">            return shooter;</span>
+        }
+<span class="nc bnc" id="L347" title="All 4 branches missed.">        if (damager instanceof TNTPrimed primed &amp;&amp; primed.getSource() instanceof Player source) {</span>
+<span class="nc" id="L348">            return source;</span>
+        }
+<span class="nc bnc" id="L350" title="All 4 branches missed.">        if (damager instanceof Tameable tameable &amp;&amp; tameable.getOwner() instanceof Player owner) {</span>
+<span class="nc" id="L351">            return owner;</span>
+        }
+<span class="nc" id="L353">        return null;</span>
+    }
+
+    @SuppressWarnings(&quot;unused&quot;)
+    private void handleCombatLogout(Player player) {
+<span class="fc" id="L358">        combatTagService.handleCombatLogout(player);</span>
+<span class="fc" id="L359">    }</span>
+
+    @SuppressWarnings(&quot;unused&quot;)
+    private boolean isMobDeath(UUID victimId) {
+<span class="fc" id="L363">        return combatTagService.isMobDeath(victimId);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

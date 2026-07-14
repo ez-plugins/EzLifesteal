@@ -1,0 +1,14 @@
+name: EzLifesteal
+version: 1.1.2
+main: com.skyblockexp.ezlifesteal.EzLifestealPlugin
+api-version: 1.21
+folia-supported: true
+author: Shadow48402
+description: Lifesteal plugin with YAML/MySQL storage and smurf detection
+softdepend:
+  - PlaceholderAPI
+  - Vault
+  - EzSeasons
+  - WorldGuard
+  - EzCountdown
+  - TeamsAPI

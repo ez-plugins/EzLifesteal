@@ -1,0 +1,9 @@
+# Primary plugin configuration.
+# Additional settings are stored in dedicated files such as storage.yml,
+# features.yml, admin.yml, and hearts.yml.
+
+# Supported built-in language files are under /languages.
+language: en
+
+messages:
+  prefix: "&cLifesteal &8» &7"

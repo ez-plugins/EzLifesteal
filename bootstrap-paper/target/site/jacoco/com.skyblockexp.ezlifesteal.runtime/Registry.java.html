@@ -1,0 +1,425 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Registry.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.runtime</a> &gt; <span class="el_source">Registry.java</span></div><h1>Registry.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.runtime;
+
+import com.skyblockexp.ezlifesteal.config.AdminConfigAdapter;
+import com.skyblockexp.ezlifesteal.config.ConfigLoader;
+import com.skyblockexp.ezlifesteal.config.LifestealConfigAdapter;
+import com.skyblockexp.ezlifesteal.config.SmurfConfigAdapter;
+import com.skyblockexp.ezlifesteal.hologram.TopHologramManager;
+import com.skyblockexp.ezlifesteal.integration.SeasonsIntegrationState;
+import com.skyblockexp.ezlifesteal.integration.VaultIntegrationState;
+import com.skyblockexp.ezlifesteal.killstreak.KillStreakManager;
+import com.skyblockexp.ezlifesteal.listener.PlayerListener;
+import com.skyblockexp.ezlifesteal.listener.SeasonsServiceListener;
+import com.skyblockexp.ezlifesteal.listener.VaultServiceListener;
+import com.skyblockexp.ezlifesteal.overlay.HeartOverlayManager;
+import com.skyblockexp.ezlifesteal.placeholder.PlaceholderHook;
+import com.skyblockexp.ezlifesteal.runtime.state.GameplayState;
+import com.skyblockexp.ezlifesteal.service.LifestealManager;
+import com.skyblockexp.ezlifesteal.storage.Storage;
+import com.skyblockexp.ezlifesteal.util.PlayerLookupService;
+import java.io.File;
+import java.util.concurrent.ExecutorService;
+import org.bukkit.configuration.file.YamlConfiguration;
+
+<span class="fc" id="L24">public class Registry {</span>
+
+    private Bootstrap bootstrap;
+
+<span class="fc" id="L28">    private final IntegrationState integrationState = new IntegrationState();</span>
+
+<span class="fc" id="L30">    private final ConfigState configState = new ConfigState();</span>
+
+<span class="fc" id="L32">    private final ManagerState managerState = new ManagerState();</span>
+
+<span class="fc" id="L34">    private final GameplayState gameplayState = GameplayState.defaults();</span>
+
+
+    public Bootstrap getBootstrap() {
+<span class="fc" id="L38">        return bootstrap;</span>
+    }
+
+    public void setBootstrap(Bootstrap bootstrap) {
+<span class="fc" id="L42">        this.bootstrap = bootstrap;</span>
+<span class="fc" id="L43">    }</span>
+
+    public IntegrationState getIntegrationState() {
+<span class="fc" id="L46">        return integrationState;</span>
+    }
+
+    public ConfigState getConfigState() {
+<span class="fc" id="L50">        return configState;</span>
+    }
+
+    public ManagerState getManagerState() {
+<span class="fc" id="L54">        return managerState;</span>
+    }
+
+    public GameplayState getGameplayState() {
+<span class="fc" id="L58">        return gameplayState;</span>
+    }
+
+    public PlayerLookupService getPlayerLookupService() {
+<span class="fc" id="L62">        return managerState.getPlayerLookupService();</span>
+    }
+
+    public void setPlayerLookupService(PlayerLookupService playerLookupService) {
+<span class="fc" id="L66">        managerState.setPlayerLookupService(playerLookupService);</span>
+<span class="fc" id="L67">    }</span>
+
+    public PlayerListener getPlayerListener() {
+<span class="fc" id="L70">        return managerState.getPlayerListener();</span>
+    }
+
+    public void setPlayerListener(PlayerListener playerListener) {
+<span class="fc" id="L74">        managerState.setPlayerListener(playerListener);</span>
+<span class="fc" id="L75">    }</span>
+
+    public VaultServiceListener getVaultServiceListener() {
+<span class="fc" id="L78">        return integrationState.getVaultServiceListener();</span>
+    }
+
+    public void setVaultServiceListener(VaultServiceListener vaultServiceListener) {
+<span class="fc" id="L82">        integrationState.setVaultServiceListener(vaultServiceListener);</span>
+<span class="fc" id="L83">    }</span>
+
+    public SeasonsServiceListener getSeasonsServiceListener() {
+<span class="fc" id="L86">        return integrationState.getSeasonsServiceListener();</span>
+    }
+
+    public void setSeasonsServiceListener(SeasonsServiceListener seasonsServiceListener) {
+<span class="fc" id="L90">        integrationState.setSeasonsServiceListener(seasonsServiceListener);</span>
+<span class="fc" id="L91">    }</span>
+
+    public VaultIntegrationState getVaultIntegrationState() {
+<span class="fc" id="L94">        return integrationState.getVaultIntegrationState();</span>
+    }
+
+    public SeasonsIntegrationState getSeasonsIntegrationState() {
+<span class="fc" id="L98">        return integrationState.getSeasonsIntegrationState();</span>
+    }
+
+<span class="fc" id="L101">    public static final class IntegrationState {</span>
+        private VaultServiceListener vaultServiceListener;
+
+        private SeasonsServiceListener seasonsServiceListener;
+
+<span class="fc" id="L106">        private final VaultIntegrationState vaultIntegrationState = new VaultIntegrationState();</span>
+
+<span class="fc" id="L108">        private final SeasonsIntegrationState seasonsIntegrationState = new SeasonsIntegrationState();</span>
+
+
+        public VaultServiceListener getVaultServiceListener() {
+<span class="fc" id="L112">            return vaultServiceListener;</span>
+        }
+
+        public void setVaultServiceListener(VaultServiceListener vaultServiceListener) {
+<span class="fc" id="L116">            this.vaultServiceListener = vaultServiceListener;</span>
+<span class="fc" id="L117">        }</span>
+
+        public SeasonsServiceListener getSeasonsServiceListener() {
+<span class="fc" id="L120">            return seasonsServiceListener;</span>
+        }
+
+        public void setSeasonsServiceListener(SeasonsServiceListener seasonsServiceListener) {
+<span class="fc" id="L124">            this.seasonsServiceListener = seasonsServiceListener;</span>
+<span class="fc" id="L125">        }</span>
+
+        public VaultIntegrationState getVaultIntegrationState() {
+<span class="fc" id="L128">            return vaultIntegrationState;</span>
+        }
+
+        public SeasonsIntegrationState getSeasonsIntegrationState() {
+<span class="fc" id="L132">            return seasonsIntegrationState;</span>
+        }
+    }
+
+<span class="fc" id="L136">    public static class ConfigState {</span>
+        private ConfigLoader configLoader;
+
+        private YamlConfiguration adminConfig;
+
+        private File adminConfigFile;
+
+        private YamlConfiguration smurfConfig;
+
+        private File smurfConfigFile;
+
+        private YamlConfiguration storageConfig;
+
+        private File storageConfigFile;
+
+        private YamlConfiguration lifestealConfig;
+
+        private File lifestealConfigFile;
+
+        private YamlConfiguration heartsConfig;
+
+        private File heartsConfigFile;
+
+        private YamlConfiguration shopConfig;
+
+        private File shopConfigFile;
+
+        private YamlConfiguration featureConfig;
+
+        private File featureConfigFile;
+
+        private AdminConfigAdapter adminConfigAdapter;
+
+        private LifestealConfigAdapter lifestealConfigAdapter;
+
+        private SmurfConfigAdapter smurfConfigAdapter;
+
+<span class="fc" id="L173">        private String activeLanguage = &quot;en&quot;;</span>
+
+
+        public ConfigLoader getConfigLoader() {
+<span class="fc" id="L177">            return configLoader;</span>
+        }
+
+        public void setConfigLoader(ConfigLoader configLoader) {
+<span class="fc" id="L181">            this.configLoader = configLoader;</span>
+<span class="fc" id="L182">        }</span>
+
+        public YamlConfiguration getAdminConfig() {
+<span class="fc" id="L185">            return adminConfig;</span>
+        }
+
+        public void setAdminConfig(YamlConfiguration adminConfig) {
+<span class="fc" id="L189">            this.adminConfig = adminConfig;</span>
+<span class="fc" id="L190">        }</span>
+
+        public File getAdminConfigFile() {
+<span class="fc" id="L193">            return adminConfigFile;</span>
+        }
+
+        public void setAdminConfigFile(File adminConfigFile) {
+<span class="fc" id="L197">            this.adminConfigFile = adminConfigFile;</span>
+<span class="fc" id="L198">        }</span>
+
+        public YamlConfiguration getSmurfConfig() {
+<span class="fc" id="L201">            return smurfConfig;</span>
+        }
+
+        public void setSmurfConfig(YamlConfiguration smurfConfig) {
+<span class="fc" id="L205">            this.smurfConfig = smurfConfig;</span>
+<span class="fc" id="L206">        }</span>
+
+        public File getSmurfConfigFile() {
+<span class="fc" id="L209">            return smurfConfigFile;</span>
+        }
+
+        public void setSmurfConfigFile(File smurfConfigFile) {
+<span class="fc" id="L213">            this.smurfConfigFile = smurfConfigFile;</span>
+<span class="fc" id="L214">        }</span>
+
+        public YamlConfiguration getStorageConfig() {
+<span class="fc" id="L217">            return storageConfig;</span>
+        }
+
+        public void setStorageConfig(YamlConfiguration storageConfig) {
+<span class="fc" id="L221">            this.storageConfig = storageConfig;</span>
+<span class="fc" id="L222">        }</span>
+
+        public File getStorageConfigFile() {
+<span class="fc" id="L225">            return storageConfigFile;</span>
+        }
+
+        public void setStorageConfigFile(File storageConfigFile) {
+<span class="fc" id="L229">            this.storageConfigFile = storageConfigFile;</span>
+<span class="fc" id="L230">        }</span>
+
+        public YamlConfiguration getLifestealConfig() {
+<span class="fc" id="L233">            return lifestealConfig;</span>
+        }
+
+        public void setLifestealConfig(YamlConfiguration lifestealConfig) {
+<span class="fc" id="L237">            this.lifestealConfig = lifestealConfig;</span>
+<span class="fc" id="L238">        }</span>
+
+        public File getLifestealConfigFile() {
+<span class="fc" id="L241">            return lifestealConfigFile;</span>
+        }
+
+        public void setLifestealConfigFile(File lifestealConfigFile) {
+<span class="fc" id="L245">            this.lifestealConfigFile = lifestealConfigFile;</span>
+<span class="fc" id="L246">        }</span>
+
+        public YamlConfiguration getHeartsConfig() {
+<span class="fc" id="L249">            return heartsConfig;</span>
+        }
+
+        public void setHeartsConfig(YamlConfiguration heartsConfig) {
+<span class="fc" id="L253">            this.heartsConfig = heartsConfig;</span>
+<span class="fc" id="L254">        }</span>
+
+        public File getHeartsConfigFile() {
+<span class="fc" id="L257">            return heartsConfigFile;</span>
+        }
+
+        public void setHeartsConfigFile(File heartsConfigFile) {
+<span class="fc" id="L261">            this.heartsConfigFile = heartsConfigFile;</span>
+<span class="fc" id="L262">        }</span>
+
+        public YamlConfiguration getShopConfig() {
+<span class="fc" id="L265">            return shopConfig;</span>
+        }
+
+        public void setShopConfig(YamlConfiguration shopConfig) {
+<span class="fc" id="L269">            this.shopConfig = shopConfig;</span>
+<span class="fc" id="L270">        }</span>
+
+        public File getShopConfigFile() {
+<span class="fc" id="L273">            return shopConfigFile;</span>
+        }
+
+        public void setShopConfigFile(File shopConfigFile) {
+<span class="fc" id="L277">            this.shopConfigFile = shopConfigFile;</span>
+<span class="fc" id="L278">        }</span>
+
+        public YamlConfiguration getFeatureConfig() {
+<span class="fc" id="L281">            return featureConfig;</span>
+        }
+
+        public void setFeatureConfig(YamlConfiguration featureConfig) {
+<span class="fc" id="L285">            this.featureConfig = featureConfig;</span>
+<span class="fc" id="L286">        }</span>
+
+        public File getFeatureConfigFile() {
+<span class="fc" id="L289">            return featureConfigFile;</span>
+        }
+
+        public void setFeatureConfigFile(File featureConfigFile) {
+<span class="fc" id="L293">            this.featureConfigFile = featureConfigFile;</span>
+<span class="fc" id="L294">        }</span>
+
+        public AdminConfigAdapter getAdminConfigAdapter() {
+<span class="fc" id="L297">            return adminConfigAdapter;</span>
+        }
+
+        public void setAdminConfigAdapter(AdminConfigAdapter adminConfigAdapter) {
+<span class="fc" id="L301">            this.adminConfigAdapter = adminConfigAdapter;</span>
+<span class="fc" id="L302">        }</span>
+
+        public LifestealConfigAdapter getLifestealConfigAdapter() {
+<span class="fc" id="L305">            return lifestealConfigAdapter;</span>
+        }
+
+        public void setLifestealConfigAdapter(LifestealConfigAdapter lifestealConfigAdapter) {
+<span class="fc" id="L309">            this.lifestealConfigAdapter = lifestealConfigAdapter;</span>
+<span class="fc" id="L310">        }</span>
+
+        public SmurfConfigAdapter getSmurfConfigAdapter() {
+<span class="fc" id="L313">            return smurfConfigAdapter;</span>
+        }
+
+        public void setSmurfConfigAdapter(SmurfConfigAdapter smurfConfigAdapter) {
+<span class="fc" id="L317">            this.smurfConfigAdapter = smurfConfigAdapter;</span>
+<span class="fc" id="L318">        }</span>
+
+        public String getActiveLanguage() {
+<span class="fc" id="L321">            return activeLanguage;</span>
+        }
+
+        public void setActiveLanguage(String activeLanguage) {
+<span class="fc" id="L325">            this.activeLanguage = activeLanguage;</span>
+<span class="fc" id="L326">        }</span>
+
+    }
+
+<span class="fc" id="L330">    public static class ManagerState {</span>
+        private Storage storage;
+
+        private LifestealManager lifestealManager;
+
+        private PlayerListener playerListener;
+
+        private PlaceholderHook placeholderExpansion;
+
+        private HeartOverlayManager heartOverlayManager;
+
+        private KillStreakManager killStreakManager;
+
+        private TopHologramManager topHologramManager;
+
+        private PlayerLookupService playerLookupService;
+
+        private ExecutorService storageExecutor;
+
+
+        public Storage getStorage() {
+<span class="fc" id="L351">            return storage;</span>
+        }
+
+        public void setStorage(Storage storage) {
+<span class="fc" id="L355">            this.storage = storage;</span>
+<span class="fc" id="L356">        }</span>
+
+        public LifestealManager getLifestealManager() {
+<span class="fc" id="L359">            return lifestealManager;</span>
+        }
+
+        public void setLifestealManager(LifestealManager lifestealManager) {
+<span class="fc" id="L363">            this.lifestealManager = lifestealManager;</span>
+<span class="fc" id="L364">        }</span>
+
+        public PlayerListener getPlayerListener() {
+<span class="fc" id="L367">            return playerListener;</span>
+        }
+
+        public void setPlayerListener(PlayerListener playerListener) {
+<span class="fc" id="L371">            this.playerListener = playerListener;</span>
+<span class="fc" id="L372">        }</span>
+
+        public PlaceholderHook getPlaceholderExpansion() {
+<span class="fc" id="L375">            return placeholderExpansion;</span>
+        }
+
+        public void setPlaceholderExpansion(PlaceholderHook placeholderExpansion) {
+<span class="fc" id="L379">            this.placeholderExpansion = placeholderExpansion;</span>
+<span class="fc" id="L380">        }</span>
+
+        public HeartOverlayManager getHeartOverlayManager() {
+<span class="fc" id="L383">            return heartOverlayManager;</span>
+        }
+
+        public void setHeartOverlayManager(HeartOverlayManager heartOverlayManager) {
+<span class="fc" id="L387">            this.heartOverlayManager = heartOverlayManager;</span>
+<span class="fc" id="L388">        }</span>
+
+        public KillStreakManager getKillStreakManager() {
+<span class="fc" id="L391">            return killStreakManager;</span>
+        }
+
+        public void setKillStreakManager(KillStreakManager killStreakManager) {
+<span class="fc" id="L395">            this.killStreakManager = killStreakManager;</span>
+<span class="fc" id="L396">        }</span>
+
+        public TopHologramManager getTopHologramManager() {
+<span class="fc" id="L399">            return topHologramManager;</span>
+        }
+
+        public void setTopHologramManager(TopHologramManager topHologramManager) {
+<span class="fc" id="L403">            this.topHologramManager = topHologramManager;</span>
+<span class="fc" id="L404">        }</span>
+
+        public PlayerLookupService getPlayerLookupService() {
+<span class="fc" id="L407">            return playerLookupService;</span>
+        }
+
+        public void setPlayerLookupService(PlayerLookupService playerLookupService) {
+<span class="fc" id="L411">            this.playerLookupService = playerLookupService;</span>
+<span class="fc" id="L412">        }</span>
+
+        public ExecutorService getStorageExecutor() {
+<span class="fc" id="L415">            return storageExecutor;</span>
+        }
+
+        public void setStorageExecutor(ExecutorService storageExecutor) {
+<span class="fc" id="L419">            this.storageExecutor = storageExecutor;</span>
+<span class="fc" id="L420">        }</span>
+
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

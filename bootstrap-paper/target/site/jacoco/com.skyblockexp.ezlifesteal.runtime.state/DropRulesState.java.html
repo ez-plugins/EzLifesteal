@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DropRulesState.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.runtime.state</a> &gt; <span class="el_source">DropRulesState.java</span></div><h1>DropRulesState.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.runtime.state;
+
+public final class DropRulesState {
+
+    private boolean dropHeartOnKill;
+
+    private boolean dropHeartOnDeath;
+
+    private boolean dropHeartOnlyWhenKilledByPlayer;
+
+    private String dropHeartId;
+
+    private int dropHeartAmount;
+
+<span class="fc" id="L15">    DropRulesState() {</span>
+<span class="fc" id="L16">    }</span>
+
+    public static DropRulesState defaults() {
+<span class="fc" id="L19">        return new DropRulesState();</span>
+    }
+
+    public boolean isDropHeartOnKill() {
+<span class="fc" id="L23">        return dropHeartOnKill;</span>
+    }
+
+    public void setDropHeartOnKill(boolean dropHeartOnKill) {
+<span class="fc" id="L27">        this.dropHeartOnKill = dropHeartOnKill;</span>
+<span class="fc" id="L28">    }</span>
+
+    public boolean isDropHeartOnDeath() {
+<span class="fc" id="L31">        return dropHeartOnDeath;</span>
+    }
+
+    public void setDropHeartOnDeath(boolean dropHeartOnDeath) {
+<span class="fc" id="L35">        this.dropHeartOnDeath = dropHeartOnDeath;</span>
+<span class="fc" id="L36">    }</span>
+
+    public boolean isDropHeartOnlyWhenKilledByPlayer() {
+<span class="fc" id="L39">        return dropHeartOnlyWhenKilledByPlayer;</span>
+    }
+
+    public void setDropHeartOnlyWhenKilledByPlayer(boolean dropHeartOnlyWhenKilledByPlayer) {
+<span class="fc" id="L43">        this.dropHeartOnlyWhenKilledByPlayer = dropHeartOnlyWhenKilledByPlayer;</span>
+<span class="fc" id="L44">    }</span>
+
+    public String getDropHeartId() {
+<span class="fc" id="L47">        return dropHeartId;</span>
+    }
+
+    public void setDropHeartId(String dropHeartId) {
+<span class="fc" id="L51">        this.dropHeartId = dropHeartId;</span>
+<span class="fc" id="L52">    }</span>
+
+    public int getDropHeartAmount() {
+<span class="fc" id="L55">        return dropHeartAmount;</span>
+    }
+
+    public void setDropHeartAmount(int dropHeartAmount) {
+<span class="fc" id="L59">        this.dropHeartAmount = dropHeartAmount;</span>
+<span class="fc" id="L60">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

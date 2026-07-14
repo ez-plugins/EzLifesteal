@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TeamBankAdminService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.service</a> &gt; <span class="el_source">TeamBankAdminService.java</span></div><h1>TeamBankAdminService.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.service;
+
+import com.skyblockexp.ezlifesteal.integration.TeamsApiTeamResolver;
+import com.skyblockexp.ezlifesteal.model.TeamBankAccount;
+import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
+import com.skyblockexp.ezlifesteal.storage.StorageException;
+import com.skyblockexp.ezlifesteal.storage.repository.TeamBankRepository;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+
+/**
+ * Admin-facing team bank operations that do not require an online player.
+ *
+ * &lt;p&gt;All mutating methods are thread-safe via per-team locks. Locks for two-team
+ * operations (transfer) are acquired in lexicographic UUID order to prevent deadlocks.&lt;/p&gt;
+ */
+public final class TeamBankAdminService {
+
+<span class="fc" id="L24">    public enum AdminStatus {</span>
+<span class="fc" id="L25">        SUCCESS,</span>
+<span class="fc" id="L26">        DISABLED,</span>
+<span class="fc" id="L27">        INVALID_AMOUNT,</span>
+<span class="fc" id="L28">        TEAM_NOT_FOUND,</span>
+<span class="fc" id="L29">        STORAGE_UNAVAILABLE,</span>
+<span class="fc" id="L30">        INSUFFICIENT_BANK_HEARTS,</span>
+<span class="fc" id="L31">        BANK_CAP_EXCEEDED,</span>
+<span class="fc" id="L32">        TEAMS_API_UNAVAILABLE</span>
+    }
+
+<span class="fc" id="L35">    public enum TransferStatus {</span>
+<span class="fc" id="L36">        SUCCESS,</span>
+<span class="fc" id="L37">        DISABLED,</span>
+<span class="fc" id="L38">        INVALID_AMOUNT,</span>
+<span class="fc" id="L39">        FROM_TEAM_NOT_FOUND,</span>
+<span class="fc" id="L40">        TO_TEAM_NOT_FOUND,</span>
+<span class="fc" id="L41">        STORAGE_UNAVAILABLE,</span>
+<span class="fc" id="L42">        INSUFFICIENT_BANK_HEARTS,</span>
+<span class="fc" id="L43">        BANK_CAP_EXCEEDED,</span>
+<span class="fc" id="L44">        TEAMS_API_UNAVAILABLE</span>
+    }
+
+<span class="fc" id="L47">    public record AdminResult(AdminStatus status, String teamName, double bankHearts) {</span>
+    }
+
+<span class="fc" id="L50">    public record TransferResult(</span>
+            TransferStatus status,
+            String fromTeam,
+            String toTeam,
+            double fromHearts,
+            double toHearts
+    ) {
+    }
+
+    private final PluginAccessor plugin;
+    private final TeamsApiTeamResolver resolver;
+    private final Executor storageExecutor;
+<span class="fc" id="L62">    private final Map&lt;UUID, Object&gt; teamLocks = new ConcurrentHashMap&lt;&gt;();</span>
+
+<span class="fc" id="L64">    public TeamBankAdminService(PluginAccessor plugin, TeamsApiTeamResolver resolver, Executor storageExecutor) {</span>
+<span class="fc" id="L65">        this.plugin = plugin;</span>
+<span class="fc" id="L66">        this.resolver = resolver;</span>
+<span class="fc" id="L67">        this.storageExecutor = storageExecutor;</span>
+<span class="fc" id="L68">    }</span>
+
+    /** Returns the current heart balance for the given team. */
+    public CompletableFuture&lt;AdminResult&gt; adminBalance(String teamInput) {
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        if (!plugin.isTeamBankEnabled()) {</span>
+<span class="fc" id="L73">            return CompletableFuture.completedFuture(new AdminResult(AdminStatus.DISABLED, teamInput, 0.0D));</span>
+        }
+<span class="fc" id="L75">        return CompletableFuture.supplyAsync(() -&gt; {</span>
+<span class="fc" id="L76">            final TeamsApiTeamResolver.TeamContext team = resolveTeam(teamInput);</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">            if (team == null) {</span>
+<span class="fc" id="L78">                return new AdminResult(AdminStatus.TEAM_NOT_FOUND, teamInput, 0.0D);</span>
+            }
+<span class="fc" id="L80">            final TeamBankRepository repo = plugin.getTeamBankRepository();</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">            if (repo == null) {</span>
+<span class="fc" id="L82">                return new AdminResult(AdminStatus.STORAGE_UNAVAILABLE, team.teamName(), 0.0D);</span>
+            }
+            try {
+<span class="fc" id="L85">                final double balance = repo.loadAccount(team.teamId())</span>
+<span class="fc" id="L86">                        .map(TeamBankAccount::getHearts)</span>
+<span class="fc" id="L87">                        .orElse(0.0D);</span>
+<span class="fc" id="L88">                return new AdminResult(AdminStatus.SUCCESS, team.teamName(), balance);</span>
+<span class="fc" id="L89">            } catch (StorageException exception) {</span>
+<span class="fc" id="L90">                throw new CompletionException(exception);</span>
+            }
+        }, storageExecutor);
+    }
+
+    /** Deposits {@code amount} hearts into the team bank, respecting the per-team cap. */
+    public CompletableFuture&lt;AdminResult&gt; adminDeposit(String teamInput, double amount) {
+<span class="fc bfc" id="L97" title="All 2 branches covered.">        if (!plugin.isTeamBankEnabled()) {</span>
+<span class="fc" id="L98">            return CompletableFuture.completedFuture(new AdminResult(AdminStatus.DISABLED, teamInput, 0.0D));</span>
+        }
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        if (!isAmountValid(amount)) {</span>
+<span class="fc" id="L101">            return CompletableFuture.completedFuture(new AdminResult(AdminStatus.INVALID_AMOUNT, teamInput, 0.0D));</span>
+        }
+<span class="fc" id="L103">        return CompletableFuture.supplyAsync(() -&gt; {</span>
+<span class="fc" id="L104">            final TeamsApiTeamResolver.TeamContext team = resolveTeam(teamInput);</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">            if (team == null) {</span>
+<span class="fc" id="L106">                return new AdminResult(AdminStatus.TEAM_NOT_FOUND, teamInput, 0.0D);</span>
+            }
+<span class="fc" id="L108">            final TeamBankRepository repo = plugin.getTeamBankRepository();</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">            if (repo == null) {</span>
+<span class="fc" id="L110">                return new AdminResult(AdminStatus.STORAGE_UNAVAILABLE, team.teamName(), 0.0D);</span>
+            }
+<span class="fc" id="L112">            final Object lock = teamLocks.computeIfAbsent(team.teamId(), ignored -&gt; new Object());</span>
+<span class="fc" id="L113">            synchronized (lock) {</span>
+                try {
+<span class="fc" id="L115">                    final TeamBankAccount account = repo.loadAccount(team.teamId())</span>
+<span class="pc" id="L116">                            .orElseGet(() -&gt; new TeamBankAccount(team.teamId(), 0.0D));</span>
+<span class="fc" id="L117">                    final double max = plugin.getTeamBankMaxHeartsForTeam(team.teamId());</span>
+<span class="fc" id="L118">                    final double afterBank = account.getHearts() + amount;</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">                    if (afterBank &gt; max) {</span>
+<span class="fc" id="L120">                        return new AdminResult(AdminStatus.BANK_CAP_EXCEEDED, team.teamName(), account.getHearts());</span>
+                    }
+<span class="fc" id="L122">                    account.setHearts(afterBank);</span>
+<span class="fc" id="L123">                    repo.saveAccount(account);</span>
+<span class="fc" id="L124">                    return new AdminResult(AdminStatus.SUCCESS, team.teamName(), afterBank);</span>
+<span class="fc" id="L125">                } catch (StorageException exception) {</span>
+<span class="fc" id="L126">                    throw new CompletionException(exception);</span>
+                }
+            }
+        }, storageExecutor);
+    }
+
+    /** Withdraws {@code amount} hearts from the team bank. */
+    public CompletableFuture&lt;AdminResult&gt; adminWithdraw(String teamInput, double amount) {
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        if (!plugin.isTeamBankEnabled()) {</span>
+<span class="fc" id="L135">            return CompletableFuture.completedFuture(new AdminResult(AdminStatus.DISABLED, teamInput, 0.0D));</span>
+        }
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        if (!isAmountValid(amount)) {</span>
+<span class="fc" id="L138">            return CompletableFuture.completedFuture(new AdminResult(AdminStatus.INVALID_AMOUNT, teamInput, 0.0D));</span>
+        }
+<span class="fc" id="L140">        return CompletableFuture.supplyAsync(() -&gt; {</span>
+<span class="fc" id="L141">            final TeamsApiTeamResolver.TeamContext team = resolveTeam(teamInput);</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">            if (team == null) {</span>
+<span class="fc" id="L143">                return new AdminResult(AdminStatus.TEAM_NOT_FOUND, teamInput, 0.0D);</span>
+            }
+<span class="fc" id="L145">            final TeamBankRepository repo = plugin.getTeamBankRepository();</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">            if (repo == null) {</span>
+<span class="fc" id="L147">                return new AdminResult(AdminStatus.STORAGE_UNAVAILABLE, team.teamName(), 0.0D);</span>
+            }
+<span class="fc" id="L149">            final Object lock = teamLocks.computeIfAbsent(team.teamId(), ignored -&gt; new Object());</span>
+<span class="fc" id="L150">            synchronized (lock) {</span>
+                try {
+<span class="fc" id="L152">                    final TeamBankAccount account = repo.loadAccount(team.teamId())</span>
+<span class="pc" id="L153">                            .orElseGet(() -&gt; new TeamBankAccount(team.teamId(), 0.0D));</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">                    if (account.getHearts() &lt; amount) {</span>
+<span class="fc" id="L155">                        return new AdminResult(AdminStatus.INSUFFICIENT_BANK_HEARTS, team.teamName(), account.getHearts());</span>
+                    }
+<span class="fc" id="L157">                    final double afterBank = account.getHearts() - amount;</span>
+<span class="fc" id="L158">                    account.setHearts(afterBank);</span>
+<span class="fc" id="L159">                    repo.saveAccount(account);</span>
+<span class="fc" id="L160">                    return new AdminResult(AdminStatus.SUCCESS, team.teamName(), afterBank);</span>
+<span class="fc" id="L161">                } catch (StorageException exception) {</span>
+<span class="fc" id="L162">                    throw new CompletionException(exception);</span>
+                }
+            }
+        }, storageExecutor);
+    }
+
+    /** Resets the team bank balance to zero. */
+    public CompletableFuture&lt;AdminResult&gt; adminReset(String teamInput) {
+<span class="fc bfc" id="L170" title="All 2 branches covered.">        if (!plugin.isTeamBankEnabled()) {</span>
+<span class="fc" id="L171">            return CompletableFuture.completedFuture(new AdminResult(AdminStatus.DISABLED, teamInput, 0.0D));</span>
+        }
+<span class="fc" id="L173">        return CompletableFuture.supplyAsync(() -&gt; {</span>
+<span class="fc" id="L174">            final TeamsApiTeamResolver.TeamContext team = resolveTeam(teamInput);</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">            if (team == null) {</span>
+<span class="fc" id="L176">                return new AdminResult(AdminStatus.TEAM_NOT_FOUND, teamInput, 0.0D);</span>
+            }
+<span class="fc" id="L178">            final TeamBankRepository repo = plugin.getTeamBankRepository();</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">            if (repo == null) {</span>
+<span class="fc" id="L180">                return new AdminResult(AdminStatus.STORAGE_UNAVAILABLE, team.teamName(), 0.0D);</span>
+            }
+<span class="fc" id="L182">            final Object lock = teamLocks.computeIfAbsent(team.teamId(), ignored -&gt; new Object());</span>
+<span class="fc" id="L183">            synchronized (lock) {</span>
+                try {
+<span class="fc" id="L185">                    final TeamBankAccount account = repo.loadAccount(team.teamId())</span>
+<span class="pc" id="L186">                            .orElseGet(() -&gt; new TeamBankAccount(team.teamId(), 0.0D));</span>
+<span class="fc" id="L187">                    account.setHearts(0.0D);</span>
+<span class="fc" id="L188">                    repo.saveAccount(account);</span>
+<span class="fc" id="L189">                    return new AdminResult(AdminStatus.SUCCESS, team.teamName(), 0.0D);</span>
+<span class="fc" id="L190">                } catch (StorageException exception) {</span>
+<span class="fc" id="L191">                    throw new CompletionException(exception);</span>
+                }
+            }
+        }, storageExecutor);
+    }
+
+    /**
+     * Transfers {@code amount} hearts from one team bank to another.
+     * Locks are acquired in lexicographic UUID order to prevent deadlocks.
+     */
+    public CompletableFuture&lt;TransferResult&gt; adminTransfer(String fromInput, String toInput, double amount) {
+<span class="fc bfc" id="L202" title="All 2 branches covered.">        if (!plugin.isTeamBankEnabled()) {</span>
+<span class="fc" id="L203">            return CompletableFuture.completedFuture(</span>
+                    new TransferResult(TransferStatus.DISABLED, fromInput, toInput, 0.0D, 0.0D));
+        }
+<span class="fc bfc" id="L206" title="All 2 branches covered.">        if (!isAmountValid(amount)) {</span>
+<span class="fc" id="L207">            return CompletableFuture.completedFuture(</span>
+                    new TransferResult(TransferStatus.INVALID_AMOUNT, fromInput, toInput, 0.0D, 0.0D));
+        }
+<span class="fc" id="L210">        return CompletableFuture.supplyAsync(() -&gt; {</span>
+<span class="fc" id="L211">            final TeamsApiTeamResolver.TeamContext fromTeam = resolveTeam(fromInput);</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">            if (fromTeam == null) {</span>
+<span class="fc" id="L213">                return new TransferResult(TransferStatus.FROM_TEAM_NOT_FOUND, fromInput, toInput, 0.0D, 0.0D);</span>
+            }
+<span class="fc" id="L215">            final TeamsApiTeamResolver.TeamContext toTeam = resolveTeam(toInput);</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">            if (toTeam == null) {</span>
+<span class="fc" id="L217">                return new TransferResult(TransferStatus.TO_TEAM_NOT_FOUND, fromTeam.teamName(), toInput, 0.0D, 0.0D);</span>
+            }
+<span class="fc" id="L219">            final TeamBankRepository repo = plugin.getTeamBankRepository();</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">            if (repo == null) {</span>
+<span class="fc" id="L221">                return new TransferResult(TransferStatus.STORAGE_UNAVAILABLE,</span>
+<span class="fc" id="L222">                        fromTeam.teamName(), toTeam.teamName(), 0.0D, 0.0D);</span>
+            }
+            // Acquire locks in lexicographic UUID order to prevent deadlocks
+<span class="fc bfc" id="L225" title="All 2 branches covered.">            final boolean fromFirst = fromTeam.teamId().compareTo(toTeam.teamId()) &lt;= 0;</span>
+<span class="fc bfc" id="L226" title="All 2 branches covered.">            final UUID firstId = fromFirst ? fromTeam.teamId() : toTeam.teamId();</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">            final UUID secondId = fromFirst ? toTeam.teamId() : fromTeam.teamId();</span>
+<span class="fc" id="L228">            final Object firstLock = teamLocks.computeIfAbsent(firstId, ignored -&gt; new Object());</span>
+<span class="fc" id="L229">            final Object secondLock = teamLocks.computeIfAbsent(secondId, ignored -&gt; new Object());</span>
+<span class="fc" id="L230">            synchronized (firstLock) {</span>
+<span class="fc" id="L231">                synchronized (secondLock) {</span>
+                    try {
+<span class="fc" id="L233">                        final TeamBankAccount fromAccount = repo.loadAccount(fromTeam.teamId())</span>
+<span class="fc" id="L234">                                .orElseGet(() -&gt; new TeamBankAccount(fromTeam.teamId(), 0.0D));</span>
+<span class="fc" id="L235">                        final TeamBankAccount toAccount = repo.loadAccount(toTeam.teamId())</span>
+<span class="fc" id="L236">                                .orElseGet(() -&gt; new TeamBankAccount(toTeam.teamId(), 0.0D));</span>
+
+<span class="fc" id="L238">                        final double fromBefore = fromAccount.getHearts();</span>
+<span class="fc" id="L239">                        final double toBefore = toAccount.getHearts();</span>
+
+<span class="fc bfc" id="L241" title="All 2 branches covered.">                        if (fromBefore &lt; amount) {</span>
+<span class="fc" id="L242">                            return new TransferResult(TransferStatus.INSUFFICIENT_BANK_HEARTS,</span>
+<span class="fc" id="L243">                                    fromTeam.teamName(), toTeam.teamName(),</span>
+                                    fromBefore, toBefore);
+                        }
+<span class="fc" id="L246">                        final double toMax = plugin.getTeamBankMaxHeartsForTeam(toTeam.teamId());</span>
+<span class="fc bfc" id="L247" title="All 2 branches covered.">                        if (toBefore + amount &gt; toMax) {</span>
+<span class="fc" id="L248">                            return new TransferResult(TransferStatus.BANK_CAP_EXCEEDED,</span>
+<span class="fc" id="L249">                                    fromTeam.teamName(), toTeam.teamName(),</span>
+                                    fromBefore, toBefore);
+                        }
+
+<span class="fc" id="L253">                        final double fromAfter = fromBefore - amount;</span>
+<span class="fc" id="L254">                        final double toAfter = toBefore + amount;</span>
+
+                        // Persist snapshots: save from-team first, then to-team. Rollback from-team if to-team save fails.
+                        try {
+<span class="fc" id="L258">                            repo.saveAccount(new TeamBankAccount(fromTeam.teamId(), fromAfter));</span>
+                        }
+<span class="fc" id="L260">                        catch (StorageException e) {</span>
+<span class="fc" id="L261">                            throw new CompletionException(e);</span>
+<span class="fc" id="L262">                        }</span>
+
+                        try {
+<span class="fc" id="L265">                            repo.saveAccount(new TeamBankAccount(toTeam.teamId(), toAfter));</span>
+                        }
+<span class="fc" id="L267">                        catch (StorageException bankEx) {</span>
+                            // Attempt rollback of from-team
+                            try {
+<span class="fc" id="L270">                                repo.saveAccount(new TeamBankAccount(fromTeam.teamId(), fromBefore));</span>
+                            }
+<span class="fc" id="L272">                            catch (StorageException rollbackEx) {</span>
+<span class="fc" id="L273">                                plugin.getLogger().severe(&quot;Failed to rollback from-team after transfer failure: &quot; + rollbackEx.getMessage());</span>
+<span class="fc" id="L274">                                throw new CompletionException(rollbackEx);</span>
+<span class="fc" id="L275">                            }</span>
+<span class="fc" id="L276">                            throw new CompletionException(bankEx);</span>
+<span class="fc" id="L277">                        }</span>
+
+<span class="fc" id="L279">                        return new TransferResult(TransferStatus.SUCCESS,</span>
+<span class="fc" id="L280">                                fromTeam.teamName(), toTeam.teamName(),</span>
+                                fromAfter, toAfter);
+<span class="fc" id="L282">                    } catch (StorageException exception) {</span>
+<span class="fc" id="L283">                        throw new CompletionException(exception);</span>
+                    }
+                }
+            }
+        }, storageExecutor);
+    }
+
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Resolves a team by UUID string or name. Returns null when unresolvable.
+     */
+    private TeamsApiTeamResolver.TeamContext resolveTeam(String input) {
+<span class="fc bfc" id="L298" title="All 2 branches covered.">        if (resolver == null) {</span>
+<span class="fc" id="L299">            return null;</span>
+        }
+        try {
+<span class="fc" id="L302">            final Optional&lt;TeamsApiTeamResolver.TeamContext&gt; result = resolver.resolveTeamByName(input);</span>
+<span class="fc" id="L303">            return result.orElse(null);</span>
+<span class="fc" id="L304">        } catch (Exception exception) {</span>
+<span class="fc" id="L305">            return null;</span>
+        }
+    }
+
+    private boolean isAmountValid(double amount) {
+<span class="fc bfc" id="L310" title="All 4 branches covered.">        return Double.isFinite(amount) &amp;&amp; amount &gt; 0.0D;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

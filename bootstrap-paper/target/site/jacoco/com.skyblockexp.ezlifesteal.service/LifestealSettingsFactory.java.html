@@ -1,0 +1,542 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LifestealSettingsFactory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.service</a> &gt; <span class="el_source">LifestealSettingsFactory.java</span></div><h1>LifestealSettingsFactory.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.service;
+
+import com.skyblockexp.ezlifesteal.config.BeaconSpawnSettings;
+import com.skyblockexp.ezlifesteal.config.LifestealConfigAdapter;
+import com.skyblockexp.ezlifesteal.config.ReviveAnimationSettings;
+import com.skyblockexp.ezlifesteal.runtime.DefaultPluginRuntimeServices;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.bukkit.configuration.ConfigurationSection;
+
+/**
+ * Reads, sanitizes, and exposes immutable lifesteal gameplay settings.
+ */
+<span class="fc" id="L16">public class LifestealSettingsFactory {</span>
+    private static final String REVIVE_BEACON_PATH = &quot;revive-beacon&quot;;
+
+    private static final String LEGACY_BEACON_REVIVE_PATH = &quot;beacon-revive&quot;;
+
+
+    private static final String DEFAULT_REVIVE_BEACON_VOUCHER_HEART_ID = &quot;basic&quot;;
+
+    private static final double DEFAULT_REVIVE_BEACON_MAX_DISTANCE = 8.0D;
+
+
+    private static final boolean DEFAULT_REVIVE_BEACON_ENABLED = false;
+
+    private static final boolean DEFAULT_REVIVE_BEACON_REQUIRE_SNEAK = false;
+
+    private static final boolean DEFAULT_REVIVE_BEACON_CONSUME_ON_FAIL = false;
+
+    private static final boolean DEFAULT_REVIVE_BEACON_REQUIRE_VOUCHER_IN_BEACON = false;
+
+    private static final double DEFAULT_REVIVE_BEACON_VOUCHER_HOLD_SECONDS = 0.0D;
+
+    private static final boolean DEFAULT_REVIVE_BEACON_WHITELIST_ENABLED = false;
+
+    private static final boolean DEFAULT_REVIVE_BEACON_BROADCAST_ENABLED = false;
+
+    private static final String DEFAULT_REVIVE_BEACON_BROADCAST_HOLD_START_MESSAGE_KEY =
+
+            &quot;beacon-revive-broadcast-hold-start&quot;;
+
+    private static final String DEFAULT_REVIVE_BEACON_BROADCAST_COMPLETE_MESSAGE_KEY =
+
+            &quot;beacon-revive-broadcast-complete&quot;;
+
+    public LifestealSettings create(LifestealConfigAdapter lifestealConfigAdapter) {
+<span class="fc" id="L50">        final double configuredDefaultHearts = lifestealConfigAdapter.getDouble(&quot;default-hearts&quot;, 10.0);</span>
+<span class="fc" id="L51">        final double configuredMinHearts = lifestealConfigAdapter.getDouble(&quot;min-hearts&quot;, 1.0);</span>
+<span class="fc" id="L52">        final double configuredMaxHearts = lifestealConfigAdapter.getDouble(&quot;max-hearts&quot;, 40.0);</span>
+<span class="fc" id="L53">        final DefaultPluginRuntimeServices.SanitizedHeartBounds heartBounds =</span>
+<span class="fc" id="L54">                DefaultPluginRuntimeServices.sanitizeHeartBounds(</span>
+                configuredMinHearts,
+                configuredDefaultHearts,
+                configuredMaxHearts
+        );
+
+<span class="fc" id="L60">        final List&lt;String&gt; warnings = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        if (heartBounds.adjusted()) {</span>
+<span class="fc" id="L62">            warnings.add(String.format(</span>
+                    &quot;Adjusted lifesteal heart bounds from min=%.2f/default=%.2f/max=%.2f to&quot;
+                            + &quot; min=%.2f/default=%.2f/max=%.2f&quot;,
+<span class="fc" id="L65">                    configuredMinHearts,</span>
+<span class="fc" id="L66">                    configuredDefaultHearts,</span>
+<span class="fc" id="L67">                    configuredMaxHearts,</span>
+<span class="fc" id="L68">                    heartBounds.minHearts(),</span>
+<span class="fc" id="L69">                    heartBounds.defaultHearts(),</span>
+<span class="fc" id="L70">                    heartBounds.maxHearts()</span>
+            ));
+        }
+
+<span class="fc" id="L74">        final boolean dropHeartOnDeath = lifestealConfigAdapter.getBoolean(</span>
+                &quot;drop-heart-on-death&quot;,
+<span class="fc" id="L76">                lifestealConfigAdapter.getBoolean(&quot;drop-heart-on-kill&quot;, false)</span>
+        );
+<span class="fc" id="L78">        final boolean reviveBeaconEnabled = getBooleanWithLegacyFallback(</span>
+                lifestealConfigAdapter,
+                &quot;enabled&quot;,
+                DEFAULT_REVIVE_BEACON_ENABLED
+        );
+<span class="fc" id="L83">        final String reviveBeaconVoucherHeartId = getStringWithLegacyFallback(</span>
+                lifestealConfigAdapter,
+                &quot;voucher-heart-id&quot;,
+                DEFAULT_REVIVE_BEACON_VOUCHER_HEART_ID
+        );
+<span class="fc" id="L88">        final boolean reviveBeaconRequireSneak = getBooleanWithLegacyFallback(</span>
+                lifestealConfigAdapter,
+                &quot;require-sneak&quot;,
+                DEFAULT_REVIVE_BEACON_REQUIRE_SNEAK
+        );
+<span class="fc" id="L93">        double reviveBeaconMaxDistance = getDoubleWithLegacyFallback(</span>
+                lifestealConfigAdapter,
+                &quot;max-distance&quot;,
+                DEFAULT_REVIVE_BEACON_MAX_DISTANCE
+        );
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        if (reviveBeaconMaxDistance &lt;= 0.0D) {</span>
+<span class="fc" id="L99">            warnings.add(String.format(</span>
+                    &quot;Invalid revive beacon max-distance %.2f configured; using default %.2f&quot;,
+<span class="fc" id="L101">                    reviveBeaconMaxDistance,</span>
+<span class="fc" id="L102">                    DEFAULT_REVIVE_BEACON_MAX_DISTANCE</span>
+            ));
+<span class="fc" id="L104">            reviveBeaconMaxDistance = DEFAULT_REVIVE_BEACON_MAX_DISTANCE;</span>
+        }
+<span class="fc" id="L106">        final boolean reviveBeaconConsumeOnFail = getBooleanWithLegacyFallback(</span>
+                lifestealConfigAdapter,
+                &quot;consume-on-fail&quot;,
+                DEFAULT_REVIVE_BEACON_CONSUME_ON_FAIL
+        );
+<span class="fc" id="L111">        final boolean reviveBeaconRequireVoucherInBeacon = getBooleanWithLegacyFallback(</span>
+                lifestealConfigAdapter,
+                &quot;require-voucher-in-beacon&quot;,
+                DEFAULT_REVIVE_BEACON_REQUIRE_VOUCHER_IN_BEACON
+        );
+<span class="fc" id="L116">        double reviveBeaconVoucherHoldSeconds = getDoubleWithLegacyFallback(</span>
+                lifestealConfigAdapter,
+                &quot;voucher-hold-seconds&quot;,
+                DEFAULT_REVIVE_BEACON_VOUCHER_HOLD_SECONDS
+        );
+<span class="fc bfc" id="L121" title="All 2 branches covered.">        if (reviveBeaconVoucherHoldSeconds &lt; 0.0D) {</span>
+<span class="fc" id="L122">            warnings.add(String.format(</span>
+                    &quot;Invalid revive beacon voucher-hold-seconds %.2f configured; using default %.2f&quot;,
+<span class="fc" id="L124">                    reviveBeaconVoucherHoldSeconds,</span>
+<span class="fc" id="L125">                    DEFAULT_REVIVE_BEACON_VOUCHER_HOLD_SECONDS</span>
+            ));
+<span class="fc" id="L127">            reviveBeaconVoucherHoldSeconds = DEFAULT_REVIVE_BEACON_VOUCHER_HOLD_SECONDS;</span>
+        }
+<span class="fc" id="L129">        final boolean reviveBeaconWhitelistEnabled = getBooleanWithLegacyFallback(</span>
+                lifestealConfigAdapter,
+                &quot;whitelist-enabled&quot;,
+                DEFAULT_REVIVE_BEACON_WHITELIST_ENABLED
+        );
+<span class="fc" id="L134">        final List&lt;String&gt; reviveBeaconWhitelistedBeacons = List.copyOf(getStringListWithLegacyFallback(</span>
+                lifestealConfigAdapter,
+                &quot;whitelisted-beacons&quot;
+        ));
+<span class="fc" id="L138">        final ReviveAnimationSettings reviveAnimationSettings = parseReviveAnimationSettings(lifestealConfigAdapter,</span>
+                warnings);
+<span class="fc" id="L140">        final boolean reviveBeaconBroadcastEnabled = getBooleanWithLegacyFallback(</span>
+                lifestealConfigAdapter,
+                &quot;broadcast.enabled&quot;,
+                DEFAULT_REVIVE_BEACON_BROADCAST_ENABLED
+        );
+<span class="fc" id="L145">        final String reviveBeaconBroadcastHoldStartMessageKey = getStringWithLegacyFallback(</span>
+                lifestealConfigAdapter,
+                &quot;broadcast.hold-start-message-key&quot;,
+                DEFAULT_REVIVE_BEACON_BROADCAST_HOLD_START_MESSAGE_KEY
+        );
+<span class="fc" id="L150">        final String reviveBeaconBroadcastCompleteMessageKey = getStringWithLegacyFallback(</span>
+                lifestealConfigAdapter,
+                &quot;broadcast.complete-message-key&quot;,
+                DEFAULT_REVIVE_BEACON_BROADCAST_COMPLETE_MESSAGE_KEY
+        );
+<span class="fc" id="L155">        final BeaconSpawnSettings beaconSpawnSettings = parseBeaconSpawnSettings(lifestealConfigAdapter, warnings);</span>
+
+        // Team kill bypass — support both old flat key and new nested section
+        final boolean teamKillBypassEnabled;
+        final List&lt;String&gt; teamKillBypassExemptWorlds;
+        final int teamKillBypassMinTeamSize;
+<span class="fc bfc" id="L161" title="All 2 branches covered.">        if (lifestealConfigAdapter.getSection(&quot;team-kill-bypass&quot;) != null) {</span>
+<span class="fc" id="L162">            teamKillBypassEnabled = lifestealConfigAdapter.getBoolean(&quot;team-kill-bypass.enabled&quot;, false);</span>
+<span class="fc" id="L163">            teamKillBypassExemptWorlds = List.copyOf(lifestealConfigAdapter.getStringList(&quot;team-kill-bypass.exempt-worlds&quot;));</span>
+<span class="fc" id="L164">            teamKillBypassMinTeamSize = Math.max(1, lifestealConfigAdapter.getInt(&quot;team-kill-bypass.min-team-size&quot;, 1));</span>
+        } else {
+<span class="fc" id="L166">            teamKillBypassEnabled = lifestealConfigAdapter.getBoolean(&quot;team-kill-bypass-with-teams-api&quot;, false);</span>
+<span class="fc" id="L167">            teamKillBypassExemptWorlds = List.of();</span>
+<span class="fc" id="L168">            teamKillBypassMinTeamSize = 1;</span>
+        }
+
+        // Per-team bank overrides
+<span class="fc" id="L172">        final ConfigurationSection perTeamSection =</span>
+<span class="fc" id="L173">                lifestealConfigAdapter.getSection(&quot;team-bank.per-team-overrides&quot;);</span>
+        final Map&lt;String, Double&gt; teamBankPerTeamMaxHearts;
+<span class="fc bfc" id="L175" title="All 2 branches covered.">        if (perTeamSection != null) {</span>
+<span class="fc" id="L176">            final Map&lt;String, Double&gt; overrides = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">            for (String key : perTeamSection.getKeys(false)) {</span>
+<span class="fc" id="L178">                overrides.put(key, perTeamSection.getDouble(key, 0.0));</span>
+<span class="fc" id="L179">            }</span>
+<span class="fc" id="L180">            teamBankPerTeamMaxHearts = Map.copyOf(overrides);</span>
+<span class="fc" id="L181">        } else {</span>
+<span class="fc" id="L182">            teamBankPerTeamMaxHearts = Map.of();</span>
+        }
+
+<span class="fc" id="L185">        return new LifestealSettings(</span>
+<span class="fc" id="L186">                heartBounds.defaultHearts(),</span>
+<span class="fc" id="L187">                heartBounds.minHearts(),</span>
+<span class="fc" id="L188">                heartBounds.maxHearts(),</span>
+<span class="fc" id="L189">                lifestealConfigAdapter.getBoolean(&quot;apply-health-scale&quot;, false),</span>
+<span class="fc" id="L190">                lifestealConfigAdapter.getDouble(&quot;health-scale&quot;, 20.0),</span>
+<span class="fc" id="L191">                lifestealConfigAdapter.getDouble(&quot;hearts-per-kill&quot;, 1.0),</span>
+<span class="fc" id="L192">                lifestealConfigAdapter.getDouble(&quot;hearts-lost-on-death&quot;, 1.0),</span>
+                teamKillBypassEnabled,
+                teamKillBypassExemptWorlds,
+                teamKillBypassMinTeamSize,
+<span class="fc" id="L196">                lifestealConfigAdapter.getBoolean(&quot;team-bank.enabled&quot;, false),</span>
+<span class="fc" id="L197">                Math.max(0.0D, lifestealConfigAdapter.getDouble(&quot;team-bank.max-hearts&quot;, 200.0D)),</span>
+                teamBankPerTeamMaxHearts,
+<span class="fc" id="L199">                lifestealConfigAdapter.getBoolean(&quot;dont-remove-hearts-from-mobs&quot;, true),</span>
+<span class="fc" id="L200">                lifestealConfigAdapter.getDouble(&quot;mob-remove-hearts-greater-than&quot;, -1.0),</span>
+                dropHeartOnDeath,
+<span class="fc" id="L202">                lifestealConfigAdapter.getBoolean(&quot;drop-heart-only-when-killed-by-player&quot;, true),</span>
+                dropHeartOnDeath,
+<span class="fc" id="L204">                lifestealConfigAdapter.getString(&quot;drop-heart-id&quot;, &quot;basic&quot;),</span>
+<span class="fc" id="L205">                Math.max(1, lifestealConfigAdapter.getInt(&quot;drop-heart-amount&quot;, 1)),</span>
+                reviveBeaconEnabled,
+                reviveBeaconVoucherHeartId,
+                reviveBeaconRequireSneak,
+                reviveBeaconMaxDistance,
+                reviveBeaconConsumeOnFail,
+                reviveBeaconRequireVoucherInBeacon,
+                reviveBeaconVoucherHoldSeconds,
+                reviveBeaconWhitelistEnabled,
+                reviveBeaconWhitelistedBeacons,
+                reviveAnimationSettings,
+                reviveBeaconBroadcastEnabled,
+                reviveBeaconBroadcastHoldStartMessageKey,
+                reviveBeaconBroadcastCompleteMessageKey,
+                beaconSpawnSettings,
+<span class="fc" id="L220">                lifestealConfigAdapter.getBoolean(&quot;ban-when-zero-hearts&quot;, false),</span>
+<span class="fc" id="L221">                List.copyOf(lifestealConfigAdapter.getStringList(&quot;zero-heart-commands&quot;)),</span>
+<span class="fc" id="L222">                lifestealConfigAdapter.getBoolean(&quot;global-enabled&quot;, true),</span>
+                configuredMinHearts,
+                configuredDefaultHearts,
+                configuredMaxHearts,
+<span class="fc" id="L226">                heartBounds.adjusted(),</span>
+                warnings
+        );
+    }
+
+    private boolean getBooleanWithLegacyFallback(LifestealConfigAdapter adapter, String childPath,
+            boolean defaultValue) {
+<span class="fc" id="L233">        return adapter.getBoolean(</span>
+                REVIVE_BEACON_PATH + &quot;.&quot; + childPath,
+<span class="fc" id="L235">                adapter.getBoolean(LEGACY_BEACON_REVIVE_PATH + &quot;.&quot; + childPath, defaultValue)</span>
+        );
+    }
+
+    private String getStringWithLegacyFallback(LifestealConfigAdapter adapter, String childPath, String defaultValue) {
+<span class="fc" id="L240">        return adapter.getString(</span>
+                REVIVE_BEACON_PATH + &quot;.&quot; + childPath,
+<span class="fc" id="L242">                adapter.getString(LEGACY_BEACON_REVIVE_PATH + &quot;.&quot; + childPath, defaultValue)</span>
+        );
+    }
+
+    private double getDoubleWithLegacyFallback(LifestealConfigAdapter adapter, String childPath, double defaultValue) {
+<span class="fc" id="L247">        return adapter.getDouble(</span>
+                REVIVE_BEACON_PATH + &quot;.&quot; + childPath,
+<span class="fc" id="L249">                adapter.getDouble(LEGACY_BEACON_REVIVE_PATH + &quot;.&quot; + childPath, defaultValue)</span>
+        );
+    }
+
+    private List&lt;String&gt; getStringListWithLegacyFallback(LifestealConfigAdapter adapter, String childPath) {
+<span class="fc" id="L254">        final List&lt;String&gt; primary = adapter.getStringList(REVIVE_BEACON_PATH + &quot;.&quot; + childPath);</span>
+<span class="fc bfc" id="L255" title="All 2 branches covered.">        if (!primary.isEmpty()) {</span>
+<span class="fc" id="L256">            return primary;</span>
+        }
+<span class="fc" id="L258">        return adapter.getStringList(LEGACY_BEACON_REVIVE_PATH + &quot;.&quot; + childPath);</span>
+    }
+
+    private BeaconSpawnSettings parseBeaconSpawnSettings(LifestealConfigAdapter adapter, List&lt;String&gt; warnings) {
+<span class="fc" id="L262">        final String base = REVIVE_BEACON_PATH + &quot;.spawn&quot;;</span>
+<span class="fc bfc" id="L263" title="All 2 branches covered.">        if (!adapter.getBoolean(base + &quot;.enabled&quot;, false)) {</span>
+<span class="fc" id="L264">            return BeaconSpawnSettings.disabled();</span>
+        }
+<span class="fc" id="L266">        final int maxConcurrent = Math.max(1, adapter.getInt(base + &quot;.max-concurrent&quot;, 1));</span>
+
+<span class="fc" id="L268">        final String wgBase = base + &quot;.worldguard&quot;;</span>
+<span class="fc" id="L269">        final BeaconSpawnSettings.WorldGuardSettings wg = new BeaconSpawnSettings.WorldGuardSettings(</span>
+<span class="fc" id="L270">                adapter.getBoolean(wgBase + &quot;.enabled&quot;, true),</span>
+<span class="fc" id="L271">                Math.max(1, adapter.getInt(wgBase + &quot;.radius&quot;, 10)),</span>
+<span class="fc" id="L272">                adapter.getBoolean(wgBase + &quot;.deny-build&quot;, true),</span>
+<span class="fc" id="L273">                adapter.getBoolean(wgBase + &quot;.deny-pvp&quot;, false),</span>
+<span class="fc" id="L274">                adapter.getBoolean(wgBase + &quot;.deny-mob-damage&quot;, false),</span>
+<span class="fc" id="L275">                adapter.getBoolean(wgBase + &quot;.deny-explosions&quot;, false)</span>
+        );
+
+<span class="fc" id="L278">        final String cdBase = base + &quot;.countdown&quot;;</span>
+        // Parse per-type messages map
+<span class="fc" id="L280">        final Map&lt;String, String&gt; perTypeMessages = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L281">        final ConfigurationSection perTypeSection = adapter.getSection(cdBase + &quot;.per-type-messages&quot;);</span>
+<span class="fc bfc" id="L282" title="All 2 branches covered.">        if (perTypeSection != null) {</span>
+<span class="pc bpc" id="L283" title="1 of 2 branches missed.">            for (String key : perTypeSection.getKeys(false)) {</span>
+<span class="nc" id="L284">                perTypeMessages.put(key, perTypeSection.getString(key, &quot;&quot;));</span>
+<span class="nc" id="L285">            }</span>
+        }
+<span class="fc" id="L287">        final List&lt;String&gt; endCommands = List.copyOf(adapter.getStringList(cdBase + &quot;.end-commands&quot;));</span>
+<span class="fc" id="L288">        final BeaconSpawnSettings.CountdownSettings countdown = new BeaconSpawnSettings.CountdownSettings(</span>
+<span class="fc" id="L289">                adapter.getBoolean(cdBase + &quot;.enabled&quot;, true),</span>
+<span class="fc" id="L290">                Math.max(1, adapter.getInt(cdBase + &quot;.duration-seconds&quot;, 300)),</span>
+<span class="fc" id="L291">                List.copyOf(adapter.getStringList(cdBase + &quot;.display-types&quot;)),</span>
+<span class="fc" id="L292">                adapter.getString(cdBase + &quot;.format-message&quot;, &quot;&amp;5\u2620 &amp;d&amp;lRevive Beacon &amp;5\u2620 &amp;r&amp;7 {formatted} until active&quot;),</span>
+<span class="fc" id="L293">                adapter.getString(cdBase + &quot;.boss-bar-color&quot;, &quot;PURPLE&quot;),</span>
+<span class="fc" id="L294">                adapter.getString(cdBase + &quot;.boss-bar-style&quot;, &quot;SEGMENTED_20&quot;),</span>
+<span class="fc" id="L295">                adapter.getString(cdBase + &quot;.name-prefix&quot;, &quot;ezls-beacon-&quot;),</span>
+<span class="fc" id="L296">                Map.copyOf(perTypeMessages),</span>
+<span class="fc" id="L297">                adapter.getString(cdBase + &quot;.start-message&quot;, null),</span>
+<span class="fc" id="L298">                adapter.getString(cdBase + &quot;.end-message&quot;, null),</span>
+                endCommands,
+<span class="fc" id="L300">                Math.max(1, adapter.getInt(cdBase + &quot;.update-interval-seconds&quot;, 1)),</span>
+<span class="fc" id="L301">                adapter.getString(cdBase + &quot;.visibility-permission&quot;, null),</span>
+<span class="fc" id="L302">                adapter.getBoolean(cdBase + &quot;.ephemeral&quot;, true)</span>
+        );
+
+<span class="fc" id="L305">        final String rsBase = base + &quot;.random-spawn&quot;;</span>
+<span class="fc" id="L306">        final BeaconSpawnSettings.RandomSpawnSettings randomSpawn = new BeaconSpawnSettings.RandomSpawnSettings(</span>
+<span class="fc" id="L307">                adapter.getBoolean(rsBase + &quot;.enabled&quot;, false),</span>
+<span class="fc" id="L308">                adapter.getString(rsBase + &quot;.world&quot;, &quot;world&quot;),</span>
+<span class="fc" id="L309">                adapter.getInt(rsBase + &quot;.min-x&quot;, -1000),</span>
+<span class="fc" id="L310">                adapter.getInt(rsBase + &quot;.max-x&quot;, 1000),</span>
+<span class="fc" id="L311">                adapter.getInt(rsBase + &quot;.min-y&quot;, 0),</span>
+<span class="fc" id="L312">                adapter.getInt(rsBase + &quot;.max-y&quot;, 0),</span>
+<span class="fc" id="L313">                adapter.getInt(rsBase + &quot;.min-z&quot;, -1000),</span>
+<span class="fc" id="L314">                adapter.getInt(rsBase + &quot;.max-z&quot;, 1000)</span>
+        );
+
+        // Multi-region support: parse random-spawn-regions list, with backward compat fallback
+        final List&lt;BeaconSpawnSettings.RandomSpawnRegion&gt; randomSpawnRegions;
+<span class="fc" id="L319">        final ConfigurationSection regionsSection = adapter.getSection(base + &quot;.random-spawn-regions&quot;);</span>
+<span class="pc bpc" id="L320" title="1 of 2 branches missed.">        if (regionsSection != null) {</span>
+<span class="nc" id="L321">            final List&lt;BeaconSpawnSettings.RandomSpawnRegion&gt; regions = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L322" title="All 2 branches missed.">            for (String key : regionsSection.getKeys(false)) {</span>
+<span class="nc" id="L323">                final ConfigurationSection reg = regionsSection.getConfigurationSection(key);</span>
+<span class="nc bnc" id="L324" title="All 2 branches missed.">                if (reg == null) {</span>
+<span class="nc" id="L325">                    continue;</span>
+                }
+<span class="nc" id="L327">                regions.add(new BeaconSpawnSettings.RandomSpawnRegion(</span>
+<span class="nc" id="L328">                        reg.getBoolean(&quot;enabled&quot;, true),</span>
+<span class="nc" id="L329">                        reg.getString(&quot;world&quot;, &quot;world&quot;),</span>
+<span class="nc" id="L330">                        reg.getInt(&quot;min-x&quot;, -1000),</span>
+<span class="nc" id="L331">                        reg.getInt(&quot;max-x&quot;, 1000),</span>
+<span class="nc" id="L332">                        reg.getInt(&quot;min-y&quot;, 0),</span>
+<span class="nc" id="L333">                        reg.getInt(&quot;max-y&quot;, 0),</span>
+<span class="nc" id="L334">                        reg.getInt(&quot;min-z&quot;, -1000),</span>
+<span class="nc" id="L335">                        reg.getInt(&quot;max-z&quot;, 1000),</span>
+<span class="nc" id="L336">                        Math.max(1, reg.getInt(&quot;weight&quot;, 1))</span>
+                ));
+<span class="nc" id="L338">            }</span>
+<span class="nc" id="L339">            randomSpawnRegions = List.copyOf(regions);</span>
+<span class="nc" id="L340">        } else {</span>
+<span class="fc" id="L341">            randomSpawnRegions = List.of();</span>
+        }
+
+<span class="fc" id="L344">        final int cooldownMinutes = Math.max(0, adapter.getInt(base + &quot;.cooldown-minutes&quot;, 0));</span>
+
+<span class="fc" id="L346">        final String schBase = base + &quot;.schedule&quot;;</span>
+<span class="fc" id="L347">        final BeaconSpawnSettings.ScheduleSettings schedule = new BeaconSpawnSettings.ScheduleSettings(</span>
+<span class="fc" id="L348">                adapter.getBoolean(schBase + &quot;.enabled&quot;, false),</span>
+<span class="fc" id="L349">                Math.max(1, adapter.getInt(schBase + &quot;.interval-minutes&quot;, 60))</span>
+        );
+
+<span class="fc" id="L352">        final int expiryMinutes = adapter.getInt(base + &quot;.expiry-minutes&quot;, 30);</span>
+<span class="fc bfc" id="L353" title="All 2 branches covered.">        if (expiryMinutes &lt; 0) {</span>
+<span class="fc" id="L354">            warnings.add(&quot;beacon spawn expiry-minutes is negative; using 0 (no expiry)&quot;);</span>
+        }
+<span class="fc" id="L356">        final BeaconSpawnSettings.ExpirySettings expiry =</span>
+<span class="fc" id="L357">                new BeaconSpawnSettings.ExpirySettings(Math.max(0, expiryMinutes));</span>
+
+<span class="fc" id="L359">        final String evBase = base + &quot;.availability-event&quot;;</span>
+<span class="fc" id="L360">        final BeaconSpawnSettings.AvailabilityEventSettings availabilityEvent =</span>
+                new BeaconSpawnSettings.AvailabilityEventSettings(
+<span class="fc" id="L362">                        adapter.getBoolean(evBase + &quot;.broadcast.enabled&quot;, true),</span>
+<span class="fc" id="L363">                        adapter.getString(evBase + &quot;.broadcast.message-key&quot;, &quot;beacon-spawn-available-broadcast&quot;),</span>
+<span class="fc" id="L364">                        adapter.getBoolean(evBase + &quot;.title.enabled&quot;, true),</span>
+<span class="fc" id="L365">                        adapter.getString(evBase + &quot;.title.title-key&quot;, &quot;beacon-spawn-available-title&quot;),</span>
+<span class="fc" id="L366">                        adapter.getString(evBase + &quot;.title.subtitle-key&quot;, &quot;beacon-spawn-available-subtitle&quot;),</span>
+<span class="fc" id="L367">                        adapter.getBoolean(evBase + &quot;.particles.enabled&quot;, true),</span>
+<span class="fc" id="L368">                        adapter.getBoolean(evBase + &quot;.fireworks.enabled&quot;, true)</span>
+                );
+
+<span class="fc" id="L371">        return new BeaconSpawnSettings(</span>
+                true,
+                maxConcurrent,
+                wg,
+                countdown,
+                randomSpawn,
+                randomSpawnRegions,
+                cooldownMinutes,
+                schedule,
+                expiry,
+                availabilityEvent
+        );
+    }
+
+    private ReviveAnimationSettings parseReviveAnimationSettings(LifestealConfigAdapter adapter,
+            List&lt;String&gt; warnings) {
+<span class="fc" id="L387">        final ReviveAnimationSettings defaults = ReviveAnimationSettings.defaults();</span>
+<span class="fc" id="L388">        final String animationPath = REVIVE_BEACON_PATH + &quot;.animation&quot;;</span>
+<span class="fc" id="L389">        final boolean enabled = adapter.getBoolean(animationPath + &quot;.enabled&quot;, defaults.enabled());</span>
+<span class="fc" id="L390">        final int durationTicks = sanitizePositiveInt(</span>
+<span class="fc" id="L391">                adapter.getInt(animationPath + &quot;.duration-ticks&quot;, defaults.durationTicks()),</span>
+<span class="fc" id="L392">                defaults.durationTicks(),</span>
+                animationPath + &quot;.duration-ticks&quot;,
+                warnings
+        );
+<span class="fc" id="L396">        final int spiralSteps = sanitizePositiveInt(</span>
+<span class="fc" id="L397">                adapter.getInt(animationPath + &quot;.spiral-steps&quot;, defaults.spiralSteps()),</span>
+<span class="fc" id="L398">                defaults.spiralSteps(),</span>
+                animationPath + &quot;.spiral-steps&quot;,
+                warnings
+        );
+<span class="fc" id="L402">        final int ringCount = sanitizePositiveInt(</span>
+<span class="fc" id="L403">                adapter.getInt(animationPath + &quot;.ring-count&quot;, defaults.ringCount()),</span>
+<span class="fc" id="L404">                defaults.ringCount(),</span>
+                animationPath + &quot;.ring-count&quot;,
+                warnings
+        );
+<span class="fc" id="L408">        final double verticalLiftPerStep = sanitizePositiveDouble(</span>
+<span class="fc" id="L409">                adapter.getDouble(animationPath + &quot;.vertical-lift-per-step&quot;, defaults.verticalLiftPerStep()),</span>
+<span class="fc" id="L410">                defaults.verticalLiftPerStep(),</span>
+                animationPath + &quot;.vertical-lift-per-step&quot;,
+                warnings
+        );
+<span class="fc" id="L414">        final ReviveAnimationSettings.ParticlePreset spiral = parseParticlePreset(</span>
+                adapter,
+                animationPath + &quot;.particles.spiral&quot;,
+<span class="fc" id="L417">                defaults.spiralParticle()</span>
+        );
+<span class="fc" id="L419">        final ReviveAnimationSettings.ParticlePreset ring = parseParticlePreset(</span>
+                adapter,
+                animationPath + &quot;.particles.ring&quot;,
+<span class="fc" id="L422">                defaults.ringParticle()</span>
+        );
+<span class="fc" id="L424">        final ReviveAnimationSettings.ParticlePreset impact = parseParticlePreset(</span>
+                adapter,
+                animationPath + &quot;.particles.impact&quot;,
+<span class="fc" id="L427">                defaults.impactParticle()</span>
+        );
+<span class="fc" id="L429">        final ReviveAnimationSettings.SoundPreset loopSound = parseSoundPreset(</span>
+                adapter,
+                animationPath + &quot;.sounds.loop&quot;,
+<span class="fc" id="L432">                defaults.loopSound()</span>
+        );
+<span class="fc" id="L434">        final ReviveAnimationSettings.SoundPreset impactSound = parseSoundPreset(</span>
+                adapter,
+                animationPath + &quot;.sounds.impact&quot;,
+<span class="fc" id="L437">                defaults.impactSound()</span>
+        );
+<span class="fc" id="L439">        return new ReviveAnimationSettings(</span>
+                enabled,
+                durationTicks,
+                spiralSteps,
+                ringCount,
+                verticalLiftPerStep,
+                spiral,
+                ring,
+                impact,
+                loopSound,
+                impactSound
+        );
+    }
+
+    private int sanitizePositiveInt(int value, int defaultValue, String path, List&lt;String&gt; warnings) {
+<span class="fc bfc" id="L454" title="All 2 branches covered.">        if (value &gt; 0) {</span>
+<span class="fc" id="L455">            return value;</span>
+        }
+<span class="fc" id="L457">        warnings.add(&quot;Invalid &quot; + path + &quot; &quot; + value + &quot; configured; using default &quot; + defaultValue);</span>
+<span class="fc" id="L458">        return defaultValue;</span>
+    }
+
+    private double sanitizePositiveDouble(double value, double defaultValue, String path, List&lt;String&gt; warnings) {
+<span class="fc bfc" id="L462" title="All 2 branches covered.">        if (value &gt; 0.0D) {</span>
+<span class="fc" id="L463">            return value;</span>
+        }
+<span class="fc" id="L465">        warnings.add(String.format(&quot;Invalid %s %.2f configured; using default %.2f&quot;, path, value, defaultValue));</span>
+<span class="fc" id="L466">        return defaultValue;</span>
+    }
+
+    private ReviveAnimationSettings.ParticlePreset parseParticlePreset(
+            LifestealConfigAdapter adapter,
+            String path,
+            ReviveAnimationSettings.ParticlePreset defaults
+    ) {
+<span class="fc" id="L474">        return new ReviveAnimationSettings.ParticlePreset(</span>
+<span class="fc" id="L475">                adapter.getString(path + &quot;.type&quot;, defaults.type()),</span>
+<span class="fc" id="L476">                Math.max(1, adapter.getInt(path + &quot;.count&quot;, defaults.count())),</span>
+<span class="fc" id="L477">                adapter.getDouble(path + &quot;.offset-x&quot;, defaults.offsetX()),</span>
+<span class="fc" id="L478">                adapter.getDouble(path + &quot;.offset-y&quot;, defaults.offsetY()),</span>
+<span class="fc" id="L479">                adapter.getDouble(path + &quot;.offset-z&quot;, defaults.offsetZ()),</span>
+<span class="fc" id="L480">                adapter.getDouble(path + &quot;.speed&quot;, defaults.speed())</span>
+        );
+    }
+
+    private ReviveAnimationSettings.SoundPreset parseSoundPreset(
+            LifestealConfigAdapter adapter,
+            String path,
+            ReviveAnimationSettings.SoundPreset defaults
+    ) {
+<span class="fc" id="L489">        return new ReviveAnimationSettings.SoundPreset(</span>
+<span class="fc" id="L490">                adapter.getString(path + &quot;.type&quot;, defaults.type()),</span>
+<span class="fc" id="L491">                (float) adapter.getDouble(path + &quot;.volume&quot;, defaults.volume()),</span>
+<span class="fc" id="L492">                (float) adapter.getDouble(path + &quot;.pitch&quot;, defaults.pitch())</span>
+        );
+    }
+
+<span class="fc" id="L496">    public record LifestealSettings(</span>
+            double defaultHearts,
+            double minHearts,
+            double maxHearts,
+            boolean applyHealthScale,
+            double healthScale,
+            double heartsPerKill,
+            double heartsLostOnDeath,
+            boolean teamKillBypassWithTeamsApi,
+            List&lt;String&gt; teamKillBypassExemptWorlds,
+            int teamKillBypassMinTeamSize,
+            boolean teamBankEnabled,
+            double teamBankMaxHearts,
+            Map&lt;String, Double&gt; teamBankPerTeamMaxHearts,
+            boolean dontRemoveHeartsFromMobs,
+            double mobRemoveHeartsGreaterThan,
+            boolean dropHeartOnDeath,
+            boolean dropHeartOnlyWhenKilledByPlayer,
+            boolean dropHeartOnKill,
+            String dropHeartId,
+            int dropHeartAmount,
+            boolean reviveBeaconEnabled,
+            String reviveBeaconVoucherHeartId,
+            boolean reviveBeaconRequireSneak,
+            double reviveBeaconMaxDistance,
+            boolean reviveBeaconConsumeOnFail,
+            boolean reviveBeaconRequireVoucherInBeacon,
+            double reviveBeaconVoucherHoldSeconds,
+            boolean reviveBeaconWhitelistEnabled,
+            List&lt;String&gt; reviveBeaconWhitelistedBeacons,
+            ReviveAnimationSettings reviveAnimationSettings,
+            boolean reviveBeaconBroadcastEnabled,
+            String reviveBeaconBroadcastHoldStartMessageKey,
+            String reviveBeaconBroadcastCompleteMessageKey,
+            BeaconSpawnSettings beaconSpawnSettings,
+            boolean banWhenZeroHearts,
+            List&lt;String&gt; zeroHeartCommands,
+            boolean globalLifestealEnabled,
+            double configuredMinHearts,
+            double configuredDefaultHearts,
+            double configuredMaxHearts,
+            boolean heartBoundsAdjusted,
+            List&lt;String&gt; warnings
+    ) {
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

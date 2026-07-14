@@ -1,0 +1,45 @@
+title: "&cHeart Shop"
+size: 54
+# Define items as a list. Each item needs a 'slot' and 'heart' id (from hearts.yml).
+# Optional fields: price, display-name, lore
+items:
+  - slot: 10
+    heart: basic
+    price: 10000000.0
+    display-name: "&aBasic Heart Voucher"
+    quantity: 1
+    icon: PAPER
+    lore:
+      - "&7Gives 1 heart voucher"
+    commands:
+      - "say {player} bought a basic heart"
+  - slot: 11
+    heart: silver
+    price: 25000000.0
+    display-name: "&bSilver Heart Voucher"
+    quantity: 2
+    icon: PAPER
+    lore:
+      - "&7Gives 2 heart vouchers"
+    commands:
+      - "say {player} bought a silver heart"
+  - slot: 12
+    heart: gold
+    price: 50000000.0
+    display-name: "&6Golden Heart Voucher"
+    quantity: 4
+    icon: GOLD_INGOT
+    lore:
+      - "&7Gives 4 heart vouchers"
+    commands:
+      - "say {player} bought a golden heart"
+  - slot: 13
+    heart: revive
+    price: 75000000.0
+    display-name: "&aRevive Voucher"
+    quantity: 1
+    icon: EMERALD
+    lore:
+      - "&7Revives a banned player at a beacon"
+    commands:
+      - "say {player} bought a revive voucher"

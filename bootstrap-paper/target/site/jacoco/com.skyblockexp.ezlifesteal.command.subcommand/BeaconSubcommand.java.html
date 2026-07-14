@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BeaconSubcommand.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.command.subcommand</a> &gt; <span class="el_source">BeaconSubcommand.java</span></div><h1>BeaconSubcommand.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.command.subcommand;
+
+import com.skyblockexp.ezlifesteal.command.LifestealCommand;
+import com.skyblockexp.ezlifesteal.model.SpawnedBeacon;
+import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
+import com.skyblockexp.ezlifesteal.service.BeaconReviveService;
+import com.skyblockexp.ezlifesteal.service.BeaconSpawnService;
+import com.skyblockexp.ezlifesteal.service.ReviveAnimationService;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+
+/**
+ * Admin subcommand used to manage revive beacon whitelist entries and plugin-spawned beacons.
+ */
+<span class="fc" id="L25">public class BeaconSubcommand implements Subcommand {</span>
+
+    @Override
+    public boolean execute(CommandSender sender, Command command, String label, String[] args,
+            LifestealCommand context) {
+<span class="fc bfc" id="L30" title="All 2 branches covered.">        if (!context.requirePermissionPublic(sender, &quot;lifesteal.manage.modify&quot;, &quot;lifesteal.admin&quot;)) {</span>
+<span class="fc" id="L31">            return true;</span>
+        }
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        if (args.length &lt; 2) {</span>
+<span class="fc" id="L34">            sender.sendMessage(ChatColor.RED</span>
+                    + &quot;Usage: /&quot; + label + &quot; beacon &lt;add|remove|list|clear|spawn|despawn|spawns&gt;&quot;);
+<span class="fc" id="L36">            return true;</span>
+        }
+
+<span class="fc" id="L39">        final PluginAccessor plugin = context.getPluginAccessorPublic();</span>
+<span class="fc" id="L40">        final BeaconReviveService beaconReviveService = new BeaconReviveService(plugin,</span>
+                new ReviveAnimationService(plugin));
+<span class="fc" id="L42">        final String action = args[1].toLowerCase();</span>
+
+<span class="pc bpc" id="L44" title="2 of 8 branches missed.">        return switch (action) {</span>
+<span class="fc" id="L45">            case &quot;add&quot; -&gt; handleAdd(sender, beaconReviveService);</span>
+<span class="fc" id="L46">            case &quot;remove&quot; -&gt; handleRemove(sender, beaconReviveService);</span>
+<span class="nc" id="L47">            case &quot;list&quot; -&gt; handleList(sender, beaconReviveService, plugin);</span>
+<span class="nc" id="L48">            case &quot;clear&quot; -&gt; handleClear(sender, beaconReviveService);</span>
+<span class="fc" id="L49">            case &quot;spawn&quot; -&gt; handleSpawn(sender, args, plugin);</span>
+<span class="fc" id="L50">            case &quot;despawn&quot; -&gt; handleDespawn(sender, args, plugin);</span>
+<span class="fc" id="L51">            case &quot;spawns&quot; -&gt; handleSpawns(sender, plugin);</span>
+            default -&gt; {
+<span class="fc" id="L53">                sender.sendMessage(ChatColor.RED + &quot;Unknown action. Use add, remove, list, clear, spawn, despawn, or spawns.&quot;);</span>
+<span class="fc" id="L54">                yield true;</span>
+            }
+        };
+    }
+
+    private boolean handleAdd(CommandSender sender, BeaconReviveService beaconReviveService) {
+<span class="fc" id="L60">        final Location location = resolveBeaconLocation(sender);</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">        if (location == null) {</span>
+<span class="fc" id="L62">            sender.sendMessage(ChatColor.RED + &quot;Look at a beacon block to add it to the whitelist.&quot;);</span>
+<span class="fc" id="L63">            return true;</span>
+        }
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        if (!beaconReviveService.whitelistBeacon(location)) {</span>
+<span class="nc" id="L66">            sender.sendMessage(ChatColor.YELLOW + &quot;That beacon is already whitelisted.&quot;);</span>
+<span class="nc" id="L67">            return true;</span>
+        }
+<span class="nc" id="L69">        beaconReviveService.saveWhitelist();</span>
+<span class="nc" id="L70">        sender.sendMessage(ChatColor.GREEN + &quot;Whitelisted beacon at &quot; + format(location));</span>
+<span class="nc" id="L71">        return true;</span>
+    }
+
+    private boolean handleRemove(CommandSender sender, BeaconReviveService beaconReviveService) {
+<span class="fc" id="L75">        final Location location = resolveBeaconLocation(sender);</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">        if (location == null) {</span>
+<span class="fc" id="L77">            sender.sendMessage(ChatColor.RED + &quot;Look at a beacon block to remove it from the whitelist.&quot;);</span>
+<span class="fc" id="L78">            return true;</span>
+        }
+<span class="nc bnc" id="L80" title="All 2 branches missed.">        if (!beaconReviveService.removeWhitelistedBeacon(location)) {</span>
+<span class="nc" id="L81">            sender.sendMessage(ChatColor.YELLOW + &quot;That beacon is not whitelisted.&quot;);</span>
+<span class="nc" id="L82">            return true;</span>
+        }
+<span class="nc" id="L84">        beaconReviveService.saveWhitelist();</span>
+<span class="nc" id="L85">        sender.sendMessage(ChatColor.GREEN + &quot;Removed beacon whitelist entry at &quot; + format(location));</span>
+<span class="nc" id="L86">        return true;</span>
+    }
+
+    private boolean handleList(CommandSender sender, BeaconReviveService beaconReviveService, PluginAccessor plugin) {
+<span class="nc" id="L90">        final List&lt;String&gt; beacons = beaconReviveService.listWhitelistedBeacons();</span>
+<span class="nc" id="L91">        sender</span>
+<span class="nc" id="L92">                .sendMessage(ChatColor.GOLD + &quot;Revive beacon whitelist (enabled=&quot;</span>
+<span class="nc" id="L93">                        + plugin.isReviveBeaconWhitelistEnabled() + &quot;)&quot;);</span>
+<span class="nc" id="L94">        sender.sendMessage(ChatColor.GOLD + &quot;Voucher-in-beacon=&quot; + plugin.isReviveBeaconRequireVoucherInBeacon()</span>
+<span class="nc" id="L95">                + &quot;, hold-seconds=&quot; + plugin.getReviveBeaconVoucherHoldSeconds());</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">        if (beacons.isEmpty()) {</span>
+<span class="nc" id="L97">            sender.sendMessage(ChatColor.GRAY + &quot;- none&quot;);</span>
+<span class="nc" id="L98">            return true;</span>
+        }
+<span class="nc bnc" id="L100" title="All 2 branches missed.">        for (String beacon : beacons) {</span>
+<span class="nc" id="L101">            sender.sendMessage(ChatColor.GRAY + &quot;- &quot; + ChatColor.WHITE + beacon);</span>
+<span class="nc" id="L102">        }</span>
+<span class="nc" id="L103">        return true;</span>
+    }
+
+    private boolean handleClear(CommandSender sender, BeaconReviveService beaconReviveService) {
+<span class="nc" id="L107">        beaconReviveService.clearWhitelistedBeacons();</span>
+<span class="nc" id="L108">        beaconReviveService.saveWhitelist();</span>
+<span class="nc" id="L109">        sender.sendMessage(ChatColor.GREEN + &quot;Cleared revive beacon whitelist.&quot;);</span>
+<span class="nc" id="L110">        return true;</span>
+    }
+
+    // -------------------------------------------------------------------------
+    // Plugin-spawned beacon actions
+    // -------------------------------------------------------------------------
+
+    private boolean handleSpawn(CommandSender sender, String[] args, PluginAccessor plugin) {
+<span class="fc" id="L118">        final BeaconSpawnService spawnService = plugin.getBeaconSpawnService();</span>
+<span class="pc bpc" id="L119" title="1 of 4 branches missed.">        if (spawnService == null || !plugin.getBeaconSpawnSettings().enabled()) {</span>
+<span class="fc" id="L120">            sender.sendMessage(ChatColor.RED + &quot;The beacon spawn feature is not enabled.&quot;);</span>
+<span class="fc" id="L121">            return true;</span>
+        }
+
+<span class="fc" id="L124">        Location spawnLocation = null;</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if (args.length &gt;= 6) {</span>
+            // /lifesteal beacon spawn &lt;world&gt; &lt;x&gt; &lt;y&gt; &lt;z&gt;
+<span class="fc" id="L127">            final World world = Bukkit.getWorld(args[2]);</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">            if (world == null) {</span>
+<span class="fc" id="L129">                sender.sendMessage(ChatColor.RED + &quot;World not found: &quot; + args[2]);</span>
+<span class="fc" id="L130">                return true;</span>
+            }
+            try {
+<span class="nc" id="L133">                final int x = Integer.parseInt(args[3]);</span>
+<span class="nc" id="L134">                final int y = Integer.parseInt(args[4]);</span>
+<span class="nc" id="L135">                final int z = Integer.parseInt(args[5]);</span>
+<span class="nc" id="L136">                spawnLocation = new Location(world, x, y, z);</span>
+<span class="fc" id="L137">            } catch (NumberFormatException ex) {</span>
+<span class="fc" id="L138">                sender.sendMessage(ChatColor.RED + &quot;Invalid coordinates. Usage: beacon spawn &lt;world&gt; &lt;x&gt; &lt;y&gt; &lt;z&gt;&quot;);</span>
+<span class="fc" id="L139">                return true;</span>
+<span class="nc" id="L140">            }</span>
+<span class="nc" id="L141">        } else {</span>
+            // Random spawn
+<span class="nc" id="L143">            final Optional&lt;Location&gt; randomLoc =</span>
+<span class="nc" id="L144">                    spawnService.findRandomSpawnLocation(plugin.getBeaconSpawnSettings());</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">            if (randomLoc.isEmpty()) {</span>
+<span class="nc" id="L146">                sender.sendMessage(ChatColor.RED + &quot;Could not find a valid random spawn location. Configure random-spawn bounds in revive-beacon.yml.&quot;);</span>
+<span class="nc" id="L147">                return true;</span>
+            }
+<span class="nc" id="L149">            spawnLocation = randomLoc.get();</span>
+        }
+
+<span class="nc" id="L152">        final Optional&lt;SpawnedBeacon&gt; result = spawnService.spawnBeacon(spawnLocation, plugin);</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">        if (result.isEmpty()) {</span>
+<span class="nc" id="L154">            sender.sendMessage(ChatColor.RED + &quot;Could not spawn beacon — max concurrent limit may be reached.&quot;);</span>
+<span class="nc" id="L155">            return true;</span>
+        }
+<span class="nc" id="L157">        final SpawnedBeacon beacon = result.get();</span>
+<span class="nc" id="L158">        sender.sendMessage(ChatColor.GREEN + &quot;Spawned beacon [&quot; + beacon.shortId() + &quot;] at &quot;</span>
+<span class="nc" id="L159">                + format(beacon.getLocation()) + &quot; (status=&quot; + beacon.getStatus() + &quot;)&quot;);</span>
+<span class="nc" id="L160">        return true;</span>
+    }
+
+    private boolean handleDespawn(CommandSender sender, String[] args, PluginAccessor plugin) {
+<span class="fc" id="L164">        final BeaconSpawnService spawnService = plugin.getBeaconSpawnService();</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">        if (spawnService == null) {</span>
+<span class="fc" id="L166">            sender.sendMessage(ChatColor.RED + &quot;The beacon spawn feature is not active.&quot;);</span>
+<span class="fc" id="L167">            return true;</span>
+        }
+<span class="fc bfc" id="L169" title="All 2 branches covered.">        if (args.length &lt; 3) {</span>
+<span class="fc" id="L170">            sender.sendMessage(ChatColor.RED + &quot;Usage: beacon despawn &lt;id|all&gt;&quot;);</span>
+<span class="fc" id="L171">            return true;</span>
+        }
+<span class="fc" id="L173">        final String target = args[2];</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">        if (&quot;all&quot;.equalsIgnoreCase(target)) {</span>
+<span class="fc" id="L175">            spawnService.despawnAll(plugin);</span>
+<span class="fc" id="L176">            sender.sendMessage(ChatColor.GREEN + &quot;Despawned all active beacons.&quot;);</span>
+<span class="fc" id="L177">            return true;</span>
+        }
+        // Find by short id
+<span class="fc" id="L180">        final Optional&lt;SpawnedBeacon&gt; match = spawnService.getActiveBeacons().stream()</span>
+<span class="pc bpc" id="L181" title="3 of 4 branches missed.">                .filter(b -&gt; b.shortId().equalsIgnoreCase(target) || b.getId().toString().equalsIgnoreCase(target))</span>
+<span class="fc" id="L182">                .findFirst();</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">        if (match.isEmpty()) {</span>
+<span class="fc" id="L184">            sender.sendMessage(ChatColor.RED + &quot;No active beacon found with id: &quot; + target);</span>
+<span class="fc" id="L185">            return true;</span>
+        }
+<span class="fc" id="L187">        spawnService.despawnBeacon(match.get().getId(), plugin);</span>
+<span class="fc" id="L188">        sender.sendMessage(ChatColor.GREEN + &quot;Despawned beacon [&quot; + target + &quot;].&quot;);</span>
+<span class="fc" id="L189">        return true;</span>
+    }
+
+    private boolean handleSpawns(CommandSender sender, PluginAccessor plugin) {
+<span class="fc" id="L193">        final BeaconSpawnService spawnService = plugin.getBeaconSpawnService();</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">        if (spawnService == null) {</span>
+<span class="fc" id="L195">            sender.sendMessage(ChatColor.RED + &quot;The beacon spawn feature is not active.&quot;);</span>
+<span class="fc" id="L196">            return true;</span>
+        }
+<span class="fc" id="L198">        final Collection&lt;SpawnedBeacon&gt; active = spawnService.getActiveBeacons();</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">        if (active.isEmpty()) {</span>
+<span class="fc" id="L200">            sender.sendMessage(ChatColor.GRAY + &quot;No active spawned beacons.&quot;);</span>
+<span class="fc" id="L201">            return true;</span>
+        }
+<span class="fc" id="L203">        sender.sendMessage(ChatColor.GOLD + &quot;Active spawned beacons (&quot; + active.size() + &quot;):&quot;);</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">        for (SpawnedBeacon beacon : active) {</span>
+<span class="fc" id="L205">            sender.sendMessage(ChatColor.GRAY + &quot;- [&quot; + beacon.shortId() + &quot;] &quot;</span>
+<span class="fc" id="L206">                    + ChatColor.WHITE + format(beacon.getLocation())</span>
+<span class="fc" id="L207">                    + ChatColor.GRAY + &quot; status=&quot; + beacon.getStatus());</span>
+<span class="fc" id="L208">        }</span>
+<span class="fc" id="L209">        return true;</span>
+    }
+
+    // -------------------------------------------------------------------------
+    // Shared helpers
+    // -------------------------------------------------------------------------
+
+    private Location resolveBeaconLocation(CommandSender sender) {
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">        if (!(sender instanceof Player player)) {</span>
+<span class="fc" id="L218">            return null;</span>
+        }
+<span class="nc" id="L220">        final Block target = player.getTargetBlockExact(6);</span>
+<span class="nc bnc" id="L221" title="All 4 branches missed.">        if (target == null || target.getType() != Material.BEACON) {</span>
+<span class="nc" id="L222">            return null;</span>
+        }
+<span class="nc" id="L224">        return target.getLocation();</span>
+    }
+
+    private String format(Location location) {
+<span class="fc" id="L228">        return location.getWorld().getName() + &quot; &quot; + location.getBlockX() + &quot; &quot; + location.getBlockY() + &quot; &quot;</span>
+<span class="fc" id="L229">                + location.getBlockZ();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SpawnedBeaconRepository.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.storage</a> &gt; <span class="el_source">SpawnedBeaconRepository.java</span></div><h1>SpawnedBeaconRepository.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.storage;
+
+import com.skyblockexp.ezlifesteal.model.SpawnedBeacon;
+import com.skyblockexp.ezlifesteal.model.SpawnedBeaconStatus;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import org.bukkit.Location;
+
+/**
+ * In-memory repository for {@link SpawnedBeacon} instances.
+ *
+ * &lt;p&gt;All mutations are thread-safe via a {@link ConcurrentHashMap}.&lt;/p&gt;
+ */
+<span class="fc" id="L18">public final class SpawnedBeaconRepository {</span>
+
+<span class="fc" id="L20">    private final ConcurrentHashMap&lt;UUID, SpawnedBeacon&gt; store = new ConcurrentHashMap&lt;&gt;();</span>
+
+    /** Adds a newly spawned beacon. */
+    public void add(SpawnedBeacon beacon) {
+<span class="fc" id="L24">        store.put(beacon.getId(), beacon);</span>
+<span class="fc" id="L25">    }</span>
+
+    /** Removes a beacon by id, returning the removed instance (or empty if absent). */
+    public Optional&lt;SpawnedBeacon&gt; remove(UUID id) {
+<span class="fc" id="L29">        return Optional.ofNullable(store.remove(id));</span>
+    }
+
+    /** Finds a beacon by its unique id. */
+    public Optional&lt;SpawnedBeacon&gt; findById(UUID id) {
+<span class="fc" id="L34">        return Optional.ofNullable(store.get(id));</span>
+    }
+
+    /**
+     * Finds a beacon whose block location matches the given location.
+     *
+     * &lt;p&gt;Comparison is block-level (integer coordinates + world name).&lt;/p&gt;
+     */
+    public Optional&lt;SpawnedBeacon&gt; findByLocation(Location location) {
+<span class="pc bpc" id="L43" title="2 of 4 branches missed.">        if (location == null || location.getWorld() == null) {</span>
+<span class="nc" id="L44">            return Optional.empty();</span>
+        }
+<span class="fc" id="L46">        final String worldName = location.getWorld().getName();</span>
+<span class="fc" id="L47">        final int bx = location.getBlockX();</span>
+<span class="fc" id="L48">        final int by = location.getBlockY();</span>
+<span class="fc" id="L49">        final int bz = location.getBlockZ();</span>
+
+<span class="fc" id="L51">        return store.values().stream()</span>
+<span class="fc" id="L52">                .filter(b -&gt; {</span>
+<span class="fc" id="L53">                    final Location bl = b.getLocation();</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">                    return bl.getWorld() != null</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">                            &amp;&amp; bl.getWorld().getName().equals(worldName)</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">                            &amp;&amp; bl.getBlockX() == bx</span>
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">                            &amp;&amp; bl.getBlockY() == by</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">                            &amp;&amp; bl.getBlockZ() == bz;</span>
+                })
+<span class="fc" id="L60">                .findFirst();</span>
+    }
+
+    /** Returns an immutable snapshot of all stored beacons. */
+    public Collection&lt;SpawnedBeacon&gt; getAll() {
+<span class="fc" id="L65">        return Collections.unmodifiableCollection(store.values());</span>
+    }
+
+    /** Returns only beacons that currently have a given status. */
+    public Collection&lt;SpawnedBeacon&gt; getAllWithStatus(SpawnedBeaconStatus status) {
+<span class="fc" id="L70">        return store.values().stream()</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">                .filter(b -&gt; b.getStatus() == status)</span>
+<span class="fc" id="L72">                .collect(Collectors.toUnmodifiableList());</span>
+    }
+
+    /** Returns the total number of stored beacons regardless of status. */
+    public int size() {
+<span class="fc" id="L77">        return store.size();</span>
+    }
+
+    /** Removes all beacons — used on plugin shutdown. */
+    public void clear() {
+<span class="nc" id="L82">        store.clear();</span>
+<span class="nc" id="L83">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

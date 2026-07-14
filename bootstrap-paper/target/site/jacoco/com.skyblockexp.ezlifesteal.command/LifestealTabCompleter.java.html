@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LifestealTabCompleter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.command</a> &gt; <span class="el_source">LifestealTabCompleter.java</span></div><h1>LifestealTabCompleter.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.command;
+
+import com.skyblockexp.ezlifesteal.EzLifestealPlugin;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.stream.Collectors;
+import org.bukkit.Bukkit;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
+
+public class LifestealTabCompleter implements TabCompleter {
+
+    private final EzLifestealPlugin plugin;
+
+<span class="fc" id="L18">    public LifestealTabCompleter(EzLifestealPlugin plugin) {</span>
+<span class="fc" id="L19">        this.plugin = plugin;</span>
+<span class="fc" id="L20">    }</span>
+
+    private List&lt;String&gt; filter(List&lt;String&gt; source, String prefix) {
+<span class="pc bpc" id="L23" title="1 of 2 branches missed.">        if (prefix == null) {</span>
+<span class="nc" id="L24">            prefix = &quot;&quot;;</span>
+        }
+<span class="fc" id="L26">        final String p = prefix.toLowerCase(Locale.ROOT);</span>
+<span class="fc bfc" id="L27" title="All 2 branches covered.">        if (p.isEmpty()) {</span>
+<span class="fc" id="L28">            return source;</span>
+        }
+<span class="fc" id="L30">        return source.stream().filter(s -&gt; s.toLowerCase(Locale.ROOT).startsWith(p)).collect(Collectors.toList());</span>
+    }
+
+    @Override
+    public List&lt;String&gt; onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+<span class="fc bfc" id="L35" title="All 2 branches covered.">        if (args == null) {</span>
+<span class="fc" id="L36">            return Collections.emptyList();</span>
+        }
+<span class="fc bfc" id="L38" title="All 4 branches covered.">        if (args.length == 0 || args.length == 1) {</span>
+            {
+            }
+<span class="fc bfc" id="L41" title="All 4 branches covered.">            final String prefix = args.length == 0 ? &quot;&quot; : (args[0] == null ? &quot;&quot; : args[0].trim());</span>
+<span class="fc" id="L42">            final List&lt;String&gt; allowed = LifestealCommand.listAllowedSubcommands(sender);</span>
+<span class="fc" id="L43">            return filter(allowed, prefix);</span>
+        }
+
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">        final String sub = args[0] == null ? &quot;&quot; : args[0].toLowerCase(Locale.ROOT);</span>
+        // For subcommands that take a player as the next arg, suggest online player names
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        if (args.length == 2) {</span>
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">            final String prefix = args[1] == null ? &quot;&quot; : args[1];</span>
+<span class="pc bpc" id="L50" title="1 of 7 branches missed.">            switch (sub) {</span>
+                case &quot;hearts&quot;:
+                case &quot;set&quot;:
+                case &quot;add&quot;:
+                case &quot;remove&quot;:
+                case &quot;reset&quot;:
+                case &quot;revive&quot;:
+                case &quot;transfer&quot;:
+                case &quot;giveheart&quot;: {
+                    final List&lt;String&gt; players =
+<span class="fc" id="L60">                            Bukkit.getOnlinePlayers().stream().map(p -&gt; p.getName()).collect(Collectors.toList());</span>
+<span class="fc" id="L61">                    return filter(players, prefix);</span>
+                }
+                case &quot;hologram&quot;: {
+<span class="fc" id="L64">                    return filter(List.of(&quot;place&quot;, &quot;remove&quot;), prefix);</span>
+                }
+                case &quot;beacon&quot;: {
+<span class="fc" id="L67">                    return filter(List.of(&quot;add&quot;, &quot;remove&quot;, &quot;list&quot;, &quot;clear&quot;, &quot;spawn&quot;, &quot;despawn&quot;, &quot;spawns&quot;), prefix);</span>
+                }
+                case &quot;test&quot;: {
+<span class="fc" id="L70">                    return filter(List.of(&quot;kill&quot;, &quot;death&quot;), prefix);</span>
+                }
+                case &quot;teambank&quot;: {
+<span class="nc" id="L73">                    return filter(List.of(&quot;balance&quot;, &quot;deposit&quot;, &quot;withdraw&quot;), prefix);</span>
+                }
+                case &quot;top&quot;: {
+<span class="fc" id="L76">                    return filter(List.of(&quot;1&quot;, &quot;2&quot;, &quot;3&quot;, &quot;4&quot;, &quot;5&quot;), prefix);</span>
+                }
+                default:
+<span class="fc" id="L79">                    return Collections.emptyList();</span>
+            }
+        }
+
+        // beacon: third arg is world (spawn) or short-id / &quot;all&quot; (despawn)
+<span class="pc bpc" id="L84" title="3 of 4 branches missed.">        if (sub.equals(&quot;beacon&quot;) &amp;&amp; args.length == 3) {</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">            final String prefix = args[2] == null ? &quot;&quot; : args[2];</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">            if (&quot;despawn&quot;.equalsIgnoreCase(args[1])) {</span>
+<span class="nc" id="L87">                final List&lt;String&gt; ids = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L88">                ids.add(&quot;all&quot;);</span>
+<span class="nc" id="L89">                final var accessor = plugin.getPluginAccessor();</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">                if (accessor != null) {</span>
+<span class="nc" id="L91">                    final var svc = accessor.getBeaconSpawnService();</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">                    if (svc != null) {</span>
+<span class="nc" id="L93">                        svc.getActiveBeacons().stream().map(b -&gt; b.shortId()).forEach(ids::add);</span>
+                    }
+                }
+<span class="nc" id="L96">                return filter(ids, prefix);</span>
+            }
+<span class="nc bnc" id="L98" title="All 2 branches missed.">            if (&quot;spawn&quot;.equalsIgnoreCase(args[1])) {</span>
+<span class="nc" id="L99">                return filter(</span>
+<span class="nc" id="L100">                        Bukkit.getWorlds().stream().map(w -&gt; w.getName()).collect(Collectors.toList()),</span>
+                        prefix);
+            }
+        }
+
+        // giveheart: third arg is heart id or tier
+<span class="fc bfc" id="L106" title="All 4 branches covered.">        if (sub.equals(&quot;giveheart&quot;) &amp;&amp; args.length == 3) {</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">            final String prefix = args[2] == null ? &quot;&quot; : args[2];</span>
+<span class="fc" id="L108">            final var registry = plugin.getHeartRegistry();</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">            if (registry == null) {</span>
+<span class="fc" id="L110">                return Collections.emptyList();</span>
+            }
+<span class="fc" id="L112">            final List&lt;String&gt; ids = new ArrayList&lt;&gt;(registry.getAll().keySet());</span>
+            // also suggest tier numbers
+<span class="fc" id="L114">            final List&lt;String&gt; tiers = registry.getAll().values().stream().map(h -&gt; Integer.toString(h.getTier()))</span>
+<span class="fc" id="L115">                    .distinct().collect(Collectors.toList());</span>
+<span class="fc" id="L116">            ids.addAll(tiers);</span>
+<span class="fc" id="L117">            return filter(ids, prefix);</span>
+        }
+
+<span class="pc bpc" id="L120" title="5 of 6 branches missed.">        if (sub.equals(&quot;teambank&quot;) &amp;&amp; args.length == 3 &amp;&amp; (&quot;deposit&quot;.equalsIgnoreCase(args[1])</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">                || &quot;withdraw&quot;.equalsIgnoreCase(args[1]))) {</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">            return filter(List.of(&quot;1&quot;, &quot;2&quot;, &quot;5&quot;, &quot;10&quot;), args[2] == null ? &quot;&quot; : args[2]);</span>
+        }
+
+<span class="fc" id="L125">        return Collections.emptyList();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

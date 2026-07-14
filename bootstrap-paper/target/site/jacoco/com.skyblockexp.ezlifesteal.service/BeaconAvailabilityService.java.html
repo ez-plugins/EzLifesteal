@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BeaconAvailabilityService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.service</a> &gt; <span class="el_source">BeaconAvailabilityService.java</span></div><h1>BeaconAvailabilityService.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.service;
+
+import com.skyblockexp.ezlifesteal.compat.AdapterSupport;
+import com.skyblockexp.ezlifesteal.config.BeaconSpawnSettings;
+import com.skyblockexp.ezlifesteal.config.MessageService;
+import com.skyblockexp.ezlifesteal.model.SpawnedBeacon;
+import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
+import com.skyblockexp.ezlifesteal.util.SchedulerAdapter;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.logging.Logger;
+import org.bukkit.Bukkit;
+import org.bukkit.Color;
+import org.bukkit.FireworkEffect;
+import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.World;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Firework;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.meta.FireworkMeta;
+
+/**
+ * Fires the &quot;availability event&quot; when a spawned beacon transitions to the AVAILABLE state.
+ *
+ * &lt;p&gt;Events include server broadcast, title overlay, particles, and fireworks — each
+ * individually configurable via {@link BeaconSpawnSettings.AvailabilityEventSettings}.&lt;/p&gt;
+ */
+public final class BeaconAvailabilityService {
+
+<span class="fc" id="L32">    private static final Random RANDOM = new Random();</span>
+
+    private final Logger logger;
+
+<span class="fc" id="L36">    public BeaconAvailabilityService(Logger logger) {</span>
+<span class="fc" id="L37">        this.logger = logger;</span>
+<span class="fc" id="L38">    }</span>
+
+    /**
+     * Fires all enabled availability events for the given beacon.
+     *
+     * @param beacon   the beacon that just became available
+     * @param accessor plugin accessor (for message service and plugin instance)
+     * @param settings availability event settings from config
+     */
+    public void fireAvailabilityEvent(
+            SpawnedBeacon beacon,
+            PluginAccessor accessor,
+            BeaconSpawnSettings.AvailabilityEventSettings settings
+    ) {
+<span class="fc" id="L52">        final Location location = beacon.getLocation();</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        if (location.getWorld() == null) {</span>
+<span class="fc" id="L54">            logger.warning(&quot;Beacon &quot; + beacon.shortId() + &quot; has no world; cannot fire availability event.&quot;);</span>
+<span class="fc" id="L55">            return;</span>
+        }
+
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        if (settings.broadcastEnabled()) {</span>
+<span class="fc" id="L59">            fireBroadcast(beacon, accessor, settings.broadcastMessageKey());</span>
+        }
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        if (settings.titleEnabled()) {</span>
+<span class="fc" id="L62">            fireTitle(beacon, accessor, settings.titleKey(), settings.subtitleKey());</span>
+        }
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        if (settings.particlesEnabled()) {</span>
+<span class="fc" id="L65">            fireParticles(location, accessor);</span>
+        }
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">        if (settings.fireworksEnabled()) {</span>
+<span class="nc" id="L68">            fireFireworks(accessor, location);</span>
+        }
+<span class="fc" id="L70">    }</span>
+
+    private void fireBroadcast(
+            SpawnedBeacon beacon,
+            PluginAccessor accessor,
+            String messageKey
+    ) {
+<span class="fc" id="L77">        final MessageService messageService = accessor.getMessageService();</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        if (messageService == null) {</span>
+<span class="fc" id="L79">            return;</span>
+        }
+<span class="fc" id="L81">        final Location loc = beacon.getLocation();</span>
+<span class="fc" id="L82">        final Map&lt;String, String&gt; placeholders = new HashMap&lt;&gt;();</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">        placeholders.put(&quot;world&quot;, loc.getWorld() != null ? loc.getWorld().getName() : &quot;?&quot;);</span>
+<span class="fc" id="L84">        placeholders.put(&quot;x&quot;, String.valueOf(loc.getBlockX()));</span>
+<span class="fc" id="L85">        placeholders.put(&quot;y&quot;, String.valueOf(loc.getBlockY()));</span>
+<span class="fc" id="L86">        placeholders.put(&quot;z&quot;, String.valueOf(loc.getBlockZ()));</span>
+
+<span class="fc" id="L88">        AdapterSupport.runOnMain(accessor.getPlugin(), () -&gt; {</span>
+<span class="fc" id="L89">            final String message = messageService.format(messageKey, placeholders);</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">            if (!message.isBlank()) {</span>
+<span class="fc" id="L91">                Bukkit.broadcastMessage(message);</span>
+            }
+<span class="fc" id="L93">        });</span>
+<span class="fc" id="L94">    }</span>
+
+    private void fireTitle(
+            SpawnedBeacon beacon,
+            PluginAccessor accessor,
+            String titleKey,
+            String subtitleKey
+    ) {
+<span class="fc" id="L102">        final MessageService messageService = accessor.getMessageService();</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        if (messageService == null) {</span>
+<span class="fc" id="L104">            return;</span>
+        }
+<span class="fc" id="L106">        final Location loc = beacon.getLocation();</span>
+<span class="fc" id="L107">        final Map&lt;String, String&gt; placeholders = new HashMap&lt;&gt;();</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">        placeholders.put(&quot;world&quot;, loc.getWorld() != null ? loc.getWorld().getName() : &quot;?&quot;);</span>
+<span class="fc" id="L109">        placeholders.put(&quot;x&quot;, String.valueOf(loc.getBlockX()));</span>
+<span class="fc" id="L110">        placeholders.put(&quot;y&quot;, String.valueOf(loc.getBlockY()));</span>
+<span class="fc" id="L111">        placeholders.put(&quot;z&quot;, String.valueOf(loc.getBlockZ()));</span>
+
+<span class="fc" id="L113">        final String title = messageService.render(titleKey, placeholders);</span>
+<span class="fc" id="L114">        final String subtitle = messageService.render(subtitleKey, placeholders);</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">        final String resolvedTitle = title != null ? title : &quot;&quot;;</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        final String resolvedSubtitle = subtitle != null ? subtitle : &quot;&quot;;</span>
+
+<span class="fc" id="L118">        AdapterSupport.runOnMain(accessor.getPlugin(), () -&gt; {</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">            for (Player player : Bukkit.getOnlinePlayers()) {</span>
+<span class="fc" id="L120">                player.sendTitle(resolvedTitle, resolvedSubtitle, 10, 70, 20);</span>
+<span class="fc" id="L121">            }</span>
+<span class="fc" id="L122">        });</span>
+<span class="fc" id="L123">    }</span>
+
+    private void fireParticles(Location location, PluginAccessor accessor) {
+<span class="fc" id="L126">        final World world = location.getWorld();</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">        if (world == null) {</span>
+<span class="nc" id="L128">            return;</span>
+        }
+<span class="fc" id="L130">        AdapterSupport.runAtLocation(accessor.getPlugin(), location, () -&gt; {</span>
+<span class="fc" id="L131">            world.spawnParticle(Particle.END_ROD, location.clone().add(0.5, 1.0, 0.5), 80, 1.5, 1.5, 1.5, 0.05);</span>
+<span class="fc" id="L132">            world.spawnParticle(Particle.TOTEM_OF_UNDYING, location.clone().add(0.5, 0.5, 0.5), 50,</span>
+                    0.5, 0.5, 0.5, 0.1);
+<span class="fc" id="L134">        });</span>
+<span class="fc" id="L135">    }</span>
+
+    private void fireFireworks(PluginAccessor accessor, Location location) {
+<span class="nc" id="L138">        final World world = location.getWorld();</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">        if (world == null) {</span>
+<span class="nc" id="L140">            return;</span>
+        }
+<span class="nc" id="L142">        final Location spawnLoc = location.clone().add(0.5, 1.0, 0.5);</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; i++) {</span>
+<span class="nc" id="L144">            final int fireworkIndex = i;</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">            if (i == 0) {</span>
+<span class="nc" id="L146">                spawnFirework(accessor, spawnLoc, Color.YELLOW, Color.WHITE);</span>
+            } else {
+<span class="nc" id="L148">                final Location offset = spawnLoc.clone().add(</span>
+<span class="nc" id="L149">                        (RANDOM.nextDouble() - 0.5) * 2,</span>
+                        0,
+<span class="nc" id="L151">                        (RANDOM.nextDouble() - 0.5) * 2</span>
+                );
+                // Stagger the remaining fireworks slightly
+<span class="nc" id="L154">                SchedulerAdapter.runLater(</span>
+<span class="nc" id="L155">                        accessor.getPlugin(),</span>
+<span class="nc" id="L156">                        () -&gt; spawnFirework(accessor, offset,</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">                                fireworkIndex == 1 ? Color.RED : Color.AQUA,</span>
+                                Color.WHITE),
+                        fireworkIndex * 5L
+                );
+            }
+        }
+<span class="nc" id="L163">    }</span>
+
+    private void spawnFirework(PluginAccessor accessor, Location location, Color primary, Color fade) {
+<span class="nc" id="L166">        final World world = location.getWorld();</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">        if (world == null) {</span>
+<span class="nc" id="L168">            return;</span>
+        }
+        try {
+<span class="nc" id="L171">            AdapterSupport.runAtLocation(accessor.getPlugin(), location, () -&gt; {</span>
+<span class="nc" id="L172">                final Firework firework = (Firework) world.spawnEntity(location, EntityType.FIREWORK_ROCKET);</span>
+<span class="nc" id="L173">                final FireworkMeta meta = firework.getFireworkMeta();</span>
+<span class="nc" id="L174">                meta.addEffect(FireworkEffect.builder()</span>
+<span class="nc" id="L175">                        .with(FireworkEffect.Type.STAR)</span>
+<span class="nc" id="L176">                        .withColor(primary)</span>
+<span class="nc" id="L177">                        .withFade(fade)</span>
+<span class="nc" id="L178">                        .withTrail()</span>
+<span class="nc" id="L179">                        .build());</span>
+<span class="nc" id="L180">                meta.setPower(1);</span>
+<span class="nc" id="L181">                firework.setFireworkMeta(meta);</span>
+<span class="nc" id="L182">            });</span>
+<span class="nc" id="L183">        } catch (Exception exception) {</span>
+<span class="nc" id="L184">            logger.warning(&quot;Failed to spawn firework for beacon availability event: &quot; + exception.getMessage());</span>
+<span class="nc" id="L185">        }</span>
+<span class="nc" id="L186">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

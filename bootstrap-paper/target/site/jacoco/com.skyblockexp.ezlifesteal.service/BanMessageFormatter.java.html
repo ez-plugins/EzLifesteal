@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BanMessageFormatter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.service</a> &gt; <span class="el_source">BanMessageFormatter.java</span></div><h1>BanMessageFormatter.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.service;
+
+import java.util.Locale;
+import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
+
+<span class="fc" id="L7">public class BanMessageFormatter {</span>
+
+    public BanMessages formatMessages(String banMessageTemplate,
+                                      String kickMessageTemplate,
+                                      Player victim,
+                                      Player killer,
+                                      double remainingHearts) {
+<span class="fc" id="L14">        String formattedBanMessage = formatTemplate(banMessageTemplate, victim, killer, remainingHearts);</span>
+<span class="fc" id="L15">        String formattedKickMessage = formatTemplate(kickMessageTemplate, victim, killer, remainingHearts);</span>
+<span class="fc bfc" id="L16" title="All 4 branches covered.">        if (formattedBanMessage.isEmpty() &amp;&amp; formattedKickMessage.isEmpty()) {</span>
+<span class="fc" id="L17">            formattedBanMessage = ChatColor.translateAlternateColorCodes('&amp;', &quot;You have run out of hearts.&quot;);</span>
+<span class="fc" id="L18">            formattedKickMessage = formattedBanMessage;</span>
+        }
+<span class="fc bfc" id="L20" title="All 2 branches covered.">        else if (formattedBanMessage.isEmpty()) {</span>
+<span class="fc" id="L21">            formattedBanMessage = formattedKickMessage;</span>
+        }
+<span class="pc bpc" id="L23" title="1 of 2 branches missed.">        else if (formattedKickMessage.isEmpty()) {</span>
+<span class="nc" id="L24">            formattedKickMessage = formattedBanMessage;</span>
+        }
+<span class="fc" id="L26">        return new BanMessages(formattedBanMessage, formattedKickMessage);</span>
+    }
+
+    public String formatTemplate(String template, Player victim, Player killer, double remainingHearts) {
+<span class="pc bpc" id="L30" title="1 of 4 branches missed.">        if (template == null || template.isBlank()) {</span>
+<span class="fc" id="L31">            return &quot;&quot;;</span>
+        }
+<span class="fc" id="L33">        String result = template;</span>
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">        final String victimName = victim.getName() == null ? victim.getUniqueId().toString() : victim.getName();</span>
+<span class="fc" id="L35">        result = result.replace(&quot;%victim%&quot;, victimName);</span>
+<span class="fc" id="L36">        result = result.replace(&quot;%player%&quot;, victimName);</span>
+<span class="fc" id="L37">        String killerName = &quot;&quot;;</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">        if (killer != null) {</span>
+<span class="pc bpc" id="L39" title="1 of 2 branches missed.">            killerName = killer.getName() == null ? killer.getUniqueId().toString() : killer.getName();</span>
+        }
+<span class="fc" id="L41">        result = result.replace(&quot;%killer%&quot;, killerName);</span>
+<span class="fc" id="L42">        final String formattedHearts = formatHearts(remainingHearts);</span>
+<span class="fc" id="L43">        result = result.replace(&quot;%remaining_hearts%&quot;, formattedHearts);</span>
+<span class="fc" id="L44">        result = result.replace(&quot;%hearts%&quot;, formattedHearts);</span>
+<span class="fc" id="L45">        return ChatColor.translateAlternateColorCodes('&amp;', result);</span>
+    }
+
+    private String formatHearts(double value) {
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        return value % 1 == 0 ? Integer.toString((int) value) : String.format(Locale.US, &quot;%.1f&quot;, value);</span>
+    }
+
+<span class="fc" id="L52">    public record BanMessages(String banMessage, String kickMessage) {</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MySqlTeamBankRepository.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.storage.mysql</a> &gt; <span class="el_source">MySqlTeamBankRepository.java</span></div><h1>MySqlTeamBankRepository.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.storage.mysql;
+
+import com.skyblockexp.ezlifesteal.model.TeamBankAccount;
+import com.skyblockexp.ezlifesteal.storage.StorageException;
+import com.skyblockexp.ezlifesteal.storage.repository.TeamBankRepository;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Optional;
+import java.util.UUID;
+
+public class MySqlTeamBankRepository implements TeamBankRepository {
+
+    private final MySqlStorageSupport support;
+
+    private final String tableName;
+
+<span class="fc" id="L20">    public MySqlTeamBankRepository(MySqlStorageSupport support, String tableName) {</span>
+<span class="fc" id="L21">        this.support = support;</span>
+<span class="fc" id="L22">        this.tableName = tableName;</span>
+<span class="fc" id="L23">    }</span>
+
+    public void init() throws StorageException {
+<span class="fc" id="L26">        try (Connection connection = support.connection(); Statement statement = connection.createStatement()) {</span>
+<span class="fc" id="L27">            statement.executeUpdate(&quot;CREATE TABLE IF NOT EXISTS `&quot; + tableName + &quot;` (&quot; +</span>
+                    &quot;`team_id` CHAR(36) NOT NULL PRIMARY KEY, &quot; +
+                    &quot;`hearts` DOUBLE NOT NULL&quot; +
+                    &quot;) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4&quot;);
+        }
+<span class="fc" id="L32">        catch (SQLException exception) {</span>
+<span class="fc" id="L33">            throw new StorageException(&quot;Unable to initialise MySQL team bank storage&quot;, exception);</span>
+<span class="fc" id="L34">        }</span>
+<span class="fc" id="L35">    }</span>
+
+    @Override
+    public Optional&lt;TeamBankAccount&gt; loadAccount(UUID teamId) throws StorageException {
+<span class="fc" id="L39">        final String query = &quot;SELECT hearts FROM `&quot; + tableName + &quot;` WHERE team_id = ?&quot;;</span>
+<span class="fc" id="L40">        try (Connection connection = support.connection();</span>
+<span class="fc" id="L41">                PreparedStatement statement = connection.prepareStatement(query)) {</span>
+<span class="fc" id="L42">            statement.setString(1, teamId.toString());</span>
+<span class="fc" id="L43">            try (ResultSet resultSet = statement.executeQuery()) {</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">                if (resultSet.next()) {</span>
+<span class="fc" id="L45">                    final double hearts = sanitize(resultSet.getDouble(&quot;hearts&quot;));</span>
+<span class="fc" id="L46">                    return Optional.of(new TeamBankAccount(teamId, hearts));</span>
+                }
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">            }</span>
+<span class="nc" id="L49">            return Optional.empty();</span>
+<span class="pc bpc" id="L50" title="2 of 4 branches missed.">        }</span>
+<span class="nc" id="L51">        catch (SQLException exception) {</span>
+<span class="nc" id="L52">            throw new StorageException(&quot;Unable to load team bank account from MySQL&quot;, exception);</span>
+        }
+    }
+
+    @Override
+    public void saveAccount(TeamBankAccount account) throws StorageException {
+<span class="fc" id="L58">        final String query = &quot;INSERT INTO `&quot; + tableName</span>
+                + &quot;` (team_id, hearts) VALUES (?, ?) ON DUPLICATE KEY UPDATE hearts = VALUES(hearts)&quot;;
+<span class="fc" id="L60">        try (Connection connection = support.connection();</span>
+<span class="fc" id="L61">                PreparedStatement statement = connection.prepareStatement(query)) {</span>
+<span class="fc" id="L62">            statement.setString(1, account.getTeamId().toString());</span>
+<span class="fc" id="L63">            statement.setDouble(2, sanitize(account.getHearts()));</span>
+<span class="fc" id="L64">            statement.executeUpdate();</span>
+        }
+<span class="nc" id="L66">        catch (SQLException exception) {</span>
+<span class="nc" id="L67">            throw new StorageException(&quot;Unable to save team bank account to MySQL&quot;, exception);</span>
+<span class="fc" id="L68">        }</span>
+<span class="fc" id="L69">    }</span>
+
+    private double sanitize(double value) {
+<span class="pc bpc" id="L72" title="2 of 4 branches missed.">        if (!Double.isFinite(value) || value &lt; 0.0D) {</span>
+<span class="nc" id="L73">            return 0.0D;</span>
+        }
+<span class="fc" id="L75">        return value;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

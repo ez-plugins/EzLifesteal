@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WorldGuardBeaconHook.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.integration</a> &gt; <span class="el_source">WorldGuardBeaconHook.java</span></div><h1>WorldGuardBeaconHook.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.integration;
+
+import com.skyblockexp.ezlifesteal.config.BeaconSpawnSettings;
+import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldguard.WorldGuard;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldguard.protection.flags.Flags;
+import com.sk89q.worldguard.protection.flags.StateFlag;
+import com.sk89q.worldguard.protection.managers.RegionManager;
+import com.sk89q.worldguard.protection.managers.RemovalStrategy;
+import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
+import java.util.Optional;
+import java.util.logging.Logger;
+import org.bukkit.Location;
+import org.bukkit.World;
+
+/**
+ * WorldGuard-backed implementation of {@link BeaconAreaProtection}.
+ */
+public final class WorldGuardBeaconHook implements BeaconAreaProtection {
+
+    private static final String REGION_PREFIX = &quot;ezls-beacon-&quot;;
+
+    private final Logger logger;
+
+<span class="fc" id="L26">    public WorldGuardBeaconHook(Logger logger) {</span>
+<span class="fc" id="L27">        this.logger = logger;</span>
+<span class="fc" id="L28">    }</span>
+
+    @Override
+    public Optional&lt;String&gt; protect(Location center, BeaconSpawnSettings.WorldGuardSettings settings) {
+<span class="fc bfc" id="L32" title="All 2 branches covered.">        if (!settings.enabled()) {</span>
+<span class="fc" id="L33">            return Optional.empty();</span>
+        }
+        try {
+<span class="nc" id="L36">            final RegionManager regions = getRegionManager(center.getWorld());</span>
+<span class="nc bnc" id="L37" title="All 2 branches missed.">            if (regions == null) {</span>
+<span class="nc" id="L38">                return Optional.empty();</span>
+            }
+<span class="nc" id="L40">            final String regionId = REGION_PREFIX + Long.toHexString(System.nanoTime() &amp; 0xFFFFFFFFL);</span>
+<span class="nc" id="L41">            final int radius = settings.radius();</span>
+<span class="nc" id="L42">            final int bx = center.getBlockX();</span>
+<span class="nc" id="L43">            final int by = center.getBlockY();</span>
+<span class="nc" id="L44">            final int bz = center.getBlockZ();</span>
+<span class="nc" id="L45">            final ProtectedCuboidRegion region = new ProtectedCuboidRegion(</span>
+                    regionId,
+<span class="nc" id="L47">                    BlockVector3.at(bx - radius, Math.max(by - radius, -64), bz - radius),</span>
+<span class="nc" id="L48">                    BlockVector3.at(bx + radius, Math.min(by + radius, 320), bz + radius)</span>
+            );
+<span class="nc bnc" id="L50" title="All 2 branches missed.">            if (settings.denyBuild()) {</span>
+<span class="nc" id="L51">                region.setFlag(Flags.BUILD, StateFlag.State.DENY);</span>
+            }
+<span class="nc bnc" id="L53" title="All 2 branches missed.">            if (settings.denyPvp()) {</span>
+<span class="nc" id="L54">                region.setFlag(Flags.PVP, StateFlag.State.DENY);</span>
+            }
+<span class="nc bnc" id="L56" title="All 2 branches missed.">            if (settings.denyMobDamage()) {</span>
+<span class="nc" id="L57">                region.setFlag(Flags.MOB_DAMAGE, StateFlag.State.DENY);</span>
+            }
+<span class="nc bnc" id="L59" title="All 2 branches missed.">            if (settings.denyExplosions()) {</span>
+<span class="nc" id="L60">                region.setFlag(Flags.OTHER_EXPLOSION, StateFlag.State.DENY);</span>
+<span class="nc" id="L61">                region.setFlag(Flags.TNT, StateFlag.State.DENY);</span>
+            }
+<span class="nc" id="L63">            regions.addRegion(region);</span>
+<span class="nc" id="L64">            return Optional.of(regionId);</span>
+<span class="fc" id="L65">        } catch (Exception exception) {</span>
+<span class="fc" id="L66">            logger.warning(&quot;Failed to create WorldGuard region for spawned beacon: &quot; + exception.getMessage());</span>
+<span class="fc" id="L67">            return Optional.empty();</span>
+        }
+    }
+
+    @Override
+    public void unprotect(String regionId, World world) {
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        if (regionId == null) {</span>
+<span class="fc" id="L74">            return;</span>
+        }
+        try {
+<span class="fc" id="L77">            final RegionManager regions = getRegionManager(world);</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">            if (regions != null) {</span>
+<span class="nc" id="L79">                regions.removeRegion(regionId, RemovalStrategy.UNSET_PARENT_IN_CHILDREN);</span>
+            }
+<span class="fc" id="L81">        } catch (Exception exception) {</span>
+<span class="fc" id="L82">            logger.warning(&quot;Failed to remove WorldGuard region &quot; + regionId + &quot;: &quot; + exception.getMessage());</span>
+<span class="fc" id="L83">        }</span>
+<span class="fc" id="L84">    }</span>
+
+    private RegionManager getRegionManager(World world) {
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">        if (world == null) {</span>
+<span class="fc" id="L88">            return null;</span>
+        }
+<span class="nc" id="L90">        return WorldGuard.getInstance().getPlatform().getRegionContainer().get(BukkitAdapter.adapt(world));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

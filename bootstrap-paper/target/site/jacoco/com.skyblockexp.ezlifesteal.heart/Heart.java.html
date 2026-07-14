@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Heart.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.heart</a> &gt; <span class="el_source">Heart.java</span></div><h1>Heart.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.heart;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import org.bukkit.ChatColor;
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+
+public class Heart {
+    private final String id;
+
+    private final String displayName;
+
+    private final int tier;
+
+    private final double hearts;
+
+    private final Material material;
+
+    private final String texture;
+
+    private final Map&lt;String, Object&gt; nbt;
+
+
+    public Heart(String id, String displayName, int tier, double hearts, Material material, String texture, Map&lt;String,
+<span class="fc" id="L28">            Object&gt; nbt) {</span>
+<span class="fc" id="L29">        this.id = id;</span>
+<span class="fc" id="L30">        this.displayName = displayName;</span>
+<span class="fc" id="L31">        this.tier = tier;</span>
+<span class="fc" id="L32">        this.hearts = hearts;</span>
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        this.material = material == null ? Material.NETHER_STAR : material;</span>
+<span class="fc" id="L34">        this.texture = texture;</span>
+<span class="fc" id="L35">        this.nbt = nbt;</span>
+<span class="fc" id="L36">    }</span>
+
+    public String getId() {
+<span class="fc" id="L39">        return id;</span>
+    }
+
+    public String getDisplayName() {
+<span class="fc" id="L43">        return displayName;</span>
+    }
+
+    public int getTier() {
+<span class="fc" id="L47">        return tier;</span>
+    }
+
+    public double getHearts() {
+<span class="fc" id="L51">        return hearts;</span>
+    }
+
+    public Material getMaterial() {
+<span class="fc" id="L55">        return material;</span>
+    }
+
+    public String getTexture() {
+<span class="fc" id="L59">        return texture;</span>
+    }
+
+    public Map&lt;String, Object&gt; getNbt() {
+<span class="fc" id="L63">        return nbt;</span>
+    }
+
+    public ItemStack createItemStack() {
+<span class="fc" id="L67">        final ItemStack item = new ItemStack(material);</span>
+<span class="fc" id="L68">        final ItemMeta meta = item.getItemMeta();</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">        if (meta != null) {</span>
+<span class="pc bpc" id="L70" title="1 of 4 branches missed.">            if (displayName != null &amp;&amp; !displayName.isBlank()) {</span>
+<span class="fc" id="L71">                meta.setDisplayName(ChatColor.translateAlternateColorCodes('&amp;', displayName));</span>
+            }
+<span class="fc" id="L73">            final List&lt;String&gt; lore = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L74">            lore.add(&quot;Tier: &quot; + tier);</span>
+<span class="fc" id="L75">            lore.add(&quot;Hearts: &quot; + hearts);</span>
+<span class="pc bpc" id="L76" title="1 of 4 branches missed.">            if (texture != null &amp;&amp; !texture.isBlank()) {</span>
+<span class="fc" id="L77">                lore.add(&quot;Texture: &quot; + texture);</span>
+            }
+            // Do not expose raw NBT values in the lore — use persistent data instead
+<span class="fc" id="L80">            meta.setLore(lore);</span>
+<span class="fc" id="L81">            item.setItemMeta(meta);</span>
+            // Store heart id in persistent data container for identification when used
+            try {
+<span class="fc" id="L84">                final org.bukkit.NamespacedKey key = com.skyblockexp.ezlifesteal.EzLifestealPlugin.HEART_KEY;</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">                if (key != null) {</span>
+<span class="fc" id="L86">                    final ItemMeta m = item.getItemMeta();</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">                    if (m != null) {</span>
+<span class="fc" id="L88">                        m.getPersistentDataContainer().set(key, org.bukkit.persistence.PersistentDataType.STRING, id);</span>
+<span class="fc" id="L89">                        item.setItemMeta(m);</span>
+                    }
+                }
+            }
+<span class="nc" id="L93">            catch (NoClassDefFoundError | Exception ignored) {</span>
+                // If persistent data API is unavailable, fall back to not storing the id.
+<span class="fc" id="L95">            }</span>
+        }
+<span class="fc" id="L97">        return item;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,5 +1,6 @@
 package com.skyblockexp.ezlifesteal.service;
 
+import com.skyblockexp.ezlifesteal.compat.AdapterSupport;
 import com.skyblockexp.ezlifesteal.heart.Heart;
 import com.skyblockexp.ezlifesteal.heart.HeartRegistry;
 import com.skyblockexp.ezlifesteal.model.LifestealProfile;
@@ -44,7 +45,7 @@ public class HeartWithdrawService {
         final ItemStack voucher = withdrawHeart.createItemStack();
         final Map<Integer, ItemStack> leftovers = player.getInventory().addItem(voucher);
         if (!leftovers.isEmpty()) {
-            leftovers.values().forEach(item -> player.getWorld().dropItemNaturally(player.getLocation(), item));
+            AdapterSupport.dropItemLeftoversAtPlayer(manager.getPlugin(), player, leftovers);
         }
 
         return WithdrawResult.success(withdrawHeart.getId(), profile.getHearts());

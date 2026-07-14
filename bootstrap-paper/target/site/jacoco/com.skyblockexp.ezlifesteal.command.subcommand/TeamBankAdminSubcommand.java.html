@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TeamBankAdminSubcommand.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.command.subcommand</a> &gt; <span class="el_source">TeamBankAdminSubcommand.java</span></div><h1>TeamBankAdminSubcommand.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.command.subcommand;
+
+import com.skyblockexp.ezlifesteal.command.LifestealCommand;
+import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
+import com.skyblockexp.ezlifesteal.service.TeamBankAdminService;
+import java.util.Locale;
+import java.util.Map;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+
+/**
+ * Thin command delegating admin team-bank operations to {@link TeamBankAdminService}.
+ *
+ * &lt;p&gt;Subcommands: {@code balance &lt;team&gt;}, {@code deposit &lt;team&gt; &lt;amount&gt;},
+ * {@code withdraw &lt;team&gt; &lt;amount&gt;}, {@code reset &lt;team&gt;},
+ * {@code transfer &lt;fromTeam&gt; &lt;toTeam&gt; &lt;amount&gt;}.&lt;/p&gt;
+ *
+ * &lt;p&gt;Permission: {@code lifesteal.teambank.admin} or {@code lifesteal.admin}.&lt;/p&gt;
+ */
+<span class="fc" id="L20">public final class TeamBankAdminSubcommand implements Subcommand {</span>
+
+    private static final String ADMIN_PERMISSION = &quot;lifesteal.teambank.admin&quot;;
+    private static final String BASE_USAGE = &quot;/lifesteal teambank-admin &lt;balance|deposit|withdraw|reset|transfer&gt; ...&quot;;
+
+    @Override
+    public boolean execute(CommandSender sender, Command command, String label, String[] args, LifestealCommand context) {
+<span class="fc bfc" id="L27" title="All 2 branches covered.">        if (!context.requirePermissionPublic(sender, ADMIN_PERMISSION, &quot;lifesteal.admin&quot;)) {</span>
+<span class="fc" id="L28">            return true;</span>
+        }
+<span class="fc" id="L30">        final PluginAccessor plugin = context.getPluginAccessorPublic();</span>
+<span class="fc" id="L31">        final TeamBankAdminService service = plugin.getTeamBankAdminService();</span>
+<span class="fc bfc" id="L32" title="All 2 branches covered.">        if (service == null) {</span>
+<span class="fc" id="L33">            sender.sendMessage(&quot;Team bank admin service is unavailable.&quot;);</span>
+<span class="fc" id="L34">            return true;</span>
+        }
+<span class="fc bfc" id="L36" title="All 2 branches covered.">        if (args.length &lt; 2) {</span>
+<span class="fc" id="L37">            sender.sendMessage(&quot;Usage: &quot; + BASE_USAGE);</span>
+<span class="fc" id="L38">            return true;</span>
+        }
+<span class="fc" id="L40">        final String action = args[1].toLowerCase(Locale.ROOT);</span>
+<span class="fc bfc" id="L41" title="All 6 branches covered.">        switch (action) {</span>
+            case &quot;balance&quot; -&gt; {
+<span class="fc bfc" id="L43" title="All 2 branches covered.">                if (args.length &lt; 3) {</span>
+<span class="fc" id="L44">                    sender.sendMessage(&quot;Usage: /&quot; + label + &quot; teambank-admin balance &lt;team&gt;&quot;);</span>
+<span class="fc" id="L45">                    return true;</span>
+                }
+<span class="fc" id="L47">                service.adminBalance(args[2])</span>
+<span class="fc" id="L48">                        .thenAccept(result -&gt; context.getMainThreadExecutorPublic().execute(</span>
+<span class="fc" id="L49">                                () -&gt; sendAdminResult(sender, result, action, 0.0D, plugin)))</span>
+<span class="fc" id="L50">                        .exceptionally(throwable -&gt; {</span>
+<span class="nc" id="L51">                            context.getMainThreadExecutorPublic()</span>
+<span class="nc" id="L52">                                    .execute(() -&gt; context.handleAsyncFailure(sender, throwable, &quot;loading team bank balance&quot;));</span>
+<span class="nc" id="L53">                            return null;</span>
+                        });
+<span class="fc" id="L55">            }</span>
+            case &quot;deposit&quot; -&gt; {
+<span class="fc bfc" id="L57" title="All 2 branches covered.">                if (args.length &lt; 4) {</span>
+<span class="fc" id="L58">                    sender.sendMessage(&quot;Usage: /&quot; + label + &quot; teambank-admin deposit &lt;team&gt; &lt;amount&gt;&quot;);</span>
+<span class="fc" id="L59">                    return true;</span>
+                }
+<span class="fc" id="L61">                final double amount = parseAmount(args[3], sender);</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">                if (amount &lt;= 0.0D) {</span>
+<span class="fc" id="L63">                    return true;</span>
+                }
+<span class="fc" id="L65">                service.adminDeposit(args[2], amount)</span>
+<span class="fc" id="L66">                        .thenAccept(result -&gt; context.getMainThreadExecutorPublic().execute(</span>
+<span class="fc" id="L67">                                () -&gt; sendAdminResult(sender, result, action, amount, plugin)))</span>
+<span class="fc" id="L68">                        .exceptionally(throwable -&gt; {</span>
+<span class="nc" id="L69">                            context.getMainThreadExecutorPublic()</span>
+<span class="nc" id="L70">                                    .execute(() -&gt; context.handleAsyncFailure(sender, throwable, &quot;depositing team bank hearts&quot;));</span>
+<span class="nc" id="L71">                            return null;</span>
+                        });
+<span class="fc" id="L73">            }</span>
+            case &quot;withdraw&quot; -&gt; {
+<span class="fc bfc" id="L75" title="All 2 branches covered.">                if (args.length &lt; 4) {</span>
+<span class="fc" id="L76">                    sender.sendMessage(&quot;Usage: /&quot; + label + &quot; teambank-admin withdraw &lt;team&gt; &lt;amount&gt;&quot;);</span>
+<span class="fc" id="L77">                    return true;</span>
+                }
+<span class="fc" id="L79">                final double amount = parseAmount(args[3], sender);</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">                if (amount &lt;= 0.0D) {</span>
+<span class="nc" id="L81">                    return true;</span>
+                }
+<span class="fc" id="L83">                service.adminWithdraw(args[2], amount)</span>
+<span class="fc" id="L84">                        .thenAccept(result -&gt; context.getMainThreadExecutorPublic().execute(</span>
+<span class="fc" id="L85">                                () -&gt; sendAdminResult(sender, result, action, amount, plugin)))</span>
+<span class="fc" id="L86">                        .exceptionally(throwable -&gt; {</span>
+<span class="nc" id="L87">                            context.getMainThreadExecutorPublic()</span>
+<span class="nc" id="L88">                                    .execute(() -&gt; context.handleAsyncFailure(sender, throwable, &quot;withdrawing team bank hearts&quot;));</span>
+<span class="nc" id="L89">                            return null;</span>
+                        });
+<span class="fc" id="L91">            }</span>
+            case &quot;reset&quot; -&gt; {
+<span class="fc bfc" id="L93" title="All 2 branches covered.">                if (args.length &lt; 3) {</span>
+<span class="fc" id="L94">                    sender.sendMessage(&quot;Usage: /&quot; + label + &quot; teambank-admin reset &lt;team&gt;&quot;);</span>
+<span class="fc" id="L95">                    return true;</span>
+                }
+<span class="fc" id="L97">                service.adminReset(args[2])</span>
+<span class="fc" id="L98">                        .thenAccept(result -&gt; context.getMainThreadExecutorPublic().execute(</span>
+<span class="fc" id="L99">                                () -&gt; sendAdminResult(sender, result, action, 0.0D, plugin)))</span>
+<span class="fc" id="L100">                        .exceptionally(throwable -&gt; {</span>
+<span class="nc" id="L101">                            context.getMainThreadExecutorPublic()</span>
+<span class="nc" id="L102">                                    .execute(() -&gt; context.handleAsyncFailure(sender, throwable, &quot;resetting team bank&quot;));</span>
+<span class="nc" id="L103">                            return null;</span>
+                        });
+<span class="fc" id="L105">            }</span>
+            case &quot;transfer&quot; -&gt; {
+<span class="fc bfc" id="L107" title="All 2 branches covered.">                if (args.length &lt; 5) {</span>
+<span class="fc" id="L108">                    sender.sendMessage(&quot;Usage: /&quot; + label + &quot; teambank-admin transfer &lt;fromTeam&gt; &lt;toTeam&gt; &lt;amount&gt;&quot;);</span>
+<span class="fc" id="L109">                    return true;</span>
+                }
+<span class="fc" id="L111">                final double amount = parseAmount(args[4], sender);</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">                if (amount &lt;= 0.0D) {</span>
+<span class="nc" id="L113">                    return true;</span>
+                }
+<span class="fc" id="L115">                service.adminTransfer(args[2], args[3], amount)</span>
+<span class="fc" id="L116">                        .thenAccept(result -&gt; context.getMainThreadExecutorPublic().execute(</span>
+<span class="fc" id="L117">                                () -&gt; sendTransferResult(sender, result, amount, plugin)))</span>
+<span class="fc" id="L118">                        .exceptionally(throwable -&gt; {</span>
+<span class="nc" id="L119">                            context.getMainThreadExecutorPublic()</span>
+<span class="nc" id="L120">                                    .execute(() -&gt; context.handleAsyncFailure(sender, throwable, &quot;transferring team bank hearts&quot;));</span>
+<span class="nc" id="L121">                            return null;</span>
+                        });
+<span class="fc" id="L123">            }</span>
+<span class="fc" id="L124">            default -&gt; sender.sendMessage(&quot;Usage: &quot; + BASE_USAGE);</span>
+        }
+<span class="fc" id="L126">        return true;</span>
+    }
+
+    private void sendAdminResult(CommandSender sender, TeamBankAdminService.AdminResult result,
+                                 String action, double amount, PluginAccessor plugin) {
+<span class="pc bpc" id="L131" title="3 of 9 branches missed.">        switch (result.status()) {</span>
+            case SUCCESS -&gt; {
+<span class="fc bfc" id="L133" title="All 2 branches covered.">                if (&quot;balance&quot;.equals(action)) {</span>
+<span class="fc" id="L134">                    plugin.getMessageService().sendMessage(sender, &quot;team-bank-admin-balance&quot;, Map.of(</span>
+<span class="fc" id="L135">                            &quot;team&quot;, result.teamName(),</span>
+<span class="fc" id="L136">                            &quot;bank&quot;, Double.toString(result.bankHearts())</span>
+                    ));
+<span class="fc bfc" id="L138" title="All 2 branches covered.">                } else if (&quot;reset&quot;.equals(action)) {</span>
+<span class="fc" id="L139">                    plugin.getMessageService().sendMessage(sender, &quot;team-bank-admin-reset&quot;, Map.of(</span>
+<span class="fc" id="L140">                            &quot;team&quot;, result.teamName()</span>
+                    ));
+<span class="fc bfc" id="L142" title="All 2 branches covered.">                } else if (&quot;deposit&quot;.equals(action)) {</span>
+<span class="fc" id="L143">                    plugin.getMessageService().sendMessage(sender, &quot;team-bank-admin-deposit&quot;, Map.of(</span>
+<span class="fc" id="L144">                            &quot;team&quot;, result.teamName(),</span>
+<span class="fc" id="L145">                            &quot;amount&quot;, Double.toString(amount),</span>
+<span class="fc" id="L146">                            &quot;bank&quot;, Double.toString(result.bankHearts())</span>
+                    ));
+                } else {
+<span class="fc" id="L149">                    plugin.getMessageService().sendMessage(sender, &quot;team-bank-admin-withdraw&quot;, Map.of(</span>
+<span class="fc" id="L150">                            &quot;team&quot;, result.teamName(),</span>
+<span class="fc" id="L151">                            &quot;amount&quot;, Double.toString(amount),</span>
+<span class="fc" id="L152">                            &quot;bank&quot;, Double.toString(result.bankHearts())</span>
+                    ));
+                }
+<span class="fc" id="L155">            }</span>
+<span class="fc" id="L156">            case DISABLED -&gt; sender.sendMessage(&quot;Team heart bank is disabled.&quot;);</span>
+<span class="nc" id="L157">            case INVALID_AMOUNT -&gt; sender.sendMessage(&quot;Please enter a valid heart amount greater than zero.&quot;);</span>
+<span class="fc" id="L158">            case TEAM_NOT_FOUND -&gt; plugin.getMessageService().sendMessage(sender, &quot;team-bank-admin-team-not-found&quot;,</span>
+<span class="fc" id="L159">                    Map.of(&quot;team&quot;, result.teamName()));</span>
+<span class="fc" id="L160">            case STORAGE_UNAVAILABLE -&gt; sender.sendMessage(&quot;Team bank storage is unavailable.&quot;);</span>
+<span class="fc" id="L161">            case INSUFFICIENT_BANK_HEARTS -&gt; sender.sendMessage(&quot;Team bank does not have enough hearts.&quot;);</span>
+<span class="fc" id="L162">            case BANK_CAP_EXCEEDED -&gt; sender.sendMessage(&quot;Operation would exceed the team bank cap.&quot;);</span>
+<span class="nc" id="L163">            case TEAMS_API_UNAVAILABLE -&gt; plugin.getMessageService().sendMessage(</span>
+                    sender, &quot;team-bank-admin-teams-api-unavailable&quot;);
+<span class="nc" id="L165">            default -&gt; plugin.getMessageService().sendMessage(sender, &quot;storage-error&quot;);</span>
+        }
+<span class="fc" id="L167">    }</span>
+
+    private void sendTransferResult(CommandSender sender, TeamBankAdminService.TransferResult result,
+                                    double amount, PluginAccessor plugin) {
+<span class="pc bpc" id="L171" title="4 of 10 branches missed.">        switch (result.status()) {</span>
+<span class="fc" id="L172">            case SUCCESS -&gt; plugin.getMessageService().sendMessage(sender, &quot;team-bank-admin-transfer&quot;, Map.of(</span>
+<span class="fc" id="L173">                    &quot;from&quot;, result.fromTeam(),</span>
+<span class="fc" id="L174">                    &quot;to&quot;, result.toTeam(),</span>
+<span class="fc" id="L175">                    &quot;amount&quot;, Double.toString(amount),</span>
+<span class="fc" id="L176">                    &quot;from_bank&quot;, Double.toString(result.fromHearts()),</span>
+<span class="fc" id="L177">                    &quot;to_bank&quot;, Double.toString(result.toHearts())</span>
+            ));
+<span class="fc" id="L179">            case DISABLED -&gt; sender.sendMessage(&quot;Team heart bank is disabled.&quot;);</span>
+<span class="nc" id="L180">            case INVALID_AMOUNT -&gt; sender.sendMessage(&quot;Please enter a valid heart amount greater than zero.&quot;);</span>
+<span class="fc" id="L181">            case FROM_TEAM_NOT_FOUND -&gt; plugin.getMessageService().sendMessage(</span>
+<span class="fc" id="L182">                    sender, &quot;team-bank-admin-team-not-found&quot;, Map.of(&quot;team&quot;, result.fromTeam()));</span>
+<span class="fc" id="L183">            case TO_TEAM_NOT_FOUND -&gt; plugin.getMessageService().sendMessage(</span>
+<span class="fc" id="L184">                    sender, &quot;team-bank-admin-team-not-found&quot;, Map.of(&quot;team&quot;, result.toTeam()));</span>
+<span class="nc" id="L185">            case STORAGE_UNAVAILABLE -&gt; sender.sendMessage(&quot;Team bank storage is unavailable.&quot;);</span>
+<span class="fc" id="L186">            case INSUFFICIENT_BANK_HEARTS -&gt; sender.sendMessage(&quot;Source team bank does not have enough hearts.&quot;);</span>
+<span class="fc" id="L187">            case BANK_CAP_EXCEEDED -&gt; sender.sendMessage(&quot;Transfer would exceed the target team bank cap.&quot;);</span>
+<span class="nc" id="L188">            case TEAMS_API_UNAVAILABLE -&gt; plugin.getMessageService().sendMessage(</span>
+                    sender, &quot;team-bank-admin-teams-api-unavailable&quot;);
+<span class="nc" id="L190">            default -&gt; plugin.getMessageService().sendMessage(sender, &quot;storage-error&quot;);</span>
+        }
+<span class="fc" id="L192">    }</span>
+
+    private double parseAmount(String raw, CommandSender sender) {
+        try {
+<span class="fc" id="L196">            final double amount = Double.parseDouble(raw);</span>
+<span class="pc bpc" id="L197" title="1 of 4 branches missed.">            if (!Double.isFinite(amount) || amount &lt;= 0.0D) {</span>
+<span class="fc" id="L198">                sender.sendMessage(&quot;Please enter a valid heart amount greater than zero.&quot;);</span>
+<span class="fc" id="L199">                return -1.0D;</span>
+            }
+<span class="fc" id="L201">            return amount;</span>
+<span class="fc" id="L202">        } catch (NumberFormatException exception) {</span>
+<span class="fc" id="L203">            sender.sendMessage(&quot;Please enter a valid heart amount greater than zero.&quot;);</span>
+<span class="fc" id="L204">            return -1.0D;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

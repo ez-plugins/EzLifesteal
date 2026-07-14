@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TopSubcommand.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.command.subcommand</a> &gt; <span class="el_source">TopSubcommand.java</span></div><h1>TopSubcommand.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.command.subcommand;
+
+import com.skyblockexp.ezlifesteal.command.LifestealCommand;
+import com.skyblockexp.ezlifesteal.model.LifestealProfile;
+import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
+import com.skyblockexp.ezlifesteal.service.LifestealManager;
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+
+
+<span class="fc" id="L13">public class TopSubcommand implements Subcommand {</span>
+    @Override
+    public boolean execute(CommandSender sender, Command command, String label, String[] args,
+            LifestealCommand context) {
+<span class="fc bfc" id="L17" title="All 2 branches covered.">        if (!context.requirePermissionPublic(sender, &quot;lifesteal.top&quot;, &quot;lifesteal.admin&quot;)) {</span>
+<span class="fc" id="L18">            return true;</span>
+        }
+<span class="fc" id="L20">        int page = 1;</span>
+<span class="pc bpc" id="L21" title="1 of 2 branches missed.">        if (args.length &gt;= 2) {</span>
+            try {
+<span class="fc" id="L23">                page = Integer.parseInt(args[1]);</span>
+            }
+<span class="fc" id="L25">            catch (NumberFormatException exception) {</span>
+<span class="fc" id="L26">                context.getPluginAccessorPublic().getMessageService().sendMessage(sender, &quot;top-invalid-page&quot;);</span>
+<span class="fc" id="L27">                return true;</span>
+<span class="fc" id="L28">            }</span>
+        }
+<span class="fc bfc" id="L30" title="All 2 branches covered.">        if (page &lt;= 0) {</span>
+<span class="fc" id="L31">            context.getPluginAccessorPublic().getMessageService().sendMessage(sender, &quot;top-invalid-page&quot;);</span>
+<span class="fc" id="L32">            return true;</span>
+        }
+<span class="fc" id="L34">        final int pageSize = 10;</span>
+<span class="fc" id="L35">        final long requested = (long) page * pageSize;</span>
+<span class="pc bpc" id="L36" title="1 of 2 branches missed.">        final int limit = requested &gt; Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) requested;</span>
+<span class="fc" id="L37">        final PluginAccessor plugin = context.getPluginAccessorPublic();</span>
+<span class="fc" id="L38">        final LifestealManager topManager = plugin.getLifestealManager();</span>
+<span class="fc" id="L39">        final int finalPage = page;</span>
+<span class="fc" id="L40">        topManager.loadTopProfilesAsync(limit).whenComplete((profiles, throwable) -&gt; {</span>
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">            if (throwable != null) {</span>
+<span class="nc" id="L42">                plugin.getLogger().severe(&quot;Failed to load top profiles: &quot; + throwable.getMessage());</span>
+<span class="nc" id="L43">                context.getMainThreadExecutorPublic()</span>
+<span class="nc" id="L44">                        .execute(() -&gt; plugin.getMessageService().sendMessage(sender, &quot;storage-error&quot;));</span>
+<span class="nc" id="L45">                return;</span>
+            }
+<span class="fc" id="L47">            final Runnable uiTask = () -&gt; {</span>
+<span class="pc bpc" id="L48" title="2 of 4 branches missed.">                if (profiles == null || profiles.isEmpty()) {</span>
+<span class="nc" id="L49">                    plugin.getMessageService().sendMessage(sender, &quot;top-empty&quot;);</span>
+<span class="nc" id="L50">                    return;</span>
+                }
+<span class="fc" id="L52">                final int total = profiles.size();</span>
+<span class="fc" id="L53">                final int startIndex = Math.min(total, (finalPage - 1) * pageSize);</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">                if (startIndex &gt;= total) {</span>
+<span class="nc" id="L55">                    plugin.getMessageService().sendMessage(sender, &quot;top-no-page&quot;,</span>
+<span class="nc" id="L56">                            java.util.Map.of(&quot;page&quot;, Integer.toString(finalPage)));</span>
+<span class="nc" id="L57">                    return;</span>
+                }
+<span class="fc" id="L59">                final int endIndex = Math.min(total, startIndex + pageSize);</span>
+<span class="fc" id="L60">                int totalPages = (int) Math.ceil(total / (double) pageSize);</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">                if (totalPages &lt; finalPage) {</span>
+<span class="nc" id="L62">                    totalPages = finalPage;</span>
+                }
+<span class="fc" id="L64">                plugin.getMessageService().sendMessage(sender, &quot;top-header&quot;, java.util.Map.of(</span>
+<span class="fc" id="L65">                        &quot;page&quot;, Integer.toString(finalPage),</span>
+<span class="fc" id="L66">                        &quot;pages&quot;, Integer.toString(Math.max(totalPages, 1))</span>
+                ));
+<span class="fc bfc" id="L68" title="All 2 branches covered.">                for (int index = startIndex; index &lt; endIndex; index++) {</span>
+<span class="fc" id="L69">                    final LifestealProfile profile = profiles.get(index);</span>
+<span class="fc" id="L70">                    plugin.getMessageService().sendMessage(sender, &quot;top-entry&quot;, java.util.Map.of(</span>
+<span class="fc" id="L71">                            &quot;rank&quot;, Integer.toString(index + 1),</span>
+<span class="fc" id="L72">                            &quot;player&quot;, resolvePlayerName(profile),</span>
+<span class="fc" id="L73">                            &quot;hearts&quot;, Double.toString(profile.getHearts())</span>
+                    ));
+                }
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">                if (total == limit) {</span>
+<span class="nc" id="L77">                    plugin.getMessageService().sendMessage(sender, &quot;top-footer&quot;,</span>
+<span class="nc" id="L78">                            java.util.Map.of(&quot;next_page&quot;, Integer.toString(finalPage + 1)));</span>
+                }
+                else {
+<span class="fc" id="L81">                    plugin.getMessageService().sendMessage(sender, &quot;top-footer-end&quot;);</span>
+                }
+<span class="fc" id="L83">            };</span>
+<span class="fc" id="L84">            context.getMainThreadExecutorPublic().execute(uiTask);</span>
+<span class="fc" id="L85">        });</span>
+<span class="fc" id="L86">        return true;</span>
+    }
+
+    private String resolvePlayerName(LifestealProfile profile) {
+        try {
+<span class="fc" id="L91">            final OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(profile.getUniqueId());</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">            final String name = offlinePlayer != null ? offlinePlayer.getName() : null;</span>
+<span class="pc bpc" id="L93" title="2 of 4 branches missed.">            if (name != null &amp;&amp; !name.isBlank()) {</span>
+<span class="fc" id="L94">                return name;</span>
+            }
+        }
+<span class="fc" id="L97">        catch (Throwable ignored) {</span>
+            // Bukkit lookup may be unavailable in isolated unit tests; fall through to UUID fallback.
+<span class="nc" id="L99">        }</span>
+<span class="fc" id="L100">        return profile.getUniqueId().toString();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

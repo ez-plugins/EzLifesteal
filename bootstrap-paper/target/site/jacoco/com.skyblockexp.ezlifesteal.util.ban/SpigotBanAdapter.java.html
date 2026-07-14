@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SpigotBanAdapter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">EzLifesteal Bootstrap Paper</a> &gt; <a href="index.source.html" class="el_package">com.skyblockexp.ezlifesteal.util.ban</a> &gt; <span class="el_source">SpigotBanAdapter.java</span></div><h1>SpigotBanAdapter.java</h1><pre class="source lang-java linenums">package com.skyblockexp.ezlifesteal.util.ban;
+
+import java.time.Instant;
+import java.util.Date;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.UUID;
+import org.bukkit.BanEntry;
+import org.bukkit.BanList;
+import org.bukkit.Bukkit;
+
+/**
+ * Ban adapter that uses Spigot's {@link BanList.Type#NAME} (string-based) ban list.
+ *
+ * &lt;p&gt;This implementation is used on Spigot where the Paper profile API is absent.
+ * Because name-based bans do not store UUIDs, {@link BanEntryView#getPlayerId()}
+ * returns {@code null} for all entries returned by {@link #getBanEntries()}.
+ * Callers that require UUIDs should handle this gracefully.&lt;/p&gt;
+ */
+<span class="fc" id="L20">final class SpigotBanAdapter implements PlatformBanAdapter {</span>
+
+    @Override
+    @SuppressWarnings(&quot;rawtypes&quot;)
+    public void addBan(UUID playerId, String playerName, String reason, String source, Instant expiry) {
+<span class="fc bfc" id="L25" title="All 4 branches covered.">        if (playerName == null || playerName.isBlank()) {</span>
+<span class="fc" id="L26">            return;</span>
+        }
+<span class="fc" id="L28">        final BanList raw = Bukkit.getBanList(BanList.Type.NAME);</span>
+<span class="fc bfc" id="L29" title="All 2 branches covered.">        if (!raw.isBanned(playerName)) {</span>
+<span class="pc bpc" id="L30" title="1 of 2 branches missed.">            raw.addBan(playerName, reason, expiry == null ? null : Date.from(expiry), source);</span>
+        }
+<span class="fc" id="L32">    }</span>
+
+    @Override
+    @SuppressWarnings(&quot;rawtypes&quot;)
+    public void removeBan(UUID playerId, String playerName) {
+<span class="pc bpc" id="L37" title="1 of 4 branches missed.">        if (playerName == null || playerName.isBlank()) {</span>
+<span class="fc" id="L38">            return;</span>
+        }
+<span class="fc" id="L40">        final BanList raw = Bukkit.getBanList(BanList.Type.NAME);</span>
+<span class="fc" id="L41">        raw.pardon(playerName);</span>
+<span class="fc" id="L42">    }</span>
+
+    @Override
+    @SuppressWarnings(&quot;rawtypes&quot;)
+    public boolean isBanned(UUID playerId, String playerName) {
+<span class="fc bfc" id="L47" title="All 4 branches covered.">        if (playerName != null &amp;&amp; !playerName.isBlank()) {</span>
+<span class="fc" id="L48">            final BanList raw = Bukkit.getBanList(BanList.Type.NAME);</span>
+<span class="fc" id="L49">            return raw.isBanned(playerName);</span>
+        }
+<span class="fc" id="L51">        return false;</span>
+    }
+
+    @Override
+    public Set&lt;BanEntryView&gt; getBanEntries() {
+<span class="fc" id="L56">        final BanList&lt;String&gt; banList = Bukkit.getBanList(BanList.Type.NAME);</span>
+<span class="fc" id="L57">        final Set&lt;BanEntryView&gt; views = new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        for (BanEntry&lt;String&gt; entry : banList.getBanEntries()) {</span>
+<span class="fc" id="L59">            final String name = entry.getBanTarget();</span>
+<span class="pc bpc" id="L60" title="1 of 4 branches missed.">            if (name == null || name.isBlank()) {</span>
+<span class="fc" id="L61">                continue;</span>
+            }
+<span class="fc" id="L63">            views.add(new BanEntryView(</span>
+                    null,
+                    name,
+<span class="fc" id="L66">                    entry.getReason(),</span>
+<span class="fc" id="L67">                    entry.getSource(),</span>
+<span class="fc" id="L68">                    entry.getCreated(),</span>
+<span class="fc" id="L69">                    entry.getExpiration()</span>
+            ));
+<span class="fc" id="L71">        }</span>
+<span class="fc" id="L72">        return views;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
