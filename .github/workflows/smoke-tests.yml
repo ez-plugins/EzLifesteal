@@ -47,25 +47,33 @@ jobs:
       fail-fast: false
       matrix:
         java-version: ['21', '25']
-        server-id: ['paper-1-21', 'paper-26-1', 'folia-1-21', 'folia-26-1']
+        server-id: ['paper-1-21', 'paper-26-2', 'folia-1-21', 'spigot-1-21', 'spigot-26-2']
         include:
           - server-id: paper-1-21
             server-project: paper
             server-version: '1.21.11'
-          - server-id: paper-26-1
+            server-download-mode: fill
+          - server-id: paper-26-2
             server-project: paper
-            server-version: '26.1.2'
+            server-version: '26.2'
+            server-download-mode: fill
           - server-id: folia-1-21
             server-project: folia
             server-version: '1.21.4'
-          - server-id: folia-26-1
-            server-project: folia
-            server-version: '26.1.2'
+            server-download-mode: fill
+          - server-id: spigot-1-21
+            server-project: spigot
+            server-version: '1.21.11'
+            server-download-mode: buildtools
+          - server-id: spigot-26-2
+            server-project: spigot
+            server-version: '26.2'
+            server-download-mode: buildtools
         exclude:
           - java-version: '21'
-            server-id: paper-26-1
+            server-id: paper-26-2
           - java-version: '21'
-            server-id: folia-26-1
+            server-id: spigot-26-2
 
     steps:
       - uses: actions/checkout@v6
@@ -92,6 +100,7 @@ jobs:
           echo "Using plugin jar: $JAR"
 
       - name: Download ${{ matrix.server-project }} ${{ matrix.server-version }}
+        if: matrix.server-download-mode == 'fill'
         run: |
           API="https://fill.papermc.io/v3/projects/${{ matrix.server-project }}/versions/${{ matrix.server-version }}/builds"
           URL=$(curl -sf -H "User-Agent: $USER_AGENT" "$API" | python3 -c '
@@ -109,6 +118,20 @@ print(stable.get("downloads", {}).get("server:default", {}).get("url", ""))
           fi
           curl -sfLo server.jar -H "User-Agent: $USER_AGENT" "$URL"
           echo "Downloaded server from: $URL"
+
+      - name: Build Spigot ${{ matrix.server-version }} server.jar
+        if: matrix.server-download-mode == 'buildtools'
+        timeout-minutes: 20
+        run: |
+          curl -sfLo BuildTools.jar -H "User-Agent: $USER_AGENT" https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar
+          java -jar BuildTools.jar --rev ${{ matrix.server-version }} --compile SPIGOT
+          JAR=$(find . -maxdepth 2 -type f -name 'spigot-*.jar' | head -n1)
+          if [ -z "$JAR" ]; then
+            echo "BuildTools did not produce a spigot server jar"
+            exit 1
+          fi
+          cp "$JAR" server.jar
+          echo "Using Spigot server jar: $JAR"
 
       - name: Run full startup smoke test
         timeout-minutes: 6

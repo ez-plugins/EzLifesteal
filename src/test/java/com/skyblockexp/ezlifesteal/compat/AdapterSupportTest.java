@@ -39,17 +39,33 @@ class AdapterSupportTest {
 
     @Test
     void resolveRuntimeAdapterIdHandlesKnownAndUnknownVersions() {
+        org.bukkit.Server server = mock(org.bukkit.Server.class);
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class);
              MockedStatic<SchedulerAdapter> scheduler = mockStatic(SchedulerAdapter.class)) {
+            bukkit.when(Bukkit::getServer).thenReturn(server);
+
             bukkit.when(Bukkit::getBukkitVersion).thenReturn("1.21.4-R0.1-SNAPSHOT");
+            when(server.getName()).thenReturn("Paper");
             scheduler.when(SchedulerAdapter::detectFolia).thenReturn(false);
             assertEquals("paper.1.21.x", AdapterSupport.resolveRuntimeAdapterId());
 
-            bukkit.when(Bukkit::getBukkitVersion).thenReturn("1.26.1-R0.1-SNAPSHOT");
+            bukkit.when(Bukkit::getBukkitVersion).thenReturn("1.26.2-R0.1-SNAPSHOT");
+            when(server.getName()).thenReturn("Folia");
             scheduler.when(SchedulerAdapter::detectFolia).thenReturn(true);
-            assertEquals("folia.26.1.x", AdapterSupport.resolveRuntimeAdapterId());
+            assertEquals("folia.26.2.x", AdapterSupport.resolveRuntimeAdapterId());
+
+            bukkit.when(Bukkit::getBukkitVersion).thenReturn("1.21.11-R0.1-SNAPSHOT");
+            when(server.getName()).thenReturn("Spigot");
+            scheduler.when(SchedulerAdapter::detectFolia).thenReturn(false);
+            assertEquals("spigot.1.21.x", AdapterSupport.resolveRuntimeAdapterId());
+
+            bukkit.when(Bukkit::getBukkitVersion).thenReturn("1.26.2-R0.1-SNAPSHOT");
+            when(server.getName()).thenReturn("Spigot");
+            scheduler.when(SchedulerAdapter::detectFolia).thenReturn(false);
+            assertEquals("spigot.26.2.x", AdapterSupport.resolveRuntimeAdapterId());
 
             bukkit.when(Bukkit::getBukkitVersion).thenReturn("git-Paper-unknown");
+            when(server.getName()).thenReturn("Paper");
             scheduler.when(SchedulerAdapter::detectFolia).thenReturn(false);
             assertEquals("paper.unknown", AdapterSupport.resolveRuntimeAdapterId());
         }

@@ -1,9 +1,9 @@
 package com.skyblockexp.ezlifesteal.util;
 
-import io.papermc.paper.threadedregions.scheduler.GlobalRegionScheduler;
-import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+import java.lang.reflect.Method;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
@@ -31,9 +31,18 @@ public final class SchedulerAdapter {
     public static void runAsync(Plugin plugin, Runnable runnable) {
         Objects.requireNonNull(plugin, "plugin");
         Objects.requireNonNull(runnable, "runnable");
-        if (HAS_ASYNC_SCHEDULER) {
-            Bukkit.getAsyncScheduler().runNow(plugin, task -> runnable.run());
-        } else {
+        if (!HAS_ASYNC_SCHEDULER) {
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, runnable);
+            return;
+        }
+
+        try {
+            final Object asyncScheduler = Bukkit.class.getMethod("getAsyncScheduler").invoke(null);
+            final Method runNow = asyncScheduler.getClass().getMethod("runNow", Plugin.class, Consumer.class);
+            final Consumer<Object> task = ignored -> runnable.run();
+            runNow.invoke(asyncScheduler, plugin, task);
+        }
+        catch (ReflectiveOperationException | RuntimeException ignored) {
             Bukkit.getScheduler().runTaskAsynchronously(plugin, runnable);
         }
     }
@@ -45,12 +54,18 @@ public final class SchedulerAdapter {
             FOLIA = detectFolia();
         }
         if (FOLIA) {
-            final GlobalRegionScheduler scheduler = Bukkit.getGlobalRegionScheduler();
-            scheduler.execute(plugin, runnable);
+            try {
+                final Object scheduler = Bukkit.class.getMethod("getGlobalRegionScheduler").invoke(null);
+                final Method execute = scheduler.getClass().getMethod("execute", Plugin.class, Runnable.class);
+                execute.invoke(scheduler, plugin, runnable);
+                return;
+            }
+            catch (ReflectiveOperationException | RuntimeException ignored) {
+                // Fall back to Bukkit scheduler when Folia scheduler APIs are unavailable.
+            }
         }
-        else {
-            Bukkit.getScheduler().runTask(plugin, runnable);
-        }
+
+        Bukkit.getScheduler().runTask(plugin, runnable);
     }
 
     public static TaskHandle runLater(Plugin plugin, Runnable runnable, long delayTicks) {
@@ -60,9 +75,17 @@ public final class SchedulerAdapter {
             FOLIA = detectFolia();
         }
         if (FOLIA) {
-            final GlobalRegionScheduler scheduler = Bukkit.getGlobalRegionScheduler();
-            final ScheduledTask task = scheduler.runDelayed(plugin, scheduledTask -> runnable.run(), delayTicks);
-            return new FoliaTaskHandle(task);
+            try {
+                final Object scheduler = Bukkit.class.getMethod("getGlobalRegionScheduler").invoke(null);
+                final Method runDelayed = scheduler.getClass()
+                        .getMethod("runDelayed", Plugin.class, Consumer.class, long.class);
+                final Consumer<Object> taskConsumer = ignored -> runnable.run();
+                final Object task = runDelayed.invoke(scheduler, plugin, taskConsumer, delayTicks);
+                return new ReflectiveTaskHandle(task);
+            }
+            catch (ReflectiveOperationException | RuntimeException ignored) {
+                // Fall back to Bukkit scheduler when Folia scheduler APIs are unavailable.
+            }
         }
         final BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, runnable, delayTicks);
         return new BukkitTaskHandle(task);
@@ -75,10 +98,17 @@ public final class SchedulerAdapter {
             FOLIA = detectFolia();
         }
         if (FOLIA) {
-            final GlobalRegionScheduler scheduler = Bukkit.getGlobalRegionScheduler();
-            final ScheduledTask task = scheduler.runAtFixedRate(plugin, scheduledTask -> runnable.run(), delayTicks,
-                    periodTicks);
-            return new FoliaTaskHandle(task);
+            try {
+                final Object scheduler = Bukkit.class.getMethod("getGlobalRegionScheduler").invoke(null);
+                final Method runAtFixedRate = scheduler.getClass()
+                        .getMethod("runAtFixedRate", Plugin.class, Consumer.class, long.class, long.class);
+                final Consumer<Object> taskConsumer = ignored -> runnable.run();
+                final Object task = runAtFixedRate.invoke(scheduler, plugin, taskConsumer, delayTicks, periodTicks);
+                return new ReflectiveTaskHandle(task);
+            }
+            catch (ReflectiveOperationException | RuntimeException ignored) {
+                // Fall back to Bukkit scheduler when Folia scheduler APIs are unavailable.
+            }
         }
         final BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, runnable, delayTicks, periodTicks);
         return new BukkitTaskHandle(task);
@@ -114,27 +144,42 @@ public final class SchedulerAdapter {
         }
     }
 
-    private static final class FoliaTaskHandle implements TaskHandle {
+    private static final class ReflectiveTaskHandle implements TaskHandle {
 
-        private final ScheduledTask delegate;
+        private final Object delegate;
 
         private final AtomicBoolean cancelled = new AtomicBoolean(false);
 
 
-        private FoliaTaskHandle(ScheduledTask delegate) {
+        private ReflectiveTaskHandle(Object delegate) {
             this.delegate = delegate;
         }
 
         @Override
         public void cancel() {
             if (cancelled.compareAndSet(false, true)) {
-                delegate.cancel();
+                try {
+                    delegate.getClass().getMethod("cancel").invoke(delegate);
+                }
+                catch (ReflectiveOperationException | RuntimeException ignored) {
+                }
             }
         }
 
         @Override
         public boolean isCancelled() {
-            return cancelled.get() || delegate.isCancelled();
+            if (cancelled.get()) {
+                return true;
+            }
+            try {
+                final Object value = delegate.getClass().getMethod("isCancelled").invoke(delegate);
+                if (value instanceof Boolean cancelledValue) {
+                    return cancelledValue;
+                }
+            }
+            catch (ReflectiveOperationException | RuntimeException ignored) {
+            }
+            return false;
         }
     }
 }

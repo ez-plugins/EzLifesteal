@@ -26,10 +26,10 @@ jobs:
             mockbukkit-version: '4.110.0'
             run-tests: false
           - java-version: '25'
-            paper-version: '26.1.2.build.74-stable'
+            paper-version: '26.2.build.60-beta'
             worldguard-version: '7.0.16'
             worldedit-version: '7.4.3'
-            mockbukkit-artifact-id: 'mockbukkit-v26.1.2'
+            mockbukkit-artifact-id: 'mockbukkit-v26.2'
             mockbukkit-version: 'local'
             run-tests: true
 
@@ -44,10 +44,10 @@ jobs:
           java-version: ${{ matrix.java-version }}
           cache: maven
 
-      - name: Build and install MockBukkit minecraft/v26
+      - name: Build and install MockBukkit minecraft/v26.2
         if: matrix.run-tests
         run: |
-          git clone --depth=1 --branch minecraft/v26 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
+          git clone --depth=1 --branch minecraft/v26.2 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
           sed -i 's/^mockbukkit\.version=$/mockbukkit.version=local/' /tmp/MockBukkit/gradle.properties
           cd /tmp/MockBukkit && GITHUB_REPOSITORY=MockBukkit/MockBukkit ./gradlew publishToMavenLocal -xtest -xjavadoc
 
@@ -90,9 +90,9 @@ jobs:
           server-username: GITHUB_ACTOR
           server-password: GITHUB_TOKEN
 
-      - name: Build and install MockBukkit minecraft/v26
+      - name: Build and install MockBukkit minecraft/v26.2
         run: |
-          git clone --depth=1 --branch minecraft/v26 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
+          git clone --depth=1 --branch minecraft/v26.2 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
           sed -i 's/^mockbukkit\.version=$/mockbukkit.version=local/' /tmp/MockBukkit/gradle.properties
           cd /tmp/MockBukkit && GITHUB_REPOSITORY=MockBukkit/MockBukkit ./gradlew publishToMavenLocal -xtest -xjavadoc
 

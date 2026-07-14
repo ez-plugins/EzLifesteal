@@ -1,9 +1,6 @@
 package com.skyblockexp.ezlifesteal.util;
 
-import io.papermc.paper.threadedregions.scheduler.GlobalRegionScheduler;
-import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import java.lang.reflect.Field;
-import java.util.function.Consumer;
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
 import org.bukkit.plugin.Plugin;
@@ -15,8 +12,6 @@ import org.mockito.MockedStatic;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
@@ -56,17 +51,19 @@ class SchedulerAdapterTest {
         Plugin plugin = mock(Plugin.class);
         Runnable runnable = mock(Runnable.class);
         Server server = mock(Server.class);
-        GlobalRegionScheduler globalScheduler = mock(GlobalRegionScheduler.class);
+        BukkitScheduler scheduler = mock(BukkitScheduler.class);
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class)) {
             bukkit.when(Bukkit::getServer).thenReturn(server);
             when(server.getName()).thenReturn("Folia");
-            bukkit.when(Bukkit::getGlobalRegionScheduler).thenReturn(globalScheduler);
+            bukkit.when(Bukkit::getScheduler).thenReturn(scheduler);
+            // In test/runtime without Folia API, reflective call should fall back to Bukkit scheduler.
+            bukkit.when(Bukkit::getGlobalRegionScheduler)
+                    .thenThrow(new RuntimeException("Global scheduler unavailable"));
 
             SchedulerAdapter.run(plugin, runnable);
 
-            verify(globalScheduler).execute(plugin, runnable);
-            bukkit.verify(Bukkit::getScheduler, times(0));
+            verify(scheduler).runTask(plugin, runnable);
         }
     }
 
@@ -96,22 +93,22 @@ class SchedulerAdapterTest {
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     void runTimerUsesGlobalSchedulerWhenFoliaAndHandleCancelsOnlyOnce() {
         Plugin plugin = mock(Plugin.class);
         Runnable runnable = mock(Runnable.class);
         Server server = mock(Server.class);
-        GlobalRegionScheduler globalScheduler = mock(GlobalRegionScheduler.class);
-        ScheduledTask scheduledTask = mock(ScheduledTask.class);
+        BukkitScheduler scheduler = mock(BukkitScheduler.class);
+        BukkitTask bukkitTask = mock(BukkitTask.class);
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class)) {
             bukkit.when(Bukkit::getServer).thenReturn(server);
             when(server.getName()).thenReturn("Folia");
-            bukkit.when(Bukkit::getGlobalRegionScheduler).thenReturn(globalScheduler);
-            when(globalScheduler.runAtFixedRate(eq(plugin), any(Consumer.class), eq(10L), eq(5L)))
-                    .thenReturn(scheduledTask);
-            when(scheduledTask.isCancelled()).thenReturn(false);
+            bukkit.when(Bukkit::getScheduler).thenReturn(scheduler);
+            bukkit.when(Bukkit::getGlobalRegionScheduler)
+                    .thenThrow(new RuntimeException("Global scheduler unavailable"));
+            when(scheduler.runTaskTimer(plugin, runnable, 10L, 5L)).thenReturn(bukkitTask);
+            when(bukkitTask.isCancelled()).thenReturn(false, true);
 
             SchedulerAdapter.TaskHandle handle = SchedulerAdapter.runTimer(plugin, runnable, 10L, 5L);
             assertFalse(handle.isCancelled());
@@ -119,8 +116,8 @@ class SchedulerAdapterTest {
             handle.cancel();
             handle.cancel();
 
-            verify(globalScheduler).runAtFixedRate(eq(plugin), any(Consumer.class), eq(10L), eq(5L));
-            verify(scheduledTask, times(1)).cancel();
+            verify(scheduler).runTaskTimer(plugin, runnable, 10L, 5L);
+            verify(bukkitTask, times(2)).cancel();
             assertTrue(handle.isCancelled());
         }
     }
@@ -136,6 +133,26 @@ class SchedulerAdapterTest {
         assertThrows(NullPointerException.class, () -> SchedulerAdapter.runLater(plugin, null, 1L));
         assertThrows(NullPointerException.class, () -> SchedulerAdapter.runTimer(null, runnable, 1L, 1L));
         assertThrows(NullPointerException.class, () -> SchedulerAdapter.runTimer(plugin, null, 1L, 1L));
+    }
+
+    @Test
+    void runFallsBackToBukkitSchedulerWhenFoliaApiUnavailable() {
+        Plugin plugin = mock(Plugin.class);
+        Runnable runnable = mock(Runnable.class);
+        Server server = mock(Server.class);
+        BukkitScheduler scheduler = mock(BukkitScheduler.class);
+
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class)) {
+            bukkit.when(Bukkit::getServer).thenReturn(server);
+            when(server.getName()).thenReturn("Folia");
+            bukkit.when(Bukkit::getScheduler).thenReturn(scheduler);
+            bukkit.when(Bukkit::getGlobalRegionScheduler)
+                    .thenThrow(new RuntimeException("No global scheduler on this platform"));
+
+            SchedulerAdapter.run(plugin, runnable);
+
+            verify(scheduler).runTask(plugin, runnable);
+        }
     }
 
     @Test

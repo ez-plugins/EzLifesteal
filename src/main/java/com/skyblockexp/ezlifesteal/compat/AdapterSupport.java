@@ -32,10 +32,23 @@ public final class AdapterSupport {
 
     public static String resolveRuntimeAdapterId() {
         final String apiLine = resolveApiLine();
+        if (isSpigotServer()) {
+            return "spigot." + apiLine;
+        }
         if (isFoliaServer()) {
             return "folia." + apiLine;
         }
         return "paper." + apiLine;
+    }
+
+    private static boolean isSpigotServer() {
+        try {
+            final String serverName = Bukkit.getServer().getName();
+            return "Spigot".equalsIgnoreCase(serverName);
+        }
+        catch (Throwable ignored) {
+            return false;
+        }
     }
 
     public static void runOnMain(Plugin plugin, Runnable runnable) {
@@ -172,11 +185,22 @@ public final class AdapterSupport {
 
         final int major = parseIntSafe(matcher.group(1));
         final int minor = parseIntSafe(matcher.group(2));
+
+        // New server version lines report as 1.26.x; normalize to 26.x family.
+        if (major == 1 && minor >= 26) {
+            return "26.2.x";
+        }
         if (major == 1 && minor <= 21) {
             return "1.21.x";
         }
-        if (major > 1 || minor >= 26) {
-            return "26.1.x";
+        if (major == 26) {
+            if (minor <= 1) {
+                return "26.1.x";
+            }
+            return "26.2.x";
+        }
+        if (major > 26) {
+            return "26.2.x";
         }
         return String.format(Locale.ROOT, "%d.%d.x", major, minor);
     }
