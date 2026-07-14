@@ -22,11 +22,13 @@ jobs:
             paper-version: '1.21.11-R0.1-SNAPSHOT'
             worldguard-version: '7.0.13'
             worldedit-version: '7.3.12'
+            mockbukkit-version: '4.114.0'
             run-tests: false
           - java-version: '25'
             paper-version: '26.1.2.build.74-stable'
             worldguard-version: '7.0.16'
             worldedit-version: '7.4.3'
+            mockbukkit-version: 'local'
             run-tests: true
 
     steps:
@@ -49,11 +51,11 @@ jobs:
 
       - name: Build plugin (Java 21 compatibility lane)
         if: ${{ !matrix.run-tests }}
-        run: mvn -B -ntp clean package -pl bootstrap-paper -am -Dmaven.test.skip=true -Dpaper.version=${{ matrix.paper-version }} -Dworldguard.version=${{ matrix.worldguard-version }} -Dworldedit.version=${{ matrix.worldedit-version }}
+        run: mvn -B -ntp clean package -pl bootstrap-paper -am -Dmaven.test.skip=true -Dpaper.version=${{ matrix.paper-version }} -Dworldguard.version=${{ matrix.worldguard-version }} -Dworldedit.version=${{ matrix.worldedit-version }} -Dmockbukkit.version=${{ matrix.mockbukkit-version }}
 
       - name: Verify plugin build
         if: matrix.run-tests
-        run: mvn -B -ntp clean verify -pl bootstrap-paper -am -Dpaper.version=${{ matrix.paper-version }} -Dworldguard.version=${{ matrix.worldguard-version }} -Dworldedit.version=${{ matrix.worldedit-version }}
+        run: mvn -B -ntp clean verify -pl bootstrap-paper -am -Dpaper.version=${{ matrix.paper-version }} -Dworldguard.version=${{ matrix.worldguard-version }} -Dworldedit.version=${{ matrix.worldedit-version }} -Dmockbukkit.version=${{ matrix.mockbukkit-version }}
 
       - name: Upload coverage to Codecov
         if: matrix.run-tests

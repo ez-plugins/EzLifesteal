@@ -28,6 +28,7 @@
         <paper.version>26.1.2.build.74-stable</paper.version>
         <worldguard.version>7.0.16</worldguard.version>
         <worldedit.version>7.4.3</worldedit.version>
+        <mockbukkit.version>local</mockbukkit.version>
         <jar.version.hyphenated>${project.version}</jar.version.hyphenated>
         <junit.version>6.0.3</junit.version>
         <mockito.version>5.2.0</mockito.version>
@@ -132,7 +133,7 @@
             <dependency>
                 <groupId>org.mockbukkit.mockbukkit</groupId>
                 <artifactId>mockbukkit-v26.1.2</artifactId>
-                <version>local</version>
+                <version>${mockbukkit.version}</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>
