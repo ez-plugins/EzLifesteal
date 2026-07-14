@@ -5,11 +5,15 @@ import com.skyblockexp.ezlifesteal.config.MessageService;
 import com.skyblockexp.ezlifesteal.model.LifestealProfile;
 import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
 import com.skyblockexp.ezlifesteal.service.LifestealManager;
+import com.skyblockexp.ezlifesteal.storage.StorageException;
+import com.skyblockexp.ezlifesteal.storage.repository.BanRepository;
 import com.skyblockexp.ezlifesteal.util.PlayerLookupService;
 import com.skyblockexp.ezlifesteal.util.ban.PlatformBanAdapter;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.logging.Logger;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
@@ -27,6 +31,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ReviveSubcommandTest {
+
+    private static final Executor DIRECT_EXECUTOR = command -> command.run();
 
     @Test
     void permissionDenied_returnsEarly() {
@@ -52,13 +58,25 @@ class ReviveSubcommandTest {
         when(context.requirePermissionPublic(any(), anyString(), any())).thenReturn(true);
         when(context.getPluginAccessorPublic()).thenReturn(plugin);
         when(context.getPlayerLookupServicePublic()).thenReturn(lookup);
-        when(context.getMainThreadExecutorPublic()).thenReturn(Runnable::run);
+        when(context.getMainThreadExecutorPublic()).thenReturn(DIRECT_EXECUTOR);
         when(plugin.getLifestealManager()).thenReturn(manager);
         when(lookup.lookupUniqueId("ghost")).thenReturn(CompletableFuture.completedFuture(Optional.empty()));
 
         new ReviveSubcommand().execute(sender, null, "lifesteal", new String[]{"revive", "ghost"}, context);
 
         verify(context).sendPlayerNotFoundPublic(sender, "ghost");
+    }
+
+    @Test
+    void missingArgs_sendsUsageMessage() {
+        LifestealCommand context = mock(LifestealCommand.class);
+        CommandSender sender = mock(CommandSender.class);
+
+        when(context.requirePermissionPublic(any(), anyString(), any())).thenReturn(true);
+
+        new ReviveSubcommand().execute(sender, null, "lifesteal", new String[]{"revive"}, context);
+
+        verify(sender).sendMessage("Usage: /lifesteal revive <player>");
     }
 
     @Test
@@ -78,7 +96,7 @@ class ReviveSubcommandTest {
         when(context.requirePermissionPublic(any(), anyString(), any())).thenReturn(true);
         when(context.getPluginAccessorPublic()).thenReturn(plugin);
         when(context.getPlayerLookupServicePublic()).thenReturn(lookup);
-        when(context.getMainThreadExecutorPublic()).thenReturn(Runnable::run);
+        when(context.getMainThreadExecutorPublic()).thenReturn(DIRECT_EXECUTOR);
         when(context.resolvePlayerNamePublic(any(), anyString())).thenReturn("target");
         when(context.formatPublic(anyDouble())).thenReturn("6");
         when(plugin.getLifestealManager()).thenReturn(manager);
@@ -99,6 +117,49 @@ class ReviveSubcommandTest {
         verify(manager).saveProfileAsync(profile);
         verify(banAdapter).removeBan(targetId, "target");
         verify(plugin).requestTopHologramUpdate();
+        verify(messageService).sendMessage(eq(sender), eq("revive-success"), anyMap());
+    }
+
+    @Test
+    void success_logsWarningWhenPersistedBanRemovalFails() throws Exception {
+        LifestealCommand context = mock(LifestealCommand.class);
+        PluginAccessor plugin = mock(PluginAccessor.class);
+        LifestealManager manager = mock(LifestealManager.class);
+        PlayerLookupService lookup = mock(PlayerLookupService.class);
+        MessageService messageService = mock(MessageService.class);
+        CommandSender sender = mock(CommandSender.class);
+        PlatformBanAdapter banAdapter = mock(PlatformBanAdapter.class);
+        BanRepository banRepository = mock(BanRepository.class);
+        Logger logger = mock(Logger.class);
+
+        UUID targetId = UUID.randomUUID();
+        LifestealProfile profile = new LifestealProfile(targetId, 1.0);
+        OfflinePlayer offline = mock(OfflinePlayer.class);
+
+        when(context.requirePermissionPublic(any(), anyString(), any())).thenReturn(true);
+        when(context.getPluginAccessorPublic()).thenReturn(plugin);
+        when(context.getPlayerLookupServicePublic()).thenReturn(lookup);
+        when(context.getMainThreadExecutorPublic()).thenReturn(DIRECT_EXECUTOR);
+        when(context.resolvePlayerNamePublic(any(), anyString())).thenReturn("target");
+        when(context.formatPublic(anyDouble())).thenReturn("6");
+        when(plugin.getLifestealManager()).thenReturn(manager);
+        when(plugin.getMessageService()).thenReturn(messageService);
+        when(plugin.getBanAdapter()).thenReturn(banAdapter);
+        when(plugin.getBanRepository()).thenReturn(banRepository);
+        when(plugin.getLogger()).thenReturn(logger);
+        when(manager.getDefaultHearts()).thenReturn(6.0);
+        when(lookup.lookupUniqueId("target")).thenReturn(CompletableFuture.completedFuture(Optional.of(targetId)));
+        when(manager.loadProfileAsync(targetId)).thenReturn(CompletableFuture.completedFuture(profile));
+        when(offline.isOnline()).thenReturn(false);
+        when(offline.getUniqueId()).thenReturn(targetId);
+        org.mockito.Mockito.doThrow(new StorageException("db down")).when(banRepository).removeBan(targetId);
+
+        try (MockedStatic<Bukkit> mocked = mockStatic(Bukkit.class)) {
+            mocked.when(() -> Bukkit.getOfflinePlayer(targetId)).thenReturn(offline);
+            new ReviveSubcommand().execute(sender, null, "lifesteal", new String[]{"revive", "target"}, context);
+        }
+
+        verify(logger).warning(org.mockito.Mockito.contains("Failed to remove persisted ban record"));
         verify(messageService).sendMessage(eq(sender), eq("revive-success"), anyMap());
     }
 }

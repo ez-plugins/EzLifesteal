@@ -7,6 +7,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 
 public class RecipeService {
 
@@ -15,6 +16,8 @@ public class RecipeService {
     private final HeartRecipeParser parser;
 
     private final HeartRecipeRegistrar registrar;
+
+    private final Plugin plugin;
 
 
     public RecipeService(DefaultPluginRuntimeServices services) {
@@ -25,6 +28,7 @@ public class RecipeService {
         this.services = services;
         this.parser = parser;
         this.registrar = registrar;
+        this.plugin = services.getPlugin();
     }
 
     public void registerHeartRecipes() {
@@ -58,13 +62,9 @@ public class RecipeService {
                 result.setAmount(spec.amount());
                 final NamespacedKey key = services.createNamespacedKey("heart_" + heartId);
 
-                if (registrar.register(spec, key, result)) {
-                    services.addRegisteredHeartRecipe(key);
-                    services.getLogger().info("Registered " + spec.type() + " heart recipe for '" + heartId + "'.");
-                }
-                else {
-                    services.getLogger().warning("Bukkit rejected " + spec.type() + " recipe for '" + heartId + "'.");
-                }
+                registrar.register(spec, key, result, plugin);
+                services.addRegisteredHeartRecipe(key);
+                services.getLogger().info("Registered " + spec.type() + " heart recipe for '" + heartId + "'.");
             }
             catch (HeartRecipeParseException exception) {
                 services.getLogger().warning(exception.getMessage());

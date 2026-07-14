@@ -5,6 +5,7 @@ import com.skyblockexp.ezlifesteal.api.event.BeaconExpiredEvent;
 import com.skyblockexp.ezlifesteal.api.event.BeaconSpawnEvent;
 import com.skyblockexp.ezlifesteal.api.event.BeaconUsedEvent;
 import com.skyblockexp.ezlifesteal.config.BeaconSpawnSettings;
+import com.skyblockexp.ezlifesteal.compat.AdapterSupport;
 import com.skyblockexp.ezlifesteal.integration.BeaconAreaProtection;
 import com.skyblockexp.ezlifesteal.integration.BeaconCountdownProvider;
 import com.skyblockexp.ezlifesteal.model.SpawnedBeacon;
@@ -153,7 +154,7 @@ public final class BeaconSpawnService {
         final BeaconSpawnEvent spawnEvent = new BeaconSpawnEvent(beacon);
         Bukkit.getPluginManager().callEvent(spawnEvent);
         if (spawnEvent.isCancelled()) {
-            cleanupBeacon(beacon);
+            cleanupBeacon(beacon, accessor);
             logger.info("Beacon spawn at " + world.getName() + " "
                     + location.getBlockX() + " " + location.getBlockY() + " "
                     + location.getBlockZ() + " was cancelled by a plugin event listener.");
@@ -195,7 +196,7 @@ public final class BeaconSpawnService {
             return;
         }
         final SpawnedBeacon beacon = optBeacon.get();
-        cleanupBeacon(beacon);
+        cleanupBeacon(beacon, accessor);
         lastBeaconEndedAtMillis = System.currentTimeMillis();
         logger.info("Despawned beacon " + beacon.shortId()
                 + " (status=" + beacon.getStatus() + ").");
@@ -265,7 +266,7 @@ public final class BeaconSpawnService {
         repository.findByLocation(blockLocation).ifPresent(beacon -> {
             if (beacon.getStatus() == SpawnedBeaconStatus.AVAILABLE) {
                 beacon.setStatus(SpawnedBeaconStatus.USED);
-                cleanupBeacon(beacon);
+                cleanupBeacon(beacon, accessor);
                 repository.remove(beacon.getId());
                 lastBeaconEndedAtMillis = System.currentTimeMillis();
                 Bukkit.getPluginManager().callEvent(new BeaconUsedEvent(beacon));
@@ -408,24 +409,26 @@ public final class BeaconSpawnService {
         }
         final SpawnedBeacon beacon = optBeacon.get();
         beacon.setStatus(SpawnedBeaconStatus.EXPIRED);
-        cleanupBeacon(beacon);
+        cleanupBeacon(beacon, accessor);
         lastBeaconEndedAtMillis = System.currentTimeMillis();
         Bukkit.getPluginManager().callEvent(new BeaconExpiredEvent(beacon));
         logger.info("Beacon " + beacon.shortId() + " expired and was removed.");
     }
 
-    private void cleanupBeacon(SpawnedBeacon beacon) {
+    private void cleanupBeacon(SpawnedBeacon beacon, PluginAccessor accessor) {
         // Remove beacon block
         final Location loc = beacon.getLocation();
         final World world = loc.getWorld();
-        if (world != null && loc.getBlock().getType() == Material.BEACON) {
-            loc.getBlock().setType(Material.AIR, false);
-        }
-        // Remove glowing Shulker entity
-        removeGlowEntity(beacon, world);
-        // Unprotect WG region
-        if (areaProtection != null && beacon.getWgRegionId() != null) {
-            areaProtection.unprotect(beacon.getWgRegionId(), world);
+        if (world != null) {
+            AdapterSupport.runAtLocation(accessor.getPlugin(), loc, () -> {
+                if (loc.getBlock().getType() == Material.BEACON) {
+                    loc.getBlock().setType(Material.AIR, false);
+                }
+                removeGlowEntity(beacon, world);
+                if (areaProtection != null && beacon.getWgRegionId() != null) {
+                    areaProtection.unprotect(beacon.getWgRegionId(), world);
+                }
+            });
         }
         // Cancel EzCountdown timer
         if (countdownProvider != null && beacon.getCountdownId() != null) {

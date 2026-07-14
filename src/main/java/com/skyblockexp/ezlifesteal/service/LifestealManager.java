@@ -129,8 +129,11 @@ public class LifestealManager {
         final double maxHealth = Math.max(2.0, Math.min(maxHearts * 2.0, profile.getHearts() * 2.0));
         final Attribute resolvedAttribute = healthAttributeResolver.resolveMaxHealthAttribute();
         var attribute = player.getAttribute(resolvedAttribute);
-        if (attribute == null && resolvedAttribute != Attribute.MAX_HEALTH) {
-            attribute = player.getAttribute(Attribute.MAX_HEALTH);
+        if (attribute == null) {
+            final Attribute fallbackAttribute = resolveAttributeByFieldName("MAX_HEALTH");
+            if (fallbackAttribute != null && fallbackAttribute != resolvedAttribute) {
+                attribute = player.getAttribute(fallbackAttribute);
+            }
         }
         if (attribute != null) {
             attribute.setBaseValue(maxHealth);
@@ -145,6 +148,18 @@ public class LifestealManager {
         else {
             player.setHealthScaled(false);
         }
+    }
+
+    private Attribute resolveAttributeByFieldName(String fieldName) {
+        try {
+            final Object value = Attribute.class.getField(fieldName).get(null);
+            if (value instanceof Attribute attribute) {
+                return attribute;
+            }
+        }
+        catch (Throwable ignored) {
+        }
+        return null;
     }
 
     public double getDefaultHearts() {

@@ -8,29 +8,195 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  USER_AGENT: EzLifesteal-SmokeTest/1.0 (https://github.com/gyvex/EzPlugins)
+
 jobs:
+  build-plugin:
+    name: Build plugin JAR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Build plugin JAR (skip tests)
+        run: mvn -B -ntp clean package -pl bootstrap-paper -am -DskipTests
+
+      - name: Upload plugin JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ezlifesteal-plugin-jar
+          path: |
+            bootstrap-paper/target/ezlifesteal-v*.jar
+            !bootstrap-paper/target/original-*.jar
+          if-no-files-found: error
+          retention-days: 1
+
   smoke-tests:
-    name: Server startup smoke tests
+    name: ${{ matrix.server-id }} / Java ${{ matrix.java-version }}
+    needs: build-plugin
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        java-version: ['21', '25']
+        server-id: ['paper-1-21', 'paper-26-2', 'folia-1-21', 'spigot-1-21', 'spigot-26-2']
+        include:
+          - server-id: paper-1-21
+            server-project: paper
+            server-version: '1.21.11'
+            server-download-mode: fill
+          - server-id: paper-26-2
+            server-project: paper
+            server-version: '26.2'
+            server-download-mode: fill
+          - server-id: folia-1-21
+            server-project: folia
+            server-version: '1.21.4'
+            server-download-mode: fill
+          - server-id: spigot-1-21
+            server-project: spigot
+            server-version: '1.21.11'
+            server-download-mode: buildtools
+          - server-id: spigot-26-2
+            server-project: spigot
+            server-version: '26.2'
+            server-download-mode: buildtools
+        exclude:
+          - java-version: '21'
+            server-id: paper-26-2
+          - java-version: '21'
+            server-id: spigot-26-2
+
     steps:
       - uses: actions/checkout@v6
 
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '25'
-          cache: maven
+          java-version: ${{ matrix.java-version }}
+      - name: Download built plugin JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: ezlifesteal-plugin-jar
+          path: plugin
 
-      - name: Build and install MockBukkit minecraft/v26
+      - name: Locate plugin JAR
+        id: plugin-jar
         run: |
-          git clone --depth=1 --branch minecraft/v26 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
-          sed -i 's/^mockbukkit\.version=$/mockbukkit.version=local/' /tmp/MockBukkit/gradle.properties
-          cd /tmp/MockBukkit && GITHUB_REPOSITORY=MockBukkit/MockBukkit ./gradlew publishToMavenLocal -xtest -xjavadoc
+          JAR=$(find plugin -maxdepth 1 -type f -name '*.jar' ! -name 'original-*' | head -n1)
+          if [ -z "$JAR" ]; then
+            echo "No plugin JAR found in artifact"
+            exit 1
+          fi
+          echo "path=$JAR" >> "$GITHUB_OUTPUT"
+          echo "Using plugin jar: $JAR"
 
-      - name: Build plugin JAR (skip unit tests)
-        run: mvn -B -ntp package -DskipTests
+      - name: Download ${{ matrix.server-project }} ${{ matrix.server-version }}
+        if: matrix.server-download-mode == 'fill'
+        run: |
+          API="https://fill.papermc.io/v3/projects/${{ matrix.server-project }}/versions/${{ matrix.server-version }}/builds"
+          URL=$(curl -sf -H "User-Agent: $USER_AGENT" "$API" | python3 -c '
+import json, sys
+builds = json.load(sys.stdin)
+if not builds:
+    print("")
+    raise SystemExit(0)
+stable = next((b for b in builds if b.get("channel") == "STABLE"), builds[0])
+print(stable.get("downloads", {}).get("server:default", {}).get("url", ""))
+')
+          if [ -z "$URL" ] || [ "$URL" = "null" ]; then
+            echo "No download URL found for ${{ matrix.server-project }} ${{ matrix.server-version }}"
+            exit 1
+          fi
+          curl -sfLo server.jar -H "User-Agent: $USER_AGENT" "$URL"
+          echo "Downloaded server from: $URL"
 
-      - name: Run smoke tests
-        timeout-minutes: 25
-        run: mvn -B -ntp verify -Psmoke-tests -DskipTests=false
+      - name: Build Spigot ${{ matrix.server-version }} server.jar
+        if: matrix.server-download-mode == 'buildtools'
+        timeout-minutes: 20
+        run: |
+          curl -sfLo BuildTools.jar -H "User-Agent: $USER_AGENT" https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar
+          java -jar BuildTools.jar --rev ${{ matrix.server-version }} --compile SPIGOT
+          JAR=$(find . -maxdepth 2 -type f -name 'spigot-*.jar' | head -n1)
+          if [ -z "$JAR" ]; then
+            echo "BuildTools did not produce a spigot server jar"
+            exit 1
+          fi
+          cp "$JAR" server.jar
+          echo "Using Spigot server jar: $JAR"
+
+      - name: Run full startup smoke test
+        timeout-minutes: 6
+        run: |
+          mkdir -p server/plugins
+          cp "${{ steps.plugin-jar.outputs.path }}" server/plugins/
+
+          printf 'eula=true\n' > server/eula.txt
+          printf 'online-mode=false\n' > server/server.properties
+
+          cd server
+          java -Xms256M -Xmx1G -jar ../server.jar --nogui < /dev/null > server.log 2>&1 &
+          SERVER_PID=$!
+
+          echo "Started PID=$SERVER_PID server=${{ matrix.server-id }} java=${{ matrix.java-version }}"
+
+          FAIL_PAT='NoSuchMethodError|NoSuchFieldError|Error enabling plugin EzLifesteal|Error occurred while enabling EzLifesteal|Exception in thread "Server thread"'
+          RESULT=timeout
+
+          for i in $(seq 1 150); do
+            sleep 1
+
+            if grep -qE "$FAIL_PAT" server.log 2>/dev/null; then
+              RESULT=fail
+              break
+            fi
+
+            if grep -qE 'Done \([0-9.]+' server.log 2>/dev/null; then
+              if grep -qE "$FAIL_PAT" server.log 2>/dev/null; then
+                RESULT=fail
+              else
+                RESULT=pass
+              fi
+              break
+            fi
+
+            if grep -q 'Enabling EzLifesteal' server.log 2>/dev/null; then
+              sleep 5
+              if grep -qE "$FAIL_PAT" server.log 2>/dev/null; then
+                RESULT=fail
+              else
+                RESULT=pass
+              fi
+              break
+            fi
+          done
+
+          kill -9 "$SERVER_PID" 2>/dev/null || true
+          wait "$SERVER_PID" 2>/dev/null || true
+
+          echo ""
+          echo "=== Error context in server.log ==="
+          grep -n -B1 -A25 -E 'Error occurred while enabling|Error enabling plugin|NoSuchMethodError|NoSuchFieldError|Exception in thread "Server thread"' server.log | head -80 || true
+          echo ""
+          echo "=== Last 100 lines of server.log ==="
+          tail -100 server.log || true
+          echo "====================================="
+          echo ""
+
+          if [ "$RESULT" = 'pass' ]; then
+            echo "PASS: EzLifesteal started on ${{ matrix.server-id }} / Java ${{ matrix.java-version }}"
+          elif [ "$RESULT" = 'fail' ]; then
+            echo "FAIL: EzLifesteal threw an error during startup"
+            exit 1
+          else
+            echo "FAIL: Timed out waiting for startup completion"
+            exit 1
+          fi

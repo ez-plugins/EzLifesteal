@@ -1,5 +1,6 @@
 package com.skyblockexp.ezlifesteal;
 
+import com.skyblockexp.ezlifesteal.compat.AdapterSupport;
 import com.skyblockexp.ezlifesteal.config.MessageService;
 import com.skyblockexp.ezlifesteal.detector.SmurfDetector;
 import com.skyblockexp.ezlifesteal.heart.HeartRegistry;
@@ -30,6 +31,7 @@ public class EzLifestealPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        getLogger().info("Selected runtime adapter: " + AdapterSupport.resolveRuntimeAdapterId());
         final Bootstrap bootstrap = new Bootstrap(this, registry);
         registry.setBootstrap(bootstrap);
         bootstrap.start();

@@ -1,5 +1,7 @@
 package com.skyblockexp.ezlifesteal.gui;
 
+import com.skyblockexp.ezlifesteal.compat.AdapterSupport;
+import com.skyblockexp.ezlifesteal.compat.ShopPersistentKeys;
 import com.skyblockexp.ezlifesteal.heart.Heart;
 import com.skyblockexp.ezlifesteal.util.NumberFormatUtil;
 import java.math.BigDecimal;
@@ -7,7 +9,6 @@ import java.math.RoundingMode;
 import java.util.List;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.ChatColor;
-import org.bukkit.NamespacedKey;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -16,15 +17,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 public class ShopGuiListener implements Listener {
-    private static final NamespacedKey SHOP_ID_KEY = new NamespacedKey("ezlifesteal", "shop_id");
-
-    private static final NamespacedKey SHOP_PRICE_KEY = new NamespacedKey("ezlifesteal", "shop_price");
-
-    private static final NamespacedKey SHOP_QTY_KEY = new NamespacedKey("ezlifesteal", "shop_qty");
-
-    private static final NamespacedKey SHOP_COMMANDS_KEY = new NamespacedKey("ezlifesteal", "shop_cmds");
-
-
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getInventory().getHolder() instanceof ShopMenu menu)) {
@@ -50,10 +42,12 @@ public class ShopGuiListener implements Listener {
         Integer storedQuantity = null;
         String storedCommands = null;
         if (persistentDataContainer != null) {
-            heartId = persistentDataContainer.get(SHOP_ID_KEY, PersistentDataType.STRING);
-            storedPrice = persistentDataContainer.get(SHOP_PRICE_KEY, PersistentDataType.DOUBLE);
-            storedQuantity = persistentDataContainer.get(SHOP_QTY_KEY, PersistentDataType.INTEGER);
-            storedCommands = persistentDataContainer.get(SHOP_COMMANDS_KEY, PersistentDataType.STRING);
+            heartId = persistentDataContainer.get(ShopPersistentKeys.shopIdKey(), PersistentDataType.STRING);
+            storedPrice = persistentDataContainer.get(ShopPersistentKeys.shopPriceKey(), PersistentDataType.DOUBLE);
+            storedQuantity =
+                persistentDataContainer.get(ShopPersistentKeys.shopQuantityKey(), PersistentDataType.INTEGER);
+            storedCommands =
+                persistentDataContainer.get(ShopPersistentKeys.shopCommandsKey(), PersistentDataType.STRING);
         }
 
         if (storedPrice != null) {
@@ -139,7 +133,7 @@ public class ShopGuiListener implements Listener {
                 toGive.setAmount(Math.max(1, Math.min(toGive.getMaxStackSize(), quantity)));
                 final var leftover = player.getInventory().addItem(toGive);
                 if (!leftover.isEmpty()) {
-                    player.getWorld().dropItemNaturally(player.getLocation(), toGive);
+                    AdapterSupport.dropItemLeftoversAtPlayer(plugin, player, leftover);
                 }
                 player.sendMessage(plugin.getMessageService().getPrefix()
                         + "Purchase successful for " + NumberFormatUtil.formatCompact(chargeAmount) + ".");

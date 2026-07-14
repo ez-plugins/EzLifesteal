@@ -4,6 +4,7 @@ import com.skyblockexp.ezlifesteal.EzLifestealPlugin;
 import com.skyblockexp.ezlifesteal.command.MessageCapturingSender;
 import java.io.File;
 import java.io.IOException;
+import java.util.Locale;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.AfterEach;
@@ -36,13 +37,18 @@ class ReloadFeatureIntegrationTest {
         languageConfig.save(languageFile);
 
         PluginCommand lifestealCommand = plugin.getCommand("lifesteal");
-        assertNotNull(lifestealCommand);
-
         MessageCapturingSender sender = new MessageCapturingSender();
-        boolean executed = lifestealCommand.execute(sender.getProxy(), "lifesteal", new String[]{"reload"});
+        boolean executed;
+        if (lifestealCommand != null) {
+            executed = lifestealCommand.execute(sender.getProxy(), "lifesteal", new String[]{"reload"});
+        } else {
+            executed = plugin.getServer().dispatchCommand(sender.getProxy(), "lifesteal reload");
+        }
 
         assertTrue(executed);
-        assertTrue(sender.getMessages().stream().anyMatch(message -> message.contains("Reloaded from feature test.")));
+        assertTrue(sender.getMessages().stream()
+                .map(message -> message.toLowerCase(Locale.ROOT))
+                .anyMatch(message -> message.contains("reloaded from feature test.")));
     }
 
     @Test

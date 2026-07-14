@@ -1,6 +1,7 @@
 package com.skyblockexp.ezlifesteal.gui;
 
 import com.skyblockexp.ezlifesteal.EzLifestealPlugin;
+import com.skyblockexp.ezlifesteal.compat.ShopPersistentKeys;
 import com.skyblockexp.ezlifesteal.heart.Heart;
 import com.skyblockexp.ezlifesteal.heart.HeartRegistry;
 import com.skyblockexp.ezlifesteal.util.NumberFormatUtil;
@@ -18,15 +19,6 @@ import org.bukkit.persistence.PersistentDataType;
 
 public class ShopMenu extends AbstractSmurfMenu {
     private static final String META_COMMAND_SEPARATOR = ";;";
-
-    private static final NamespacedKey SHOP_ID_KEY = new NamespacedKey("ezlifesteal", "shop_id");
-
-    private static final NamespacedKey SHOP_PRICE_KEY = new NamespacedKey("ezlifesteal", "shop_price");
-
-    private static final NamespacedKey SHOP_QTY_KEY = new NamespacedKey("ezlifesteal", "shop_qty");
-
-    private static final NamespacedKey SHOP_COMMANDS_KEY = new NamespacedKey("ezlifesteal", "shop_cmds");
-
 
     public ShopMenu(EzLifestealPlugin plugin, Player viewer) {
         super(
@@ -106,12 +98,15 @@ public class ShopMenu extends AbstractSmurfMenu {
                     effectiveLore
                             .add(ChatColor.GRAY + "Price: " + ChatColor.GOLD + NumberFormatUtil.formatCompact(price));
 
-                    meta.getPersistentDataContainer().set(SHOP_ID_KEY, PersistentDataType.STRING, heartId);
-                    meta.getPersistentDataContainer().set(SHOP_PRICE_KEY, PersistentDataType.DOUBLE, price);
-                    meta.getPersistentDataContainer().set(SHOP_QTY_KEY, PersistentDataType.INTEGER, quantity);
+                    meta.getPersistentDataContainer()
+                        .set(ShopPersistentKeys.shopIdKey(), PersistentDataType.STRING, heartId);
+                    meta.getPersistentDataContainer()
+                        .set(ShopPersistentKeys.shopPriceKey(), PersistentDataType.DOUBLE, price);
+                    meta.getPersistentDataContainer()
+                        .set(ShopPersistentKeys.shopQuantityKey(), PersistentDataType.INTEGER, quantity);
                     if (commands != null && !commands.isEmpty()) {
                         meta.getPersistentDataContainer()
-                            .set(SHOP_COMMANDS_KEY, PersistentDataType.STRING,
+                            .set(ShopPersistentKeys.shopCommandsKey(), PersistentDataType.STRING,
                                     String.join(META_COMMAND_SEPARATOR, commands));
                     }
 

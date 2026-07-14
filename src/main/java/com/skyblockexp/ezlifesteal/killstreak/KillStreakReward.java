@@ -1,15 +1,14 @@
 package com.skyblockexp.ezlifesteal.killstreak;
 
 import com.skyblockexp.ezlifesteal.EzLifestealPlugin;
+import com.skyblockexp.ezlifesteal.compat.AdapterSupport;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -105,16 +104,13 @@ public class KillStreakReward {
         if (items.isEmpty()) {
             return;
         }
-        final Location location = player.getLocation();
         for (ItemStack item : items) {
             if (item == null) {
                 continue;
             }
             final var leftovers = player.getInventory().addItem(item.clone());
             if (!leftovers.isEmpty()) {
-                leftovers.values().stream()
-                        .filter(Objects::nonNull)
-                        .forEach(leftover -> player.getWorld().dropItemNaturally(location, leftover));
+                AdapterSupport.dropItemLeftoversAtPlayer(plugin, player, leftovers);
             }
         }
     }

@@ -1,13 +1,33 @@
-# Build output
-/target/
+# Build output (multi-module Maven + local runtime helpers)
+**/target/
 /build/
+/build/tmp/
+
+# Local smoke/server runtime artifacts
+/server/
+server.log
+hs_err_pid*
+
+# Maven wrapper helper artifacts
+.mvn/timing.properties
 
 # IntelliJ
 /.idea/
 *.iml
 
+# Eclipse/STS
+.classpath
+.project
+.settings/
+
 # VS Code
 /.vscode/
+.kilo
+
+# Env/local secrets
+.env
+.env.*
+!.env.example
 
 # OS files
 .DS_Store

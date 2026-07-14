@@ -1,6 +1,7 @@
 package com.skyblockexp.ezlifesteal.hologram;
 
 import com.skyblockexp.ezlifesteal.EzLifestealPlugin;
+import com.skyblockexp.ezlifesteal.compat.AdapterSupport;
 import com.skyblockexp.ezlifesteal.config.MessageService;
 import com.skyblockexp.ezlifesteal.model.LifestealProfile;
 import com.skyblockexp.ezlifesteal.service.LifestealManager;
@@ -162,7 +163,7 @@ public class TopHologramManager {
             removeArmorStands();
         }
         else {
-            SchedulerAdapter.run(plugin, this::removeArmorStands);
+            AdapterSupport.runOnMain(plugin, this::removeArmorStands);
         }
         baseLocation = null;
     }
@@ -228,7 +229,11 @@ public class TopHologramManager {
         if (lines == null) {
             return;
         }
-        SchedulerAdapter.run(plugin, () -> {
+        final Location currentBaseLocation = baseLocation;
+        if (currentBaseLocation == null) {
+            return;
+        }
+        AdapterSupport.runAtLocation(plugin, currentBaseLocation, () -> {
             if (!hasHologram()) {
                 return;
             }
@@ -244,7 +249,11 @@ public class TopHologramManager {
 
     private void ensureArmorStandCount(int required) {
         if (!Bukkit.isPrimaryThread()) {
-            SchedulerAdapter.run(plugin, () -> ensureArmorStandCount(required));
+            final Location currentBaseLocation = baseLocation;
+            if (currentBaseLocation == null) {
+                return;
+            }
+            AdapterSupport.runAtLocation(plugin, currentBaseLocation, () -> ensureArmorStandCount(required));
             return;
         }
         if (baseLocation == null) {

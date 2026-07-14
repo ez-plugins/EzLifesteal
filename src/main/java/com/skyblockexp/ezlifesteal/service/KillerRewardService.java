@@ -1,8 +1,8 @@
 package com.skyblockexp.ezlifesteal.service;
 
+import com.skyblockexp.ezlifesteal.compat.AdapterSupport;
 import com.skyblockexp.ezlifesteal.model.LifestealProfile;
 import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
-import com.skyblockexp.ezlifesteal.util.SchedulerAdapter;
 import java.util.Map;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -49,13 +49,13 @@ public class KillerRewardService {
 
         final com.skyblockexp.ezlifesteal.heart.Heart selected = heart;
         final int giveAmount = Math.max(1, plugin.getDropHeartAmount());
-        SchedulerAdapter.run(plugin.getPlugin(), () -> {
+        AdapterSupport.runForPlayer(plugin.getPlugin(), killer, () -> {
             final ItemStack stack = selected.createItemStack();
             for (int i = 0; i < giveAmount; i++) {
                 final ItemStack toGive = stack.clone();
                 final Map<Integer, ItemStack> leftover = killer.getInventory().addItem(toGive);
                 if (!leftover.isEmpty()) {
-                    killer.getWorld().dropItemNaturally(killer.getLocation(), toGive);
+                    AdapterSupport.dropItemLeftoversAtPlayer(plugin.getPlugin(), killer, leftover);
                 }
             }
         });
@@ -72,7 +72,7 @@ public class KillerRewardService {
                         + killer.getName() + ": " + throwable.getMessage());
             }
         });
-        SchedulerAdapter.run(plugin.getPlugin(), () -> {
+        AdapterSupport.runForPlayer(plugin.getPlugin(), killer, () -> {
             manager.applyHearts(killer, killerProfile);
             plugin.sendHeartStatus(killer, killerProfile.getHearts());
         });

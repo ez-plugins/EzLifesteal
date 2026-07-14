@@ -39,12 +39,13 @@ class ShopGuiListenerTest {
 
     private ServerMock server;
 
-    private final ShopGuiListener listener = new ShopGuiListener();
+    private ShopGuiListener listener;
 
 
     @BeforeEach
     void setUp() {
         server = MockBukkit.mock();
+        listener = new ShopGuiListener();
     }
 
     @AfterEach

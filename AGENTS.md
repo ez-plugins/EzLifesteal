@@ -32,6 +32,7 @@ com.skyblockexp.ezlifesteal
 ├── config/                  # Configuration wrappers
 ├── model/                   # Data models
 ├── util/                    # Utility classes
+├── compat/                  # Java/API compatibility adapters and lazy Bukkit wrappers
 ├── hook/                    # External integrations
 ├── runtime/                 # Runtime orchestration and lifecycle classes
 ├── hologram/                # Hologram settings & adapters
@@ -229,6 +230,7 @@ These are concise, actionable rules contributors and the agent should follow whe
 
 - **Responsibilities:** Keep command/listener classes thin — delegate business logic to services under `service/`.
 - **Class layout:** Each new feature should be split across a small set of classes: a configuration wrapper (`config/`), a service (`service/`), a repository/storage adapter (`storage/`), and a thin command or listener class that wires them together.
+- **Java compatibility:** Put Java-version or API-compatibility logic under `compat/` and keep domain logic in regular feature packages. Prefer a small adapter in `compat/` over spreading reflection/version checks through commands, listeners, or services.
 - **Dependency injection:** Use constructor injection only. Instantiate root services in `EzLifestealPlugin` or `Bootstrap` and pass down via constructors. Avoid static singletons.
 - **Configuration:** Wrap `config.yml` sections in small POJOs under `config/`. Provide sensible defaults and a `reload()` entrypoint on runtime services.
 - **Async rules:** Never perform blocking I/O on the main thread. Use the storage executor returned by `getStorageExecutor()` for DB or file operations.
