@@ -103,15 +103,7 @@ jobs:
         if: matrix.server-download-mode == 'fill'
         run: |
           API="https://fill.papermc.io/v3/projects/${{ matrix.server-project }}/versions/${{ matrix.server-version }}/builds"
-          URL=$(curl -sf -H "User-Agent: $USER_AGENT" "$API" | python3 -c '
-import json, sys
-builds = json.load(sys.stdin)
-if not builds:
-    print("")
-    raise SystemExit(0)
-stable = next((b for b in builds if b.get("channel") == "STABLE"), builds[0])
-print(stable.get("downloads", {}).get("server:default", {}).get("url", ""))
-')
+            URL=$(curl -sf -H "User-Agent: $USER_AGENT" "$API" | python3 -c "import json,sys; builds=json.load(sys.stdin); print('' if not builds else next((b for b in builds if b.get('channel') == 'STABLE'), builds[0]).get('downloads', {}).get('server:default', {}).get('url', ''))")
           if [ -z "$URL" ] || [ "$URL" = "null" ]; then
             echo "No download URL found for ${{ matrix.server-project }} ${{ matrix.server-version }}"
             exit 1
@@ -136,6 +128,8 @@ print(stable.get("downloads", {}).get("server:default", {}).get("url", ""))
       - name: Run full startup smoke test
         timeout-minutes: 6
         run: |
+          set -euo pipefail
+
           mkdir -p server/plugins
           cp "${{ steps.plugin-jar.outputs.path }}" server/plugins/
 
@@ -148,7 +142,7 @@ print(stable.get("downloads", {}).get("server:default", {}).get("url", ""))
 
           echo "Started PID=$SERVER_PID server=${{ matrix.server-id }} java=${{ matrix.java-version }}"
 
-          FAIL_PAT='NoSuchMethodError|NoSuchFieldError|Error enabling plugin EzLifesteal|Error occurred while enabling EzLifesteal|Exception in thread "Server thread"'
+          FAIL_PAT='NoSuchMethodError|NoSuchFieldError|IllegalPluginAccessException|UnsupportedOperationException: You are trying to call JavaPlugin#getCommand|Failed to register events for class|Error enabling plugin EzLifesteal|Error occurred while enabling EzLifesteal|Exception in thread "Server thread"'
           RESULT=timeout
 
           for i in $(seq 1 150); do
@@ -160,17 +154,15 @@ print(stable.get("downloads", {}).get("server:default", {}).get("url", ""))
             fi
 
             if grep -qE 'Done \([0-9.]+' server.log 2>/dev/null; then
+              # Give the plugin a short window after full startup to expose delayed enable failures.
+              sleep 10
               if grep -qE "$FAIL_PAT" server.log 2>/dev/null; then
                 RESULT=fail
-              else
-                RESULT=pass
-              fi
-              break
-            fi
-
-            if grep -q 'Enabling EzLifesteal' server.log 2>/dev/null; then
-              sleep 5
-              if grep -qE "$FAIL_PAT" server.log 2>/dev/null; then
+              elif grep -q 'Disabling EzLifesteal' server.log 2>/dev/null; then
+                RESULT=fail
+              elif ! grep -q 'Enabling EzLifesteal' server.log 2>/dev/null; then
+                RESULT=fail
+              elif ! grep -q 'Selected runtime adapter:' server.log 2>/dev/null; then
                 RESULT=fail
               else
                 RESULT=pass

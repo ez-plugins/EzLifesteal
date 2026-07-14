@@ -1,6 +1,5 @@
 package com.skyblockexp.ezlifesteal.listener;
 
-import com.skyblockexp.ezcountdown.api.event.CountdownEndEvent;
 import com.skyblockexp.ezlifesteal.gui.BeaconInfoMenu;
 import com.skyblockexp.ezlifesteal.runtime.PluginAccessor;
 import com.skyblockexp.ezlifesteal.service.BeaconReviveService;
@@ -15,6 +14,7 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.Event;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -26,7 +26,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
  * Listens for external events that affect plugin-spawned beacons:
  *
  * <ul>
- *   <li>{@link CountdownEndEvent} — marks the beacon AVAILABLE when the EzCountdown timer ends.</li>
+ *   <li>EzCountdown end events — mark the beacon AVAILABLE when the timer ends.</li>
  *   <li>{@link BlockBreakEvent} — prevents players from breaking an active spawned beacon.</li>
  *   <li>Explosion events — prevents explosions from destroying spawned beacons.</li>
  * </ul>
@@ -57,9 +57,20 @@ public final class SpawnedBeaconListener implements Listener {
      * Triggered when an EzCountdown timer finishes.
      * Identifies beacons waiting on this countdown and marks them AVAILABLE.
      */
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onCountdownEnd(CountdownEndEvent event) {
-        final String countdownName = event.getCountdown().getName();
+    // Registered dynamically against EzCountdown's concrete CountdownEndEvent class.
+    public void onCountdownEnd(Event event) {
+        if (!"com.skyblockexp.ezcountdown.api.event.CountdownEndEvent".equals(event.getClass().getName())) {
+            return;
+        }
+
+        final String countdownName;
+        try {
+            final Object countdown = event.getClass().getMethod("getCountdown").invoke(event);
+            countdownName = String.valueOf(countdown.getClass().getMethod("getName").invoke(countdown));
+        } catch (ReflectiveOperationException ignored) {
+            return;
+        }
+
         if (!countdownName.startsWith(EZLS_COUNTDOWN_PREFIX)) {
             return;
         }

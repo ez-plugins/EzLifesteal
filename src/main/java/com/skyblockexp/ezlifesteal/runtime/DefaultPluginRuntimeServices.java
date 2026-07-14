@@ -93,7 +93,11 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 
@@ -138,6 +142,9 @@ public final class DefaultPluginRuntimeServices {
 
     private static final String LEGACY_SEASONS_INTEGRATION_CLASS_NAME =
             "com.skyblockexp.lifesteal.seasons.api.SeasonsIntegration";
+
+        private static final String EZCOUNTDOWN_END_EVENT_CLASS_NAME =
+            "com.skyblockexp.ezcountdown.api.event.CountdownEndEvent";
 
 
     public java.util.logging.Logger getLogger() {
@@ -1098,11 +1105,42 @@ public final class DefaultPluginRuntimeServices {
         final SpawnedBeaconListener listener =
                 new SpawnedBeaconListener(beaconSpawnService, pluginAccessor, plugin.getLogger());
         plugin.getServer().getPluginManager().registerEvents(listener, plugin);
+        registerEzCountdownEndEvent(listener);
         plugin.getServer().getPluginManager().registerEvents(new BeaconGuiListener(), plugin);
 
         // Start schedule
         beaconScheduleService = new BeaconScheduleService(beaconSpawnService, plugin.getLogger());
         beaconScheduleService.start(pluginAccessor);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void registerEzCountdownEndEvent(SpawnedBeaconListener listener) {
+        if (!Bukkit.getPluginManager().isPluginEnabled("EzCountdown")) {
+            return;
+        }
+
+        try {
+            final Class<?> rawEventClass = tryLoadClass(getClassLoader(), EZCOUNTDOWN_END_EVENT_CLASS_NAME);
+            if (rawEventClass == null || !Event.class.isAssignableFrom(rawEventClass)) {
+                plugin.getLogger().warning("BeaconSpawnFeature: EzCountdown CountdownEndEvent class not found.");
+                return;
+            }
+
+            final Class<? extends Event> eventClass = (Class<? extends Event>) rawEventClass;
+            final EventExecutor executor = (ignored, event) -> listener.onCountdownEnd(event);
+            plugin.getServer().getPluginManager().registerEvent(
+                    eventClass,
+                    listener,
+                    EventPriority.MONITOR,
+                    executor,
+                    plugin,
+                    true
+            );
+        }
+        catch (Throwable throwable) {
+            plugin.getLogger().warning("BeaconSpawnFeature: failed to register EzCountdown end listener: "
+                    + throwable.getMessage());
+        }
     }
 
     /**

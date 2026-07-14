@@ -5,7 +5,7 @@
 
     <groupId>com.skyblockexp.lifesteal</groupId>
     <artifactId>ezlifesteal-parent</artifactId>
-    <version>1.1.2</version>
+    <version>1.2.0</version>
     <packaging>pom</packaging>
 
     <name>EzLifesteal Parent</name>
@@ -25,11 +25,11 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>21</maven.compiler.release>
-        <paper.version>26.2.build.60-beta</paper.version>
-        <worldguard.version>7.0.16</worldguard.version>
-        <worldedit.version>7.4.3</worldedit.version>
-        <mockbukkit.artifactId>mockbukkit-v26.1.2</mockbukkit.artifactId>
-        <mockbukkit.version>local</mockbukkit.version>
+        <paper.version>1.21.11-R0.1-SNAPSHOT</paper.version>
+        <worldguard.version>7.0.13</worldguard.version>
+        <worldedit.version>7.3.12</worldedit.version>
+        <mockbukkit.artifactId>mockbukkit-v1.21</mockbukkit.artifactId>
+        <mockbukkit.version>4.110.0</mockbukkit.version>
         <jar.version.hyphenated>${project.version}</jar.version.hyphenated>
         <junit.version>6.0.3</junit.version>
         <mockito.version>5.2.0</mockito.version>
