@@ -12,6 +12,24 @@ Release tags use the `v` prefix (e.g. `v1.1.0`).
 
 ---
 
+## [1.2.0] - 2026-07-14
+
+### Added
+
+- Added adapter resolution support for the MC 26.2 line and Spigot runtime IDs (`spigot.26.2.x`) so runtime adapter selection remains deterministic on newer server versions.
+- Added/updated compatibility tests around adapter ID resolution and scheduler fallback behavior for mixed Paper/Folia/Spigot execution environments.
+
+### Changed
+
+- Bumped plugin/module version to `1.2.0`.
+- Updated CI/test workflows to use the valid MockBukkit branch `upgrade/v26.2` for local MockBukkit publishing in Java 25 / Paper 26.2 lanes.
+- Kept local default MockBukkit coordinates aligned with currently publishable local artifacts to avoid local package resolution failures while preserving CI lane overrides.
+
+### Fixed
+
+- Fixed runtime version-line normalization for Bukkit strings like `1.26.x` so they map to the 26.2 adapter family instead of producing `1.26.x` adapter IDs.
+- Fixed scheduler compatibility tests that were relying on typed Folia scheduler stubs and could fail with Mockito return-type mismatches.
+
 ## [1.1.2] - 2026-05-31
 
 ### Added

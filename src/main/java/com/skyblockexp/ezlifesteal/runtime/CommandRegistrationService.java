@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import org.bukkit.command.CommandMap;
+import org.bukkit.command.PluginCommand;
 
 public final class CommandRegistrationService {
 
@@ -51,7 +52,7 @@ public final class CommandRegistrationService {
         final SubcommandRegistry subcommandRegistry = createSubcommandRegistry();
         final LifestealCommand executor = new LifestealCommand(pluginAccessor, subcommandRegistry);
         final LifestealTabCompleter tabCompleter = new LifestealTabCompleter(plugin);
-        final var pluginCommand = plugin.getCommand("lifesteal");
+        final PluginCommand pluginCommand = safeGetCommand("lifesteal");
         if (pluginCommand != null) {
             pluginCommand.setExecutor(executor);
             pluginCommand.setTabCompleter(tabCompleter);
@@ -64,19 +65,19 @@ public final class CommandRegistrationService {
             }
         }
 
-        final var heartsCommand = plugin.getCommand("hearts");
+        final PluginCommand heartsCommand = safeGetCommand("hearts");
         if (heartsCommand != null) {
             heartsCommand.setExecutor(new HeartsCommand(executor));
         }
 
-        final var reviveCommand = plugin.getCommand("revive");
+        final PluginCommand reviveCommand = safeGetCommand("revive");
         if (reviveCommand != null) {
             reviveCommand.setExecutor(new ReviveCommand(
                     new BeaconReviveService(pluginAccessor, new ReviveAnimationService(pluginAccessor))
             ));
         }
 
-        final var beaconPluginCommand = plugin.getCommand("beacon");
+        final PluginCommand beaconPluginCommand = safeGetCommand("beacon");
         if (beaconPluginCommand != null) {
             final BeaconCommand beaconCmd = new BeaconCommand(executor, tabCompleter);
             beaconPluginCommand.setExecutor(beaconCmd);
@@ -158,5 +159,14 @@ public final class CommandRegistrationService {
             throw new UnsupportedOperationException("Server does not expose a command map instance");
         }
         commandMap.register(plugin.getDescription().getName().toLowerCase(Locale.ROOT), command);
+    }
+
+    private PluginCommand safeGetCommand(String name) {
+        try {
+            return plugin.getCommand(name);
+        }
+        catch (UnsupportedOperationException exception) {
+            return null;
+        }
     }
 }
