@@ -122,6 +122,27 @@ class DefaultPluginRuntimeServicesSeasonsLoadingTest {
     }
 
     @Test
+    void ensureSeasonsClassesFallsBackToLegacyWhenModernClassesAreUnsupportedOnCurrentJava() {
+        RuntimeHarness harness = runtimeHarness();
+        ClassLoader loader = buildLegacyLoaderWithUnsupportedModernClasses();
+
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) {
+            bukkit.when(Bukkit::getPluginManager).thenReturn(harness.pluginManager);
+            when(harness.pluginManager.getPlugin("EzSeasons"))
+                    .thenReturn(seasonsPluginWithLoader(loader));
+
+            boolean loaded = harness.services.ensureSeasonsClasses();
+
+            assertTrue(loaded);
+            assertEquals("com.ezlifesteal.seasons.api.SeasonsApi",
+                    harness.registry.getSeasonsIntegrationState().getApiClass().getName());
+            assertEquals("com.skyblockexp.lifesteal.seasons.api.SeasonsIntegration",
+                    harness.registry.getSeasonsIntegrationState().getIntegrationClass().getName());
+            assertTrue(harness.registry.getSeasonsIntegrationState().getProfileClass().getName().endsWith("$Profile"));
+        }
+    }
+
+    @Test
     void ensureSeasonsClassesLeavesIntegrationDisabledWhenNoCandidatesExist() {
         RuntimeHarness harness = runtimeHarness();
         ClassLoader loader = new FilteringClassLoader(getClass().getClassLoader(), Set.of(
@@ -184,6 +205,42 @@ class DefaultPluginRuntimeServicesSeasonsLoadingTest {
         return loader;
     }
 
+        private ClassLoader buildLegacyLoaderWithUnsupportedModernClasses() {
+        LegacySimulatingClassLoader loader = new LegacySimulatingClassLoader(getClass().getClassLoader(), Set.of());
+
+        loader.setLinkageError(
+            "com.skyblockexp.lifesteal.seasons.api.SeasonsApi",
+            new UnsupportedClassVersionError("modern api not supported")
+        );
+        loader.setLinkageError(
+            "com.skyblockexp.lifesteal.seasons.integration.LifestealIntegration",
+            new UnsupportedClassVersionError("modern integration not supported")
+        );
+
+        byte[] legacyApiBytes = new ByteBuddy()
+            .makeInterface()
+            .name("com.ezlifesteal.seasons.api.SeasonsApi")
+            .make()
+            .getBytes();
+        loader.define("com.ezlifesteal.seasons.api.SeasonsApi", legacyApiBytes);
+
+        byte[] integrationBytes = new ByteBuddy()
+            .subclass(Object.class)
+            .name("com.skyblockexp.lifesteal.seasons.api.SeasonsIntegration")
+            .make()
+            .getBytes();
+        loader.define("com.skyblockexp.lifesteal.seasons.api.SeasonsIntegration", integrationBytes);
+
+        byte[] profileBytes = new ByteBuddy()
+            .subclass(Object.class)
+            .name("com.skyblockexp.lifesteal.seasons.api.SeasonsIntegration$Profile")
+            .make()
+            .getBytes();
+        loader.define("com.skyblockexp.lifesteal.seasons.api.SeasonsIntegration$Profile", profileBytes);
+
+        return loader;
+        }
+
     private static RuntimeHarness runtimeHarness() {
         EzLifestealPlugin plugin = mock(EzLifestealPlugin.class);
         Logger logger = mock(Logger.class);
@@ -241,6 +298,8 @@ class DefaultPluginRuntimeServicesSeasonsLoadingTest {
 
         private final Map<String, Class<?>> defined = new HashMap<>();
 
+        private final Map<String, LinkageError> linkageErrors = new HashMap<>();
+
         private final Set<String> blocked;
 
         private LegacySimulatingClassLoader(ClassLoader parent, Set<String> blocked) {
@@ -252,10 +311,17 @@ class DefaultPluginRuntimeServicesSeasonsLoadingTest {
             defined.put(name, defineClass(name, bytes, 0, bytes.length, (ProtectionDomain) null));
         }
 
+        void setLinkageError(String className, LinkageError error) {
+            linkageErrors.put(className, error);
+        }
+
         @Override
         protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
             if (defined.containsKey(name)) {
                 return defined.get(name);
+            }
+            if (linkageErrors.containsKey(name)) {
+                throw linkageErrors.get(name);
             }
             if (blocked.contains(name)) {
                 throw new ClassNotFoundException("Blocked for legacy simulation: " + name);

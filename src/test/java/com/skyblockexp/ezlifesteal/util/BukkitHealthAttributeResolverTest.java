@@ -1,5 +1,6 @@
 package com.skyblockexp.ezlifesteal.util;
 
+import org.bukkit.attribute.Attribute;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -30,6 +31,85 @@ class BukkitHealthAttributeResolverTest {
         BukkitHealthAttributeResolver resolver = new BukkitHealthAttributeResolver();
 
         assertThrows(NoSuchFieldException.class, () -> resolver.readMaxHealthField(FakeNoHealthAttribute.class));
+    }
+
+    @Test
+    void resolveMaxHealthAttributeUsesPrimaryReadPath() {
+        Attribute expected = resolveAnyAttribute();
+        BukkitHealthAttributeResolver resolver = new BukkitHealthAttributeResolver() {
+            @Override
+            Object readGenericMaxHealthField() {
+                return expected;
+            }
+        };
+
+        assertEquals(expected, resolver.resolveMaxHealthAttribute());
+    }
+
+    @Test
+    void resolveMaxHealthAttributeFallsBackWhenPrimaryReadFails() {
+        Attribute expected = resolveAnyAttribute();
+        BukkitHealthAttributeResolver resolver = new BukkitHealthAttributeResolver() {
+            @Override
+            Object readGenericMaxHealthField() throws NoSuchFieldException {
+                throw new NoSuchFieldException("missing primary field");
+            }
+
+            @Override
+            Object findAttributeByFieldNames(String... fieldNames) {
+                return expected;
+            }
+        };
+
+        assertEquals(expected, resolver.resolveMaxHealthAttribute());
+    }
+
+    @Test
+    void resolveMaxHealthAttributeThrowsWhenNothingResolvable() {
+        BukkitHealthAttributeResolver resolver = new BukkitHealthAttributeResolver() {
+            @Override
+            Object readGenericMaxHealthField() throws NoSuchFieldException {
+                throw new NoSuchFieldException("missing primary field");
+            }
+
+            @Override
+            Object findAttributeByFieldNames(String... fieldNames) {
+                return null;
+            }
+        };
+
+        assertThrows(IllegalStateException.class, resolver::resolveMaxHealthAttribute);
+    }
+
+    @Test
+    void findAttributeByFieldNamesReturnsNullForUnknownNames() {
+        BukkitHealthAttributeResolver resolver = new BukkitHealthAttributeResolver();
+
+        Object value = resolver.findAttributeByFieldNames("__MISSING_ONE__", "__MISSING_TWO__");
+
+        assertEquals(null, value);
+    }
+
+    private Attribute resolveAnyAttribute() {
+        try {
+            Object maxHealth = Attribute.class.getField("MAX_HEALTH").get(null);
+            if (maxHealth instanceof Attribute attribute) {
+                return attribute;
+            }
+        }
+        catch (ReflectiveOperationException ignored) {
+        }
+
+        try {
+            Object genericMaxHealth = Attribute.class.getField("GENERIC_MAX_HEALTH").get(null);
+            if (genericMaxHealth instanceof Attribute attribute) {
+                return attribute;
+            }
+        }
+        catch (ReflectiveOperationException ignored) {
+        }
+
+        throw new IllegalStateException("No Bukkit attributes available for test");
     }
 
     static final class FakeAttribute {
