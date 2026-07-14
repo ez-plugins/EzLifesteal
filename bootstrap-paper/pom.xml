@@ -118,7 +118,7 @@
         </dependency>
         <dependency>
             <groupId>org.mockbukkit.mockbukkit</groupId>
-            <artifactId>mockbukkit-v26.1.2</artifactId>
+            <artifactId>${mockbukkit.artifactId}</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
