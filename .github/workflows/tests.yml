@@ -35,10 +35,10 @@ jobs:
           java-version: ${{ matrix.java-version }}
           cache: maven
 
-      - name: Build and install MockBukkit minecraft/v26.2
+      - name: Build and install MockBukkit upgrade/v26.2
         if: matrix.mockbukkit-version == 'local'
         run: |
-          git clone --depth=1 --branch minecraft/v26.2 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
+          git clone --depth=1 --branch upgrade/v26.2 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
           sed -i 's/^mockbukkit\.version=$/mockbukkit.version=local/' /tmp/MockBukkit/gradle.properties
           cd /tmp/MockBukkit && GITHUB_REPOSITORY=MockBukkit/MockBukkit ./gradlew publishToMavenLocal -xtest -xjavadoc
 
@@ -56,9 +56,9 @@ jobs:
           java-version: '25'
           cache: maven
 
-      - name: Build and install MockBukkit minecraft/v26.2
+      - name: Build and install MockBukkit upgrade/v26.2
         run: |
-          git clone --depth=1 --branch minecraft/v26.2 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
+          git clone --depth=1 --branch upgrade/v26.2 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
           sed -i 's/^mockbukkit\.version=$/mockbukkit.version=local/' /tmp/MockBukkit/gradle.properties
           cd /tmp/MockBukkit && GITHUB_REPOSITORY=MockBukkit/MockBukkit ./gradlew publishToMavenLocal -xtest -xjavadoc
 
@@ -147,10 +147,10 @@ jobs:
           java-version: ${{ matrix.java-version }}
           cache: maven
 
-      - name: Build and install MockBukkit minecraft/v26.2
+      - name: Build and install MockBukkit upgrade/v26.2
         if: matrix.mockbukkit-version == 'local'
         run: |
-          git clone --depth=1 --branch minecraft/v26.2 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
+          git clone --depth=1 --branch upgrade/v26.2 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
           sed -i 's/^mockbukkit\.version=$/mockbukkit.version=local/' /tmp/MockBukkit/gradle.properties
           cd /tmp/MockBukkit && GITHUB_REPOSITORY=MockBukkit/MockBukkit ./gradlew publishToMavenLocal -xtest -xjavadoc
 
@@ -184,10 +184,10 @@ jobs:
           java-version: ${{ matrix.java-version }}
           cache: maven
 
-      - name: Build and install MockBukkit minecraft/v26.2
+      - name: Build and install MockBukkit upgrade/v26.2
         if: matrix.mockbukkit-version == 'local'
         run: |
-          git clone --depth=1 --branch minecraft/v26.2 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
+          git clone --depth=1 --branch upgrade/v26.2 https://github.com/MockBukkit/MockBukkit.git /tmp/MockBukkit
           sed -i 's/^mockbukkit\.version=$/mockbukkit.version=local/' /tmp/MockBukkit/gradle.properties
           cd /tmp/MockBukkit && GITHUB_REPOSITORY=MockBukkit/MockBukkit ./gradlew publishToMavenLocal -xtest -xjavadoc
 
