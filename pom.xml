@@ -27,7 +27,7 @@
         <maven.compiler.release>21</maven.compiler.release>
         <paper.version>1.21.11-R0.1-SNAPSHOT</paper.version>
         <worldguard.version>7.0.13</worldguard.version>
-        <worldedit.version>7.3.12</worldedit.version>
+        <worldedit.version>7.4.5</worldedit.version>
         <mockbukkit.artifactId>mockbukkit-v1.21</mockbukkit.artifactId>
         <mockbukkit.version>4.110.0</mockbukkit.version>
         <jar.version.hyphenated>${project.version}</jar.version.hyphenated>
